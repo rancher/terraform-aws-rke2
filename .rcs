@@ -1,1 +1,2 @@
-source ~/.config/provider/default/rc
+source ~/.config/aws/default/rc
+source ~/.config/github/default/rc
