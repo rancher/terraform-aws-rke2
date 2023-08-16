@@ -9,4 +9,6 @@ rke2*
 *.gz
 examples/*/installer.sh
 examples/*/sha256sum.txt
+examples/*/rke2
+examples/*/tmp
 *.lock

@@ -1,17 +1,22 @@
 package test
 
 import (
-	"github.com/gruntwork-io/terratest/modules/terraform"
 	"testing"
+
+	"github.com/gruntwork-io/terratest/modules/terraform"
 )
 
 func TestBasic(t *testing.T) {
 	t.Parallel()
-
-	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
-		TerraformDir: "../examples/basic",
-	})
-
+	directory := "basic"
+	region := "us-west-1"
+	owner := "terraform-ci@suse.com"
+	release := getLatestRelease(t, "rancher", "rke2")
+	terraformVars := map[string]interface{}{
+		"rke2_version": release,
+	}
+	terraformOptions, keyPair, sshAgent := setup(t, directory, region, owner, terraformVars)
+	defer teardown(t, directory, keyPair, sshAgent)
 	defer terraform.Destroy(t, terraformOptions)
 	terraform.InitAndApply(t, terraformOptions)
 }
