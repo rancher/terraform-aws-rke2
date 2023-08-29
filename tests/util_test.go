@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	a "github.com/aws/aws-sdk-go/aws"
@@ -11,12 +12,11 @@ import (
 	"github.com/google/go-github/v53/github"
 	aws "github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/gruntwork-io/terratest/modules/random"
-	"github.com/gruntwork-io/terratest/modules/ssh"
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	"github.com/stretchr/testify/require"
 )
 
-func teardown(t *testing.T, directory string, keyPair *aws.Ec2Keypair, sshAgent *ssh.SshAgent) {
+func teardown(t *testing.T, directory string, keyPair *aws.Ec2Keypair) {
 	err := os.RemoveAll(fmt.Sprintf("../examples/%s/.terraform", directory))
 	require.NoError(t, err)
 	err2 := os.RemoveAll(fmt.Sprintf("../examples/%s/rke2", directory))
@@ -31,13 +31,18 @@ func teardown(t *testing.T, directory string, keyPair *aws.Ec2Keypair, sshAgent 
 	require.NoError(t, err6)
 
 	aws.DeleteEC2KeyPair(t, keyPair)
-	sshAgent.Stop()
 }
 
-func setup(t *testing.T, directory string, region string, owner string, terraformVars map[string]interface{}) (*terraform.Options, *aws.Ec2Keypair, *ssh.SshAgent) {
+func setup(t *testing.T, directory string, region string, owner string, terraformVars map[string]interface{}) (*terraform.Options, *aws.Ec2Keypair) {
 	uniqueID := random.UniqueId()
 
 	// Create an EC2 KeyPair that we can use for SSH access
+	if strings.Contains(directory, "_") {
+		// because we use the directory name in the ssh key name, we can't allow underscores
+		// aws object names must be domain names, and underscores are not allowed in domain names
+		err0 := fmt.Errorf("directory name can't contain an underscore")
+		require.NoError(t, err0)
+	}
 	keyPairName := fmt.Sprintf("terraform-aws-rke2-test-%s-%s", directory, uniqueID)
 	keyPair := aws.CreateAndImportEC2KeyPair(t, region, keyPairName)
 
@@ -53,11 +58,7 @@ func setup(t *testing.T, directory string, region string, owner string, terrafor
 
 	aws.AddTagsToResource(t, region, *result.KeyPairs[0].KeyPairId, map[string]string{"Name": keyPairName, "Owner": owner})
 
-	// start an SSH agent, with our key pair added
-	sshAgent := ssh.SshAgentWithKeyPair(t, keyPair.KeyPair)
-
 	terraformVars["ssh_key_name"] = keyPairName
-	terraformVars["ssh_key_content"] = keyPair.KeyPair.PublicKey
 
 	retryableTerraformErrors := map[string]string{
 		// The reason is unknown, but eventually these succeed after a few retries.
@@ -77,10 +78,9 @@ func setup(t *testing.T, directory string, region string, owner string, terrafor
 		EnvVars: map[string]string{
 			"AWS_DEFAULT_REGION": region,
 		},
-		SshAgent:                 sshAgent, // Overrides local SSH agent with our new agent
 		RetryableTerraformErrors: retryableTerraformErrors,
 	})
-	return terraformOptions, keyPair, sshAgent
+	return terraformOptions, keyPair
 }
 
 func getLatestRelease(t *testing.T, owner string, repo string) string {

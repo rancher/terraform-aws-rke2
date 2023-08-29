@@ -3,23 +3,41 @@
 
 locals {
   email = "terraform-ci@suse.com"
-  name  = "terraform-aws-rke2-basic" # WARNING: This must be less than 30 characters!
+  name  = "terraform-aws-rke2-cluster" # this must be less than 32 characters
   # I don't normally recommend using variables in root modules, but this allows tests to supply their own key and rke2 version
   ssh_key_name = var.ssh_key_name # I want ci to be able to generate a key that is specific to a single pipeline run
   rke2_version = var.rke2_version # I want ci to be able to get the latest version of rke2 to test
+  cluster_size = 3
 }
 resource "random_uuid" "join_token" {}
 
-module "TestBasic" {
+module "TestInitialServer" {
   source              = "../../"
   name                = local.name
   owner               = local.email
   vpc_name            = "default"
   subnet_name         = "default"
   security_group_name = local.name
-  security_group_type = "specific" # you will need to open this up to at least internal if you want to join other servers to this cluster
+  security_group_type = "internal"
   ssh_username        = local.name
   ssh_key_name        = local.ssh_key_name
   rke2_version        = local.rke2_version
   join_token          = random_uuid.join_token.result
+}
+
+module "TestServers" {
+  depends_on          = [module.TestInitialServer]
+  source              = "../../"
+  for_each            = toset([for i in range(1, local.cluster_size) : "${local.name}-${i}"])
+  name                = each.key
+  owner               = local.email
+  vpc_name            = "default"
+  subnet_name         = "default"
+  security_group_name = local.name # we can reuse the security group created with the initial server
+  ssh_username        = local.name
+  ssh_key_name        = local.ssh_key_name
+  local_file_path     = "${path.root}/rke2"
+  rke2_version        = local.rke2_version
+  join_token          = random_uuid.join_token.result
+  join_url            = module.TestInitialServer.join_url
 }
