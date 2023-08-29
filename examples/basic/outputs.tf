@@ -1,3 +1,3 @@
-output "security_group" {
-  value = module.TestBasic.security_group
+output "server" {
+  value = module.TestBasic.server
 }

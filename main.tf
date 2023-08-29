@@ -24,14 +24,13 @@ locals {
   rke2_version    = var.rke2_version    # even when supplying your own files, please provide the release version to install
   local_file_path = var.local_file_path # this should be "" if you want to download from github
   join_token      = var.join_token      # this should be set, even if you are only deploying one server
+  join_url        = var.join_url        # this should be null if you are deploying the first server
   role            = var.role            # this should be "server" or "agent", defaults to "server"
-  # initial_url should be null on the first server, and the url of the first server on all other servers
-  initial_url = var.initial_server_url
 }
 
 module "aws_access" {
   source              = "rancher/access/aws"
-  version             = "v0.0.2"
+  version             = "v0.0.4"
   owner               = local.owner
   vpc_name            = local.vpc_name
   vpc_cidr            = local.vpc_cidr
@@ -49,7 +48,7 @@ module "aws_server" {
     module.aws_access
   ]
   source                     = "rancher/server/aws"
-  version                    = "v0.0.3"
+  version                    = "v0.0.10"
   server_name                = local.server_name
   server_owner               = local.owner
   server_type                = local.server_type
@@ -65,10 +64,11 @@ module "node_config" {
     module.aws_access,
     module.aws_server,
   ]
-  source  = "rancher/rke2-config/local"
-  version = "v0.0.3"
-  token   = local.join_token
-  server  = local.initial_url
+  source            = "rancher/rke2-config/local"
+  version           = "v0.0.4"
+  token             = local.join_token
+  server            = local.join_url
+  advertise-address = module.aws_server.private_ip
 }
 
 module "install" {
@@ -78,7 +78,7 @@ module "install" {
     module.node_config,
   ]
   source            = "rancher/rke2-install/github"
-  version           = "v0.0.4"
+  version           = "v0.0.8"
   release           = local.rke2_version
   local_file_path   = local.local_file_path
   server_identifier = module.aws_server.id

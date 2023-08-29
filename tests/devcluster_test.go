@@ -7,9 +7,9 @@ import (
 	"github.com/gruntwork-io/terratest/modules/terraform"
 )
 
-func TestBasic(t *testing.T) {
+func TestDevCluster(t *testing.T) {
 	t.Parallel()
-	directory := "basic"
+	directory := "devcluster"
 	region := "us-west-1"
 	owner := "terraform-ci@suse.com"
 	release := getLatestRelease(t, "rancher", "rke2")
