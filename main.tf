@@ -30,7 +30,7 @@ locals {
 
 module "aws_access" {
   source              = "rancher/access/aws"
-  version             = "v0.0.4"
+  version             = "v0.0.5"
   owner               = local.owner
   vpc_name            = local.vpc_name
   vpc_cidr            = local.vpc_cidr
@@ -48,7 +48,7 @@ module "aws_server" {
     module.aws_access
   ]
   source                     = "rancher/server/aws"
-  version                    = "v0.0.10"
+  version                    = "v0.0.11"
   server_name                = local.server_name
   server_owner               = local.owner
   server_type                = local.server_type
@@ -65,7 +65,7 @@ module "node_config" {
     module.aws_server,
   ]
   source            = "rancher/rke2-config/local"
-  version           = "v0.0.4"
+  version           = "v0.0.5"
   token             = local.join_token
   server            = local.join_url
   advertise-address = module.aws_server.private_ip
@@ -78,7 +78,7 @@ module "install" {
     module.node_config,
   ]
   source            = "rancher/rke2-install/github"
-  version           = "v0.0.8"
+  version           = "v0.0.9"
   release           = local.rke2_version
   local_file_path   = local.local_file_path
   server_identifier = module.aws_server.id
