@@ -20,12 +20,15 @@ locals {
   server_type = var.server_type # this should be "" if the server already exists
   # image
   image_type = var.image_type # this module shouldn't override the image with image_id
+  # download
+  skip_download   = var.skip_download
+  local_file_path = var.local_file_path
   # rke2
-  rke2_version    = var.rke2_version    # even when supplying your own files, please provide the release version to install
-  local_file_path = var.local_file_path # this should be "" if you want to download from github
-  join_token      = var.join_token      # this should be set, even if you are only deploying one server
-  join_url        = var.join_url        # this should be null if you are deploying the first server
-  role            = var.role            # this should be "server" or "agent", defaults to "server"
+  rke2_version     = var.rke2_version     # even when supplying your own files, please provide the release version to install
+  join_token       = var.join_token       # this should be set, even if you are only deploying one server
+  join_url         = var.join_url         # this should be null if you are deploying the first server
+  role             = var.role             # this should be "server" or "agent", defaults to "server"
+  remote_file_path = var.remote_file_path # this defaults to "/home/<username>/rke2"
 }
 
 module "aws_access" {
@@ -59,7 +62,7 @@ module "aws_server" {
   server_subnet_name         = module.aws_access.subnet.tags.Name
 }
 
-module "node_config" {
+module "config" {
   depends_on = [
     module.aws_access,
     module.aws_server,
@@ -71,19 +74,28 @@ module "node_config" {
   advertise-address = module.aws_server.private_ip
 }
 
+module "download" {
+  count   = (local.skip_download == true ? 0 : 1)
+  source  = "rancher/rke2-download/github"
+  version = "v0.0.1"
+  release = local.rke2_version
+  path    = local.local_file_path
+}
+
 module "install" {
   depends_on = [
     module.aws_access,
     module.aws_server,
-    module.node_config,
+    module.config,
+    module.download,
   ]
-  source            = "rancher/rke2-install/github"
-  version           = "v0.0.9"
-  release           = local.rke2_version
-  local_file_path   = local.local_file_path
-  server_identifier = module.aws_server.id
-  ssh_ip            = module.aws_server.public_ip
-  ssh_user          = local.username
-  rke2_config       = module.node_config.yaml_config
-  role              = local.role
+  source          = "rancher/rke2-install/null"
+  version         = "v0.0.12"
+  release         = local.rke2_version
+  local_file_path = local.local_file_path
+  identifier      = module.aws_server.id
+  ssh_ip          = module.aws_server.public_ip
+  ssh_user        = local.username
+  rke2_config     = module.config.yaml_config
+  role            = local.role
 }

@@ -1,3 +1,3 @@
 output "server" {
-  value = module.TestBasic.server
+  value = module.TestBasic
 }
