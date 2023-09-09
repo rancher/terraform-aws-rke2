@@ -1,3 +1,4 @@
+# general
 variable "name" {
   type        = string
   description = <<-EOT
@@ -19,6 +20,7 @@ variable "owner" {
     or some identifier that can be used to contact the owner.
   EOT
 }
+# access variables
 variable "vpc_name" {
   type        = string
   description = <<-EOT
@@ -119,6 +121,7 @@ variable "ssh_key_content" {
   EOT
   default     = ""
 }
+# server
 variable "server_type" {
   type        = string
   description = <<-EOT
@@ -146,6 +149,28 @@ variable "image_type" {
   EOT
   default     = "sles-15"
 }
+# download
+variable "skip_download" {
+  type        = bool
+  description = <<-EOT
+    A boolean value to skip downloading the RKE2 release and configuation files.
+    This is useful when the files are already already downloaded at the local_file_path.
+  EOT
+  default     = false
+}
+variable "local_file_path" {
+  type        = string
+  description = <<-EOT
+    A local file path where the RKE2 release and configuation files can be found or should be downloaded to.
+    If this isn't set, the module will assume the files are already on the server at the remote_file_path.
+    WARNING!:
+      If this variable isn't set, Terraform can't track changes to the files.
+      If the files are not on the server, the install script will fail.
+  EOT
+  default     = ""
+}
+
+# rke2
 variable "rke2_version" {
   type        = string
   description = <<-EOT
@@ -154,11 +179,11 @@ variable "rke2_version" {
     This is expected even when providing a local file path to install from.
   EOT
 }
-variable "local_file_path" {
+variable "remote_file_path" {
   type        = string
   description = <<-EOT
-    A local file path where the RKE2 release and configuation files can be found.
-    If this isn't set, the module will download the release from github.
+    The remote file path where the RKE2 release and configuation files can be found or should be placed.
+    This defaults to "/home/<ssh_username>/rke2".
   EOT
   default     = ""
 }
