@@ -89,13 +89,14 @@ module "install" {
     module.config,
     module.download,
   ]
-  source          = "rancher/rke2-install/null"
-  version         = "v0.0.12"
-  release         = local.rke2_version
-  local_file_path = local.local_file_path
-  identifier      = module.aws_server.id
-  ssh_ip          = module.aws_server.public_ip
-  ssh_user        = local.username
-  rke2_config     = module.config.yaml_config
-  role            = local.role
+  source           = "rancher/rke2-install/null"
+  version          = "v0.0.12"
+  release          = local.rke2_version
+  local_file_path  = local.local_file_path
+  remote_file_path = local.remote_file_path
+  identifier       = module.aws_server.id
+  ssh_ip           = module.aws_server.public_ip
+  ssh_user         = local.username
+  rke2_config      = module.config.yaml_config
+  role             = local.role
 }
