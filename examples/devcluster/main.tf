@@ -2,11 +2,13 @@
 # this example does generate a random join token, and security groups/rules for each server
 
 locals {
-  email = "terraform-ci@suse.com"
-  name  = "terraform-aws-rke2-cluster" # this must be less than 32 characters
+  email    = "terraform-ci@suse.com"
+  name     = "tf-aws-rke2-devcluster-${local.identifier}"
+  username = "tf-${local.identifier}" # WARNING: This must be less than 32 characters!
   # I don't normally recommend using variables in root modules, but this allows tests to supply their own key and rke2 version
   ssh_key_name = var.ssh_key_name # I want ci to be able to generate a key that is specific to a single pipeline run
   rke2_version = var.rke2_version # I want ci to be able to get the latest version of rke2 to test
+  identifier   = var.identifier   # I want ci to be able to isolate resources between pipelines
   cluster_size = 3
 }
 resource "random_uuid" "join_token" {}
@@ -19,7 +21,7 @@ module "TestInitialServer" {
   subnet_name         = "default"
   security_group_name = local.name
   security_group_type = "internal"
-  ssh_username        = local.name
+  ssh_username        = local.username
   ssh_key_name        = local.ssh_key_name
   rke2_version        = local.rke2_version
   join_token          = random_uuid.join_token.result
@@ -34,7 +36,7 @@ module "TestServers" {
   vpc_name            = "default"
   subnet_name         = "default"
   security_group_name = local.name # we can reuse the security group created with the initial server
-  ssh_username        = local.name
+  ssh_username        = local.username
   ssh_key_name        = local.ssh_key_name
   local_file_path     = "${path.root}/rke2"
   rke2_version        = local.rke2_version

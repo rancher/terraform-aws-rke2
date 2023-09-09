@@ -59,6 +59,7 @@ func setup(t *testing.T, directory string, region string, owner string, terrafor
 	aws.AddTagsToResource(t, region, *result.KeyPairs[0].KeyPairId, map[string]string{"Name": keyPairName, "Owner": owner})
 
 	terraformVars["ssh_key_name"] = keyPairName
+	terraformVars["identifier"] = uniqueID
 
 	retryableTerraformErrors := map[string]string{
 		// The reason is unknown, but eventually these succeed after a few retries.
