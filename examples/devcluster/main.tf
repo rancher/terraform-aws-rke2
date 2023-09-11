@@ -23,6 +23,7 @@ module "TestInitialServer" {
   security_group_type = "internal"
   ssh_username        = local.username
   ssh_key_name        = local.ssh_key_name
+  local_file_path     = "${path.root}/rke2"
   rke2_version        = local.rke2_version
   join_token          = random_uuid.join_token.result
 }
