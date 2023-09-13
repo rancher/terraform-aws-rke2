@@ -8,10 +8,10 @@ import (
 	"github.com/gruntwork-io/terratest/modules/terraform"
 )
 
-func TestBasic(t *testing.T) {
+func TestDedicatedCluster(t *testing.T) {
 	t.Parallel()
 	uniqueID := random.UniqueId()
-	directory := "basic"
+	directory := "dedicated"
 	region := "us-west-1"
 	owner := "terraform-ci@suse.com"
 	release := getLatestRelease(t, "rancher", "rke2")

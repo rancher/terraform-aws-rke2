@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -11,31 +12,38 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/google/go-github/v53/github"
 	aws "github.com/gruntwork-io/terratest/modules/aws"
-	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	"github.com/stretchr/testify/require"
 )
 
 func teardown(t *testing.T, directory string, keyPair *aws.Ec2Keypair) {
-	err := os.RemoveAll(fmt.Sprintf("../examples/%s/.terraform", directory))
-	require.NoError(t, err)
-	err2 := os.RemoveAll(fmt.Sprintf("../examples/%s/rke2", directory))
+	err1 := os.RemoveAll(fmt.Sprintf("../examples/%s/rke2", directory))
+	require.NoError(t, err1)
+	err2 := os.RemoveAll(fmt.Sprintf("../examples/%s/tmp", directory))
 	require.NoError(t, err2)
-	err3 := os.RemoveAll(fmt.Sprintf("../examples/%s/tmp", directory))
+	files, err3 := filepath.Glob(fmt.Sprintf("../examples/%s/.terraform*", directory))
 	require.NoError(t, err3)
-	err4 := os.RemoveAll(fmt.Sprintf("../examples/%s/.terraform.lock.hcl", directory))
-	require.NoError(t, err4)
-	err5 := os.RemoveAll(fmt.Sprintf("../examples/%s/terraform.tfstate", directory))
+	for _, f := range files {
+		err4 := os.RemoveAll(f)
+		require.NoError(t, err4)
+	}
+	files, err5 := filepath.Glob(fmt.Sprintf("../examples/%s/terraform.*", directory))
 	require.NoError(t, err5)
-	err6 := os.RemoveAll(fmt.Sprintf("../examples/%s/terraform.tfstate.backup", directory))
-	require.NoError(t, err6)
+	for _, f := range files {
+		err6 := os.Remove(f)
+		require.NoError(t, err6)
+	}
+	files, err7 := filepath.Glob(fmt.Sprintf("../examples/%s/kubeconfig-*", directory))
+	require.NoError(t, err7)
+	for _, f := range files {
+		err8 := os.Remove(f)
+		require.NoError(t, err8)
+	}
 
 	aws.DeleteEC2KeyPair(t, keyPair)
 }
 
-func setup(t *testing.T, directory string, region string, owner string, terraformVars map[string]interface{}) (*terraform.Options, *aws.Ec2Keypair) {
-	uniqueID := random.UniqueId()
-
+func setup(t *testing.T, directory string, region string, owner string, uniqueID string, terraformVars map[string]interface{}) (*terraform.Options, *aws.Ec2Keypair) {
 	// Create an EC2 KeyPair that we can use for SSH access
 	if strings.Contains(directory, "_") {
 		// because we use the directory name in the ssh key name, we can't allow underscores

@@ -24,11 +24,12 @@ locals {
   skip_download   = var.skip_download
   local_file_path = var.local_file_path
   # rke2
-  rke2_version     = var.rke2_version     # even when supplying your own files, please provide the release version to install
-  join_token       = var.join_token       # this should be set, even if you are only deploying one server
-  join_url         = var.join_url         # this should be null if you are deploying the first server
-  role             = var.role             # this should be "server" or "agent", defaults to "server"
-  remote_file_path = var.remote_file_path # this defaults to "/home/<username>/rke2"
+  rke2_version        = var.rke2_version        # even when supplying your own files, please provide the release version to install
+  join_token          = var.join_token          # this should be set, even if you are only deploying one server
+  join_url            = var.join_url            # this should be null if you are deploying the first server
+  role                = var.role                # this should be "server" or "agent", defaults to "server"
+  remote_file_path    = var.remote_file_path    # this defaults to "/home/<username>/rke2"
+  retrieve_kubeconfig = var.retrieve_kubeconfig # this defaults to false
 }
 
 module "aws_access" {
@@ -72,6 +73,7 @@ module "config" {
   token             = local.join_token
   server            = local.join_url
   advertise-address = module.aws_server.private_ip
+  node-external-ip  = module.aws_server.public_ip
 }
 
 module "download" {
@@ -89,14 +91,15 @@ module "install" {
     module.config,
     module.download,
   ]
-  source           = "rancher/rke2-install/null"
-  version          = "v0.0.13"
-  release          = local.rke2_version
-  local_file_path  = local.local_file_path
-  remote_file_path = local.remote_file_path
-  identifier       = module.aws_server.id
-  ssh_ip           = module.aws_server.public_ip
-  ssh_user         = local.username
-  rke2_config      = module.config.yaml_config
-  role             = local.role
+  source              = "rancher/rke2-install/null"
+  version             = "v0.0.14"
+  release             = local.rke2_version
+  local_file_path     = local.local_file_path
+  remote_file_path    = local.remote_file_path
+  identifier          = module.aws_server.id
+  ssh_ip              = module.aws_server.public_ip
+  ssh_user            = local.username
+  rke2_config         = module.config.yaml_config
+  role                = local.role
+  retrieve_kubeconfig = local.retrieve_kubeconfig
 }
