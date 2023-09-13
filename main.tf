@@ -73,7 +73,7 @@ module "config" {
   token             = local.join_token
   server            = local.join_url
   advertise-address = module.aws_server.private_ip
-  node-external-ip  = module.aws_server.public_ip
+  node-external-ip  = [module.aws_server.public_ip]
 }
 
 module "download" {
