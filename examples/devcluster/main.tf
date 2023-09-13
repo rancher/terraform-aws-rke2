@@ -26,6 +26,7 @@ module "TestInitialServer" {
   local_file_path     = "${path.root}/rke2"
   rke2_version        = local.rke2_version
   join_token          = random_uuid.join_token.result
+  retrieve_kubeconfig = true
 }
 
 module "TestServers" {
@@ -40,7 +41,9 @@ module "TestServers" {
   ssh_username        = local.username
   ssh_key_name        = local.ssh_key_name
   local_file_path     = "${path.root}/rke2"
+  skip_download       = true # we can reuse the files downloaded with the initial server
   rke2_version        = local.rke2_version
   join_token          = random_uuid.join_token.result
   join_url            = module.TestInitialServer.join_url
+  retrieve_kubeconfig = false # we can reuse the kubeconfig downloaded with the initial server
 }

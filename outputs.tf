@@ -40,3 +40,10 @@ output "join_url" {
     The join URL for the server.
   EOT
 }
+output "kubeconfig" {
+  value       = (module.install.kubeconfig == "" ? null : module.install.kubeconfig)
+  description = <<-EOT
+    The kubeconfig for the server.
+  EOT
+  sensitive   = true
+}

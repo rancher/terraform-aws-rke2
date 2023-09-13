@@ -3,12 +3,14 @@ package test
 import (
 	"testing"
 
+	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/ssh"
 	"github.com/gruntwork-io/terratest/modules/terraform"
 )
 
 func TestDevCluster(t *testing.T) {
 	t.Parallel()
+	uniqueID := random.UniqueId()
 	directory := "devcluster"
 	region := "us-west-1"
 	owner := "terraform-ci@suse.com"
@@ -16,7 +18,7 @@ func TestDevCluster(t *testing.T) {
 	terraformVars := map[string]interface{}{
 		"rke2_version": release,
 	}
-	terraformOptions, keyPair := setup(t, directory, region, owner, terraformVars)
+	terraformOptions, keyPair := setup(t, directory, region, owner, uniqueID, terraformVars)
 
 	sshAgent := ssh.SshAgentWithKeyPair(t, keyPair.KeyPair)
 	defer sshAgent.Stop()

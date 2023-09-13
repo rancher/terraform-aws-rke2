@@ -216,3 +216,11 @@ variable "role" {
   EOT
   default     = "server"
 }
+variable "retrieve_kubeconfig" {
+  type        = bool
+  description = <<-EOT
+    A boolean value to retrieve the kubeconfig from the server.
+    This is useful when the kubeconfig is needed to interact with the cluster.
+  EOT
+  default     = false
+}

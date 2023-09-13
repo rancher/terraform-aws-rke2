@@ -12,4 +12,5 @@ examples/*/sha256sum.txt
 examples/*/rke2
 examples/*/tmp
 examples/*/kubeconfig.yaml
+examples/*/kubeconfig*.yaml
 *.lock
