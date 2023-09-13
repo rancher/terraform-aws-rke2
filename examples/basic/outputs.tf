@@ -1,3 +1,4 @@
-output "server" {
-  value = module.TestBasic
+output "kubeconfig" {
+  value     = module.TestBasic.kubeconfig
+  sensitive = true
 }
