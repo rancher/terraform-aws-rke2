@@ -51,16 +51,16 @@ module "aws_server" {
   depends_on = [
     module.aws_access
   ]
-  source                     = "rancher/server/aws"
-  version                    = "v0.0.11"
-  server_name                = local.server_name
-  server_owner               = local.owner
-  server_type                = local.server_type
-  image                      = local.image_type
-  server_user                = local.username
-  server_ssh_key             = module.aws_access.ssh_key.public_key
-  server_security_group_name = module.aws_access.security_group.tags.Name
-  server_subnet_name         = module.aws_access.subnet.tags.Name
+  source              = "rancher/server/aws"
+  version             = "v0.0.12"
+  name                = local.server_name
+  owner               = local.owner
+  type                = local.server_type
+  image               = local.image_type
+  user                = local.username
+  ssh_key             = module.aws_access.ssh_key.public_key
+  security_group_name = module.aws_access.security_group.tags.Name
+  subnet_name         = module.aws_access.subnet.tags.Name
 }
 
 module "config" {
