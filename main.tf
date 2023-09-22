@@ -16,8 +16,9 @@ locals {
   ssh_key_name    = var.ssh_key_name
   ssh_key_content = var.ssh_key_content
   # server
-  server_name = local.name      # this module shouldn't override the server with server_id
-  server_type = var.server_type # this should be "" if the server already exists
+  server_name       = local.name            # this module shouldn't override the server with server_id
+  server_type       = var.server_type       # this should be "" if the server already exists
+  availability_zone = var.availability_zone # this should be "" to deploy in the default zone for the region
   # image
   image_type = var.image_type # this module shouldn't override the image with image_id
   # download
@@ -30,6 +31,7 @@ locals {
   role                = var.role                # this should be "server" or "agent", defaults to "server"
   remote_file_path    = var.remote_file_path    # this defaults to "/home/<username>/rke2"
   retrieve_kubeconfig = var.retrieve_kubeconfig # this defaults to false
+
 }
 
 module "aws_access" {
@@ -52,7 +54,7 @@ module "aws_server" {
     module.aws_access
   ]
   source              = "rancher/server/aws"
-  version             = "v0.0.12"
+  version             = "v0.0.13"
   name                = local.server_name
   owner               = local.owner
   type                = local.server_type
@@ -61,6 +63,7 @@ module "aws_server" {
   ssh_key             = module.aws_access.ssh_key.public_key
   security_group_name = module.aws_access.security_group.tags.Name
   subnet_name         = module.aws_access.subnet.tags.Name
+  availability_zone   = local.availability_zone
 }
 
 module "config" {
