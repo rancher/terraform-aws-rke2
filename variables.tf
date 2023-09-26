@@ -136,6 +136,16 @@ variable "server_type" {
   EOT
   default     = "large"
 }
+variable "availability_zone" {
+  type        = string
+  description = <<-EOT
+    The availability zone to use when creating the server.
+    The value of this will depend on the region you are deploying to.
+    This is only used when creating a new server.
+    If this is not set, the default availability zone for the region will be used.
+  EOT
+  default     = ""
+}
 variable "image_type" {
   type        = string
   description = <<-EOT
