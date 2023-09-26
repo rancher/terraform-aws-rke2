@@ -30,7 +30,7 @@ module "TestInitialServer" {
   rke2_version        = local.rke2_version
   join_token          = random_uuid.join_token.result
   retrieve_kubeconfig = true
-  availability_zone   = "us-west-1a"
+  availability_zone   = "us-west-1b" # this is determined by the VPC and the Region, use the zone "name" not the zone "id"
 }
 
 module "TestServers" {
@@ -49,6 +49,6 @@ module "TestServers" {
   rke2_version        = local.rke2_version
   join_token          = random_uuid.join_token.result
   join_url            = module.TestInitialServer.join_url
-  retrieve_kubeconfig = false # we can reuse the kubeconfig downloaded with the initial server
-  availability_zone   = "us-west-1b"
+  retrieve_kubeconfig = false        # we can reuse the kubeconfig downloaded with the initial server
+  availability_zone   = "us-west-1c" # this is determined by the VPC and the Region, use the zone "name" not the zone "id"
 }

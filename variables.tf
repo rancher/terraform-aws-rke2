@@ -140,9 +140,14 @@ variable "availability_zone" {
   type        = string
   description = <<-EOT
     The availability zone to use when creating the server.
-    The value of this will depend on the region you are deploying to.
+    The value of this will depend on the region you are deploying to and the VPC.
     This is only used when creating a new server.
     If this is not set, the default availability zone for the region will be used.
+    This guide can help you find the correct value for your region and VPC:
+    [AWS AZ Guide](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#availability-zones-describe)
+    Deploying servers in the same availability zone will improve connection speeds between them.
+    Deploying servers in different availability zones will improve availability.
+    Use the zone "Name" not the zone "Id".
   EOT
   default     = ""
 }
