@@ -1,54 +1,122 @@
-# the provider block is not necessary, I am adding it to show what region I am using so that the availability zone choices make sense
-# if you are using an aws config file with a default region, or if you are setting the region in the environment, you can remove this block
+# example of how to set the region if not using aws config or environment variables
 provider "aws" {
-  region = "us-west-1"
+  region = "us-east-1"
 }
 
 locals {
-  email    = "terraform-ci@suse.com"
-  name     = "tf-aws-rke2-devcluster-${local.identifier}"
-  username = "tf-${local.identifier}" # WARNING: This must be less than 32 characters!
-  # I don't normally recommend using variables in root modules, but this allows tests to supply their own key and rke2 version
-  ssh_key_name = var.ssh_key_name # I want ci to be able to generate a key that is specific to a single pipeline run
-  rke2_version = var.rke2_version # I want ci to be able to get the latest version of rke2 to test
-  identifier   = var.identifier   # I want ci to be able to isolate resources between pipelines
-  cluster_size = 3
+  email              = "terraform-ci@suse.com" # put your email here
+  cluster_size       = 3
+  identifier         = var.identifier                                                   # put a unique identifier here
+  prefix             = "tf-aws-rke2-devcluster-${local.identifier}"                     # this can be anything you want, it makes it marginally easier to find in AWS
+  username           = "tf-${local.identifier}"                                         # WARNING: This must be less than 32 characters!
+  rke2_version       = var.rke2_version                                                 # put your rke2 version here, must be a valid tag name like v1.21.6+rke2r1
+  extra_config       = (var.extra_config_path == "" ? "" : file(var.extra_config_path)) # put your extra config file here
+  server_type        = "large"                                                          # https://github.com/rancher/terraform-aws-server/blob/main/modules/server/types.tf
+  image_type         = "rhel-8"                                                         # https://github.com/rancher/terraform-aws-server/blob/main/modules/image/types.tf
+  server_prep_script = file(var.server_prep_script)                                     # put your server prep script here
+
+  # We are generating random names for the servers here, you might want to simplify this for your use case, just pick some names
+  # Keep in mind that these names must not be generated using resources, but they can use functions and expressions
+  # The map format is { "0" = "name0", "1" = "name1", ... }
+  # for example : names = { "0" = "initial", "1" = "secondary", "2" = "tertiary" }
+  names                 = { for i in range(local.cluster_size) : tostring(i) => "${local.prefix}-${md5(uuidv5("dns", tostring(i)))}" }
+  vpc_cidr              = "172.31.0.0/16" # put the CIDR you want for your VPC here
+  subnet_size           = 12              # 12 new bits is a /28 given the /16 vpc_cidr, this changes based on the CIDR size and how large you want your subnets
+  subnet_start_position = 4095            # when splitting /16 into /28 chunks, there will be 4095 of them, we are starting at the end
+  subnet_cidrs          = { for i in range(local.cluster_size) : local.names[tostring(i)] => cidrsubnet(local.vpc_cidr, local.subnet_size, (local.subnet_start_position - i)) }
+  availability_zones    = { for i in range(local.cluster_size) : local.names[tostring(i)] => data.aws_availability_zones.available.names[(i % length(data.aws_availability_zones.available.names))] }
+  file_paths            = { for i in range(local.cluster_size) : local.names[tostring(i)] => "${path.root}/${local.names[tostring(i)]}" }
+  ssh_key_name          = var.ssh_key_name # put the name of your ssh keypair here
+  # ssh_key_content       = file(var.ssh_key_path) # if you want the module to create the keypair object in AWS for you, specify the contents of the public key like this
 }
+
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
 resource "random_uuid" "join_token" {}
 
-module "TestInitialServer" {
-  source              = "../../"
-  name                = local.name
-  owner               = local.email
-  vpc_name            = "default"
-  subnet_name         = "default"
-  security_group_name = local.name
-  security_group_type = "internal"
-  ssh_username        = local.username
-  ssh_key_name        = local.ssh_key_name
-  local_file_path     = "${path.root}/rke2"
-  rke2_version        = local.rke2_version
-  join_token          = random_uuid.join_token.result
-  retrieve_kubeconfig = true
-  availability_zone   = "us-west-1b" # this is determined by the VPC and the Region, use the zone "name" not the zone "id"
+resource "null_resource" "write_extra_config" {
+  for_each = (local.extra_config == "" ? {} : local.file_paths)
+  triggers = {
+    config_content = local.extra_config,
+  }
+  provisioner "local-exec" {
+    command = <<-EOT
+      set -e
+      set -x
+      install -d ${each.value}
+      cat << 'EOF' > "${each.value}/51-extra-config.yaml"
+      ${local.extra_config}
+      EOF
+    EOT
+  }
+  provisioner "local-exec" {
+    when    = destroy
+    command = <<-EOT
+      rm -rf "${each.key}"
+    EOT
+  }
 }
 
-module "TestServers" {
-  depends_on          = [module.TestInitialServer]
-  source              = "../../"
-  for_each            = toset([for i in range(1, local.cluster_size) : "${local.name}-${i}"])
-  name                = each.key
+module "InitialServer" {
+  depends_on = [
+    data.aws_availability_zones.available,
+    null_resource.write_extra_config,
+    random_uuid.join_token,
+  ]
+  source = "../../" # change this to "rancher/rke2/aws" per https://registry.terraform.io/modules/rancher/rke2/aws/latest
+  # version = "v0.0.7" # when using this example you will need to set the version
+  name                = local.names["0"] # the name attribute must not depend on a resource
   owner               = local.email
-  vpc_name            = "default"
-  subnet_name         = "default"
-  security_group_name = local.name # we can reuse the security group created with the initial server
+  vpc_name            = local.names["0"]
+  vpc_cidr            = local.vpc_cidr
+  subnet_name         = local.names["0"]
+  subnet_cidr         = local.subnet_cidrs[local.names["0"]]
+  availability_zone   = local.availability_zones[local.names["0"]]
+  security_group_name = local.names["0"]
+  security_group_type = "egress" # https://github.com/rancher/terraform-aws-access/blob/main/modules/security_group/types.tf
   ssh_username        = local.username
   ssh_key_name        = local.ssh_key_name
-  local_file_path     = "${path.root}/rke2"
-  skip_download       = true # we can reuse the files downloaded with the initial server
+  # ssh_key_content     = local.ssh_key_content
+  local_file_path     = "${path.root}/${local.names["0"]}"
   rke2_version        = local.rke2_version
   join_token          = random_uuid.join_token.result
-  join_url            = module.TestInitialServer.join_url
-  retrieve_kubeconfig = false        # we can reuse the kubeconfig downloaded with the initial server
-  availability_zone   = "us-west-1c" # this is determined by the VPC and the Region, use the zone "name" not the zone "id"
+  install_method      = "rpm" # requires "egress" security group type
+  skip_download       = true
+  retrieve_kubeconfig = true
+  server_type         = local.server_type
+  image_type          = local.image_type
+  server_prep_script  = local.server_prep_script
+}
+
+module "Servers" {
+  depends_on = [
+    data.aws_availability_zones.available,
+    random_uuid.join_token,
+    null_resource.write_extra_config,
+    module.InitialServer,
+  ]
+  source = "../../" # change this to "rancher/rke2/aws" per https://registry.terraform.io/modules/rancher/rke2/aws/latest
+  # version = "v0.0.7" # when using this example you will need to set the version
+  for_each            = toset([for i in range(1, local.cluster_size) : local.names[tostring(i)]]) # "1","2","3"... less than cluster_size
+  name                = each.key
+  owner               = local.email
+  vpc_name            = local.names["0"] # reuse what we generated with initial server
+  subnet_name         = each.key         # each server gets its own subnet
+  subnet_cidr         = local.subnet_cidrs[each.key]
+  availability_zone   = local.availability_zones[each.key]
+  security_group_name = local.names["0"] # reuse what we generated with initial server
+  ssh_username        = local.username
+  ssh_key_name        = local.ssh_key_name # reuse what we generated with initial server
+  local_file_path     = local.file_paths[each.key]
+  rke2_version        = local.rke2_version
+  join_token          = random_uuid.join_token.result
+  join_url            = module.InitialServer.join_url
+  install_method      = "rpm"
+  skip_download       = true
+  retrieve_kubeconfig = false # we can reuse the kubeconfig downloaded with the initial server
+  server_type         = local.server_type
+  image_type          = local.image_type
+  server_prep_script  = local.server_prep_script
 }

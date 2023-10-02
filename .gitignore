@@ -13,4 +13,5 @@ examples/*/rke2
 examples/*/tmp
 examples/*/kubeconfig.yaml
 examples/*/kubeconfig*.yaml
+examples/*/tf-*
 *.lock
