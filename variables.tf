@@ -139,9 +139,9 @@ variable "server_type" {
 variable "availability_zone" {
   type        = string
   description = <<-EOT
-    The availability zone to use when creating the server.
+    The availability zone to use when creating the subnet.
     The value of this will depend on the region you are deploying to and the VPC.
-    This is only used when creating a new server.
+    This is only used when creating a new subnet.
     If this is not set, the default availability zone for the region will be used.
     This guide can help you find the correct value for your region and VPC:
     [AWS AZ Guide](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#availability-zones-describe)
@@ -238,4 +238,27 @@ variable "retrieve_kubeconfig" {
     This is useful when the kubeconfig is needed to interact with the cluster.
   EOT
   default     = false
+}
+variable "install_method" {
+  type        = string
+  description = <<-EOT
+    The method to use when installing RKE2.
+    The current options are: "tar" and "rpm".
+     - tar downloads the release from github and installs it with the install.sh script.
+     - rpm downloads the release from github and installs it with the rpm command.
+    The tar method is the default.
+    The rpm method is useful when you want to use the rpm command to install RKE2.
+    The rpm method assumes your server is able to download the rpms, it will not download them for you.
+  EOT
+  default     = "tar"
+}
+variable "server_prep_script" {
+  type        = string
+  description = <<-EOT
+    The contents of a script to run on the server before installing RKE2.
+    This is helpful when you need to install packages or configure the server before installing RKE2.
+    This script will be run as root.
+    This can help mitigate issues like those found here: https://docs.rke2.io/known_issues#networkmanager
+  EOT
+  default     = ""
 }

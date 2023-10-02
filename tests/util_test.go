@@ -39,6 +39,12 @@ func teardown(t *testing.T, directory string, keyPair *aws.Ec2Keypair) {
 		err8 := os.Remove(f)
 		require.NoError(t, err8)
 	}
+	files, err9 := filepath.Glob(fmt.Sprintf("../examples/%s/tf-*", directory))
+	require.NoError(t, err9)
+	for _, f := range files {
+		err10 := os.Remove(f)
+		require.NoError(t, err10)
+	}
 
 	aws.DeleteEC2KeyPair(t, keyPair)
 }
