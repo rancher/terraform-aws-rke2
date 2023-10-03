@@ -1,6 +1,6 @@
 # Terraform AWS RKE2
 
-WARNING! this module is not ready for use
+WARNING! this module is experimental
 
 This module deploys infrastructure and installs RKE2 on that infrastructure.
 This module combines other modules that we provide to give holistic control of the lifecycle of an RKE2 node.

@@ -11,7 +11,8 @@ locals {
 resource "random_uuid" "join_token" {}
 
 module "TestBasic" {
-  source              = "../../"
+  source = "../../" # change this to "rancher/rke2/aws" per https://registry.terraform.io/modules/rancher/rke2/aws/latest
+  # version = "v0.0.7" # when using this example you will need to set the version
   name                = local.name
   owner               = local.email
   vpc_name            = "default"
