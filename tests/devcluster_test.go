@@ -12,7 +12,7 @@ func TestDevCluster(t *testing.T) {
 	t.Parallel()
 	uniqueID := random.UniqueId()
 	directory := "devcluster"
-	region := "us-east-1"
+	region := "us-west-1"
 	owner := "terraform-ci@suse.com"
 	release := getLatestRelease(t, "rancher", "rke2")
 	terraformVars := map[string]interface{}{

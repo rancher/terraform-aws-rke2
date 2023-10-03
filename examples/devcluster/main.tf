@@ -1,6 +1,6 @@
 # example of how to set the region if not using aws config or environment variables
 provider "aws" {
-  region = "us-east-1"
+  region = "us-west-1"
 }
 
 locals {
