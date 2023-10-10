@@ -46,7 +46,7 @@ module "aws_access" {
   subnet_cidr         = local.subnet_cidr
   availability_zone   = local.availability_zone
   security_group_name = local.security_group_name
-  security_group_type = local.security_group_type
+  security_group_type = local.security_group_type # https://github.com/rancher/terraform-aws-access/blob/main/modules/security_group/types.tf
   security_group_ip   = local.security_group_ip
   ssh_key_name        = local.ssh_key_name
   public_ssh_key      = local.ssh_key_content
@@ -57,15 +57,16 @@ module "aws_server" {
     module.aws_access
   ]
   source              = "rancher/server/aws"
-  version             = "v0.0.14"
+  version             = "v0.0.16"
   name                = local.server_name
   owner               = local.owner
-  type                = local.server_type
-  image               = local.image_type
+  type                = local.server_type # https://github.com/rancher/terraform-aws-server/blob/main/modules/server/types.tf
+  image               = local.image_type  # https://github.com/rancher/terraform-aws-server/blob/main/modules/image/types.tf
   user                = local.username
+  ssh_key_name        = module.aws_access.ssh_key.tags.Name
   ssh_key             = module.aws_access.ssh_key.public_key
-  security_group_name = module.aws_access.security_group.tags.Name
   subnet_name         = module.aws_access.subnet.tags.Name
+  security_group_name = module.aws_access.security_group.tags.Name
 }
 
 # the idea here is to provide the least amount of config necessary to get a cluster up and running
@@ -101,7 +102,7 @@ module "install" {
     module.download,
   ]
   source              = "rancher/rke2-install/null"
-  version             = "v0.0.19"
+  version             = "v0.0.21"
   release             = local.rke2_version
   local_file_path     = local.local_file_path
   remote_file_path    = local.remote_file_path

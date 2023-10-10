@@ -4,18 +4,19 @@ provider "aws" {
 }
 
 locals {
-  email              = "terraform-ci@suse.com" # put your email here
-  server_count       = 3
-  agent_count        = 3
-  cluster_size       = local.server_count + local.agent_count
-  identifier         = var.identifier                                                   # put a unique identifier here
-  prefix             = "tf-aws-rke2-devcluster-${local.identifier}"                     # this can be anything you want, it makes it marginally easier to find in AWS
-  username           = "tf-${local.identifier}"                                         # WARNING: This must be less than 32 characters!
-  rke2_version       = var.rke2_version                                                 # put your rke2 version here, must be a valid tag name like v1.21.6+rke2r1
-  extra_config       = (var.extra_config_path == "" ? "" : file(var.extra_config_path)) # put your extra config file here
-  server_type        = "large"                                                          # https://github.com/rancher/terraform-aws-server/blob/main/modules/server/types.tf
-  image_type         = "rhel-8"                                                         # https://github.com/rancher/terraform-aws-server/blob/main/modules/image/types.tf
-  server_prep_script = file(var.server_prep_script)                                     # put your server prep script here
+  email               = "terraform-ci@suse.com" # put your email here
+  server_count        = 3
+  agent_count         = 3
+  cluster_size        = local.server_count + local.agent_count
+  identifier          = var.identifier                                                   # put a unique identifier here
+  prefix              = "tf-aws-rke2-${local.identifier}"                                # this can be anything you want, it makes it marginally easier to find in AWS
+  username            = "tf-${local.identifier}"                                         # WARNING: This must be less than 32 characters!
+  rke2_version        = var.rke2_version                                                 # put your rke2 version here, must be a valid tag name like v1.21.6+rke2r1
+  extra_config        = (var.extra_config_path == "" ? "" : file(var.extra_config_path)) # put your extra config file here
+  server_type         = "large"                                                          # https://github.com/rancher/terraform-aws-server/blob/main/modules/server/types.tf
+  image_type          = "rhel-9"                                                         # https://github.com/rancher/terraform-aws-server/blob/main/modules/image/types.tf
+  security_group_type = "egress"                                                         # https://github.com/rancher/terraform-aws-access/blob/main/modules/security_group/types.tf
+  server_prep_script  = file(var.server_prep_script)                                     # put your server prep script here
 
   # We are generating random names for the servers here, you might want to simplify this for your use case, just pick some names
   # Keep in mind that these names must not be generated using resources, but they can use functions and expressions
@@ -77,7 +78,7 @@ module "InitialServer" {
   subnet_cidr         = local.subnet_cidrs[local.names["0"]]
   availability_zone   = local.availability_zones[local.names["0"]]
   security_group_name = local.names["0"]
-  security_group_type = "egress" # https://github.com/rancher/terraform-aws-access/blob/main/modules/security_group/types.tf
+  security_group_type = local.security_group_type
   ssh_username        = local.username
   ssh_key_name        = local.ssh_key_name
   # ssh_key_content     = local.ssh_key_content
