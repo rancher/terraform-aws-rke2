@@ -4,8 +4,6 @@ provider "aws" {
 }
 
 locals {
-  # I don't normally recommend using variables in root modules
-  #   but this allows our test suite to supply a information in ci
   ssh_key_name       = var.ssh_key_name
   rke2_version       = var.rke2_version
   identifier         = var.identifier # simple random string to identify resources

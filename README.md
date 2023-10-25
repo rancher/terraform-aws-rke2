@@ -71,7 +71,7 @@ These tools are not necessary, but they can make it much simpler to collaborate.
   * eg. `go test -v -timeout 40m -parallel 10 -run TestBasic`
 * I store my credentials in a local files and generate a symlink to them
 
-  * eg. `~/.config/github/default/rc`6
+  * eg. `~/.config/github/default/rc`
   * this will be automatically sourced when you enter the nix environment (and unloaded when you leave)
   * see the `.envrc` and `.rcs` file for the implementation
 
