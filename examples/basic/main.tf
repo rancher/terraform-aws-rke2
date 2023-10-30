@@ -21,7 +21,7 @@ module "TestBasic" {
   security_group_type = "specific" # you will need to open this up to at least internal if you want to join other servers to this cluster
   ssh_username        = local.username
   ssh_key_name        = local.ssh_key_name
-  local_file_path     = "${path.root}/rke2"
+  local_file_path     = "${abspath(path.root)}/rke2"
   rke2_version        = local.rke2_version
   join_token          = random_uuid.join_token.result
   retrieve_kubeconfig = true

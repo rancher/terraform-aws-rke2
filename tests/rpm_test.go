@@ -12,7 +12,7 @@ func TestRpm(t *testing.T) {
 	t.Parallel()
 	uniqueID := random.UniqueId()
 	directory := "rpm"
-	region := "us-west-1"
+	region := "us-west-1" // this must match the region set in the example
 	owner := "terraform-ci@suse.com"
 	release := getLatestRelease(t, "rancher", "rke2")
 	terraformVars := map[string]interface{}{

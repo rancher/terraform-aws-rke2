@@ -14,4 +14,7 @@ examples/*/tmp
 examples/*/kubeconfig.yaml
 examples/*/kubeconfig*.yaml
 examples/*/tf-*
+examples/*/config/50-*
+examples/*/50-*
 *.lock
+.DS_*

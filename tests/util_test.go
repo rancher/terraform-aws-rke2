@@ -17,36 +17,32 @@ import (
 )
 
 func teardown(t *testing.T, directory string, keyPair *aws.Ec2Keypair) {
-	err1 := os.RemoveAll(fmt.Sprintf("../examples/%s/rke2", directory))
-	require.NoError(t, err1)
-	err2 := os.RemoveAll(fmt.Sprintf("../examples/%s/tmp", directory))
+	err := os.RemoveAll(fmt.Sprintf("../examples/%s/.terraform", directory))
+	require.NoError(t, err)
+	err2 := os.RemoveAll(fmt.Sprintf("../examples/%s/rke2", directory))
 	require.NoError(t, err2)
-	files, err3 := filepath.Glob(fmt.Sprintf("../examples/%s/.terraform*", directory))
+	err3 := os.RemoveAll(fmt.Sprintf("../examples/%s/tmp", directory))
 	require.NoError(t, err3)
-	for _, f := range files {
-		err4 := os.RemoveAll(f)
-		require.NoError(t, err4)
-	}
-	files, err5 := filepath.Glob(fmt.Sprintf("../examples/%s/terraform.*", directory))
+	err4 := os.RemoveAll(fmt.Sprintf("../examples/%s/.terraform.lock.hcl", directory))
+	require.NoError(t, err4)
+	err5 := os.RemoveAll(fmt.Sprintf("../examples/%s/terraform.tfstate", directory))
 	require.NoError(t, err5)
-	for _, f := range files {
-		err6 := os.Remove(f)
-		require.NoError(t, err6)
-	}
-	files, err7 := filepath.Glob(fmt.Sprintf("../examples/%s/kubeconfig-*", directory))
-	require.NoError(t, err7)
-	for _, f := range files {
-		err8 := os.Remove(f)
-		require.NoError(t, err8)
-	}
-	files, err9 := filepath.Glob(fmt.Sprintf("../examples/%s/tf-*", directory))
-	require.NoError(t, err9)
-	for _, f := range files {
-		err10 := os.Remove(f)
-		require.NoError(t, err10)
-	}
+	err6 := os.RemoveAll(fmt.Sprintf("../examples/%s/terraform.tfstate.backup", directory))
+	require.NoError(t, err6)
+	rm(t, fmt.Sprintf("../examples/%s/kubeconfig-*.yaml", directory))
+	rm(t, fmt.Sprintf("../examples/%s/tf-*", directory))
+	rm(t, fmt.Sprintf("../examples/%s/50-*.yaml", directory))
 
 	aws.DeleteEC2KeyPair(t, keyPair)
+}
+
+func rm(t *testing.T, path string) {
+	files, err := filepath.Glob(path)
+	require.NoError(t, err)
+	for _, file := range files {
+		err2 := os.RemoveAll(file)
+		require.NoError(t, err2)
+	}
 }
 
 func setup(t *testing.T, directory string, region string, owner string, uniqueID string, terraformVars map[string]interface{}) (*terraform.Options, *aws.Ec2Keypair) {
