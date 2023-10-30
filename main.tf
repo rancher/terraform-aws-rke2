@@ -77,7 +77,7 @@ module "config" {
     module.aws_server,
   ]
   source            = "rancher/rke2-config/local"
-  version           = "v0.0.5"
+  version           = "v0.1.0"
   token             = local.join_token
   server            = local.join_url # should not be added to the initial server
   advertise-address = module.aws_server.private_ip
@@ -89,7 +89,7 @@ module "config" {
 module "download" {
   count   = (local.skip_download == true ? 0 : 1)
   source  = "rancher/rke2-download/github"
-  version = "v0.0.1"
+  version = "v0.0.3"
   release = local.rke2_version
   path    = local.local_file_path
 }
@@ -102,14 +102,13 @@ module "install" {
     module.download,
   ]
   source              = "rancher/rke2-install/null"
-  version             = "v0.0.21"
+  version             = "v0.2.0"
   release             = local.rke2_version
   local_file_path     = local.local_file_path
   remote_file_path    = local.remote_file_path
   identifier          = module.aws_server.id
   ssh_ip              = module.aws_server.public_ip
   ssh_user            = local.username
-  rke2_config         = module.config.yaml_config
   role                = local.role
   retrieve_kubeconfig = local.retrieve_kubeconfig
   install_method      = local.install_method
