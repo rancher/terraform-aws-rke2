@@ -3,12 +3,14 @@
 This module deploys infrastructure and installs RKE2 on that infrastructure.
 This module combines other modules that we provide to give holistic control of the lifecycle of a single RKE2 node.
 
+## Requirements
+
 #### Provider Setup
 
 Only two of the providers require setup:
 
-[AWS Provider
-](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)[GitHub Provider](https://registry.terraform.io/providers/integrations/github/latest/docs)
+- [AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs) : [Config Reference](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#aws-configuration-reference)
+- [GitHub Provider](https://registry.terraform.io/providers/integrations/github/latest/docs) : [Config Reference](https://registry.terraform.io/providers/integrations/github/latest/docs#argument-reference)
 
 We recommend setting the following environment variables for quick personal use:
 
@@ -19,16 +21,22 @@ AWS_SECRET_ACCESS_KEY
 AWS_ACCESS_KEY_ID
 ```
 
-#### Curl and Local Filesystem Write Access
+#### Curl
 
-If you decide to let the module download files from GitHub,
- you need to have write permissions on the local filesystem and `curl` installed on the machine running Terraform.
+You will need Curl available on the server running Terraform.
 
-#### Examples
+#### Local Filesystem Write Access
 
-We have a few example implementations to get you started,
-these examples are tested in our CI before release.
+You will need write access to the filesystem on the server running Terraform.
+If downloading the files from GitHub (not setting 'skip_download'), then you will need about 2GB storage space available in the 'local_file_path' location (defaults to ./rke2).
 
+#### Terraform Version
+
+We specify the Terraform version < 1.6 to avoid potential license issues and version > 1.4.1 to enable custom variable validations.
+
+## Examples
+
+We have a few example implementations to get you started, these examples are tested in our CI before release.
 When you use them, update the source and version to use the Terraform registry.
 
 #### Local State
@@ -63,12 +71,12 @@ These tools are not necessary, but they can make it much simpler to collaborate.
   * eg. `go test -v -timeout 40m -parallel 10 -run TestBasic`
 * I store my credentials in a local files and generate a symlink to them
 
-  * eg. `~/.config/github/default/rc`6
+  * eg. `~/.config/github/default/rc`
   * this will be automatically sourced when you enter the nix environment (and unloaded when you leave)
   * see the `.envrc` and `.rcs` file for the implementation
 
 #### Automated Tests
 
-Our continuous integration tests using the GitHub [ubuntu-latest runner](https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md) which has many different things installed and does not rely on Nix. 
+Our continuous integration tests using the GitHub [ubuntu-latest runner](https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md) which has many different things installed and does not rely on Nix.
 
 It also has special integrations with AWS to allow secure authentication, see https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services for more information.

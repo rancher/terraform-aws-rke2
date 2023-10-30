@@ -4,8 +4,6 @@ provider "aws" {
 }
 
 locals {
-  # I don't normally recommend using variables in root modules
-  #   but this allows our test suite to supply a information in ci
   ssh_key_name       = var.ssh_key_name
   rke2_version       = var.rke2_version
   identifier         = var.identifier # simple random string to identify resources
@@ -19,13 +17,13 @@ resource "random_uuid" "join_token" {}
 
 module "aws_rke2_rhel9_rpm" {
   source = "../../" # change this to "rancher/rke2/aws" per https://registry.terraform.io/modules/rancher/rke2/aws/latest
-  # version = "v0.0.7" # when using this example you will need to set the version
+  # version = "v0.0.5" # when using this example you will need to set the version
   join_token          = random_uuid.join_token.result
   name                = local.name
   owner               = local.email
   rke2_version        = local.rke2_version
   security_group_name = local.name
-  ssh_key_name        = local.ssh_key_name
+  ssh_key_name        = local.ssh_key_name # your key will need a tag with key 'Name' and value equal to this
   ssh_username        = local.username
   vpc_name            = local.name
   vpc_cidr            = "10.42.0.0/16" # generates a VPC for you, comment this to select a VPC instead
