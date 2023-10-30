@@ -166,6 +166,7 @@ variable "local_file_path" {
   type        = string
   description = <<-EOT
     A local file path where the RKE2 release and configuation files can be found or should be downloaded to.
+    This must be a full path, relative paths will cause hard to fix errors.
     This should exist on the server running Terraform.
     If this isn't set, the module will assume the files are already on the server at the remote_file_path.
     WARNING: If this variable isn't set, Terraform can't track changes to the files.
@@ -244,4 +245,22 @@ variable "server_prep_script" {
     This can help mitigate issues like those found here: https://docs.rke2.io/known_issues#networkmanager
   EOT
   default     = ""
+}
+variable "start" {
+  type        = bool
+  description = <<-EOT
+    Set this to false if you want to install rke2 without starting it.
+    The server_prep_script will be run after install, then the module will stop.
+  EOT
+  default     = true
+}
+variable "initial_config_name" {
+  type        = string
+  description = <<-EOT
+    The name for the initially generated config.
+    The initial config will be generated with a random join token and will communicate all of the required information to join nodes together.
+    This config will be written locally in the local_file_path, and copied to the config.d directory on the node.
+    Please see https://docs.rke2.io/install/configuration#multiple-config-files for more information.
+  EOT
+  default     = "50-initial-generated-config.yaml"
 }

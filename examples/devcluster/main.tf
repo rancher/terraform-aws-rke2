@@ -4,16 +4,20 @@ provider "aws" {
 }
 
 locals {
-  email              = "terraform-ci@suse.com" # put your email here
-  cluster_size       = 3
-  identifier         = var.identifier                                                   # put a unique identifier here
-  prefix             = "tf-aws-rke2-devcluster-${local.identifier}"                     # this can be anything you want, it makes it marginally easier to find in AWS
-  username           = "tf-${local.identifier}"                                         # WARNING: This must be less than 32 characters!
-  rke2_version       = var.rke2_version                                                 # put your rke2 version here, must be a valid tag name like v1.21.6+rke2r1
-  extra_config       = (var.extra_config_path == "" ? "" : file(var.extra_config_path)) # put your extra config file here
-  server_type        = "large"                                                          # https://github.com/rancher/terraform-aws-server/blob/main/modules/server/types.tf
-  image_type         = "rhel-8"                                                         # https://github.com/rancher/terraform-aws-server/blob/main/modules/image/types.tf
-  server_prep_script = file(var.server_prep_script)                                     # put your server prep script here
+  owner        = "terraform-ci@suse.com" # put your email here
+  ssh_key_name = var.ssh_key_name        # this must already exist in AWS, it must have a tag with 'Name' = <this value>
+  # ssh_key_content       = file(var.ssh_key_path) # if you want the module to create the keypair object in AWS for you, specify the contents of the public key like this
+  rke2_version       = var.rke2_version # the exact release tag, eg. v1.28.2+rke2r1
+  identifier         = var.identifier   # simple random string to identify resources
+  email              = "terraform-ci@suse.com"
+  name               = "tf-aws-rke2-rpm-${local.identifier}"
+  username           = "tf-${local.identifier}"              # WARNING: This must be less than 32 characters!
+  server_prep_script = file("${abspath(path.root)}/prep.sh") # a script that will run before start, after install
+  configs            = "${abspath(path.root)}/config"        # add custom configs here, this is added to all servers, see "dedicated" example to place different configs on different nodes
+  cluster_size       = 3                                     # this example provisions all servers the same, see the "dedicated" example to alter configs and roles
+  prefix             = "tf-devcluster-${local.identifier}"   # this can be anything you want, it makes it marginally easier to find in AWS
+  server_type        = "small"                               # https://github.com/rancher/terraform-aws-server/blob/main/modules/server/types.tf
+  image_type         = "rhel-8"                              # https://github.com/rancher/terraform-aws-server/blob/main/modules/image/types.tf
 
   # We are generating random names for the servers here, you might want to simplify this for your use case, just pick some names
   # Keep in mind that these names must not be generated using resources, but they can use functions and expressions
@@ -25,36 +29,22 @@ locals {
   subnet_start_position = 4095            # when splitting /16 into /28 chunks, there will be 4095 of them, we are starting at the end
   subnet_cidrs          = { for i in range(local.cluster_size) : local.names[tostring(i)] => cidrsubnet(local.vpc_cidr, local.subnet_size, (local.subnet_start_position - i)) }
   availability_zones    = { for i in range(local.cluster_size) : local.names[tostring(i)] => data.aws_availability_zones.available.names[(i % length(data.aws_availability_zones.available.names))] }
-  file_paths            = { for i in range(local.cluster_size) : local.names[tostring(i)] => "${path.root}/${local.names[tostring(i)]}" }
-  ssh_key_name          = var.ssh_key_name # put the name of your ssh keypair here
-  # ssh_key_content       = file(var.ssh_key_path) # if you want the module to create the keypair object in AWS for you, specify the contents of the public key like this
+  file_paths            = { for i in range(local.cluster_size) : local.names[tostring(i)] => "${abspath(path.root)}/${local.names[tostring(i)]}" }
 }
 
 data "aws_availability_zones" "available" {
   state = "available"
 }
-
 resource "random_uuid" "join_token" {}
 
-resource "null_resource" "write_extra_config" {
-  for_each = (local.extra_config == "" ? {} : local.file_paths)
-  triggers = {
-    config_content = local.extra_config,
-  }
+resource "null_resource" "write_configs" {
+  for_each = local.names
   provisioner "local-exec" {
     command = <<-EOT
       set -e
       set -x
-      install -d ${each.value}
-      cat << 'EOF' > "${each.value}/51-extra-config.yaml"
-      ${local.extra_config}
-      EOF
-    EOT
-  }
-  provisioner "local-exec" {
-    when    = destroy
-    command = <<-EOT
-      rm -rf "${each.key}"
+      install -d '${abspath(path.root)}/${each.value}'
+      cp ${local.configs}/* ${abspath(path.root)}/${each.value}
     EOT
   }
 }
@@ -62,7 +52,7 @@ resource "null_resource" "write_extra_config" {
 module "InitialServer" {
   depends_on = [
     data.aws_availability_zones.available,
-    null_resource.write_extra_config,
+    null_resource.write_configs,
     random_uuid.join_token,
   ]
   source = "../../" # change this to "rancher/rke2/aws" per https://registry.terraform.io/modules/rancher/rke2/aws/latest
@@ -79,7 +69,7 @@ module "InitialServer" {
   ssh_username        = local.username
   ssh_key_name        = local.ssh_key_name
   # ssh_key_content     = local.ssh_key_content
-  local_file_path     = "${path.root}/${local.names["0"]}"
+  local_file_path     = "${abspath(path.root)}/${local.names["0"]}"
   rke2_version        = local.rke2_version
   join_token          = random_uuid.join_token.result
   install_method      = "rpm" # requires "egress" security group type
@@ -94,7 +84,7 @@ module "Servers" {
   depends_on = [
     data.aws_availability_zones.available,
     random_uuid.join_token,
-    null_resource.write_extra_config,
+    null_resource.write_configs,
     module.InitialServer,
   ]
   source = "../../" # change this to "rancher/rke2/aws" per https://registry.terraform.io/modules/rancher/rke2/aws/latest

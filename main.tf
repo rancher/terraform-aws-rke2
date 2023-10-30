@@ -31,6 +31,8 @@ locals {
   retrieve_kubeconfig = var.retrieve_kubeconfig # this defaults to false
   install_method      = var.install_method      # this should be "tar" or "rpm", defaults to "tar"
   server_prep_script  = var.server_prep_script  # this should be "" if you don't want to run a script on the server before installing rke2
+  start               = var.start               # if this is true the module will not start the rke2 service
+  initial_config_name = var.initial_config_name
   # config
   join_token = var.join_token # this should be set, even if you are only deploying one server
   join_url   = var.join_url   # this should be null if you are deploying the first server
@@ -38,7 +40,7 @@ locals {
 
 module "aws_access" {
   source              = "rancher/access/aws"
-  version             = "v0.0.8"
+  version             = "v0.1.0"
   owner               = local.owner
   vpc_name            = local.vpc_name
   vpc_cidr            = local.vpc_cidr
@@ -57,7 +59,7 @@ module "aws_server" {
     module.aws_access
   ]
   source              = "rancher/server/aws"
-  version             = "v0.0.16"
+  version             = "v0.1.0"
   name                = local.server_name
   owner               = local.owner
   type                = local.server_type # https://github.com/rancher/terraform-aws-server/blob/main/modules/server/types.tf
@@ -84,6 +86,8 @@ module "config" {
   tls-san           = [module.aws_server.public_ip, module.aws_server.private_ip]
   node-external-ip  = [module.aws_server.public_ip]
   node-ip           = [module.aws_server.private_ip]
+  local_file_path   = local.local_file_path
+  local_file_name   = local.initial_config_name
 }
 
 module "download" {
@@ -102,10 +106,11 @@ module "install" {
     module.download,
   ]
   source              = "rancher/rke2-install/null"
-  version             = "v0.2.0"
+  version             = "v0.2.6"
   release             = local.rke2_version
   local_file_path     = local.local_file_path
   remote_file_path    = local.remote_file_path
+  remote_workspace    = module.aws_server.workfolder
   identifier          = module.aws_server.id
   ssh_ip              = module.aws_server.public_ip
   ssh_user            = local.username
@@ -113,4 +118,5 @@ module "install" {
   retrieve_kubeconfig = local.retrieve_kubeconfig
   install_method      = local.install_method
   server_prep_script  = local.server_prep_script
+  start               = local.start
 }
