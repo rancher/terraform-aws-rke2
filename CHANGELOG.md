@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.0...v0.1.1) (2023-10-31)
+
+
+### Bug Fixes
+
+* point updatecli to main ([#28](https://github.com/rancher/terraform-aws-rke2/issues/28)) ([0de3804](https://github.com/rancher/terraform-aws-rke2/commit/0de38044d1d9fb5072501c762d2afc4561f71cca))
+
 ## [0.1.0](https://github.com/rancher/terraform-aws-rke2/compare/v0.0.4...v0.1.0) (2023-10-31)
 
 
