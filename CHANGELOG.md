@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.1...v0.1.2) (2023-10-31)
+
+
+### Bug Fixes
+
+* env typo ([#30](https://github.com/rancher/terraform-aws-rke2/issues/30)) ([eed6646](https://github.com/rancher/terraform-aws-rke2/commit/eed66465a325e7861767b077e0ad2c7e6daf6a71))
+
 ## [0.1.1](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.0...v0.1.1) (2023-10-31)
 
 
