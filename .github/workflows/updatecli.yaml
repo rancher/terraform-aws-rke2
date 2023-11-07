@@ -20,18 +20,12 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == "${{env.DEFAULT_BRANCH_REF}}"
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Go
-        uses: actions/setup-go@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
         with:
           go-version: 'stable'
-
-      - name: Install Updatecli
-        uses: updatecli/updatecli-action@v2
-
-      - name: Delete leftover UpdateCLI branches
+      - uses: updatecli/updatecli-action@v2
+      - name: 'Delete leftover UpdateCLI branches'
         run: |
           gh pr list \
             --search "is:closed is:pr head:updatecli_" \
@@ -49,7 +43,6 @@ jobs:
           done
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Apply Updatecli
         # Never use '--debug' option, because it might leak the access tokens.
         run: "updatecli apply --clean --config ./updatecli/updatecli.d/ --values ./updatecli/values.yaml"
