@@ -31,6 +31,8 @@
 
         # get "leftovers" bin from release and add it to shell
         leftovers-version = {
+          # remember when updating the version to also update the shas
+          # to get the sha, download the file and run 'nix hash file <file>'
           "selected" = "v0.70.0";
         };
         leftovers-urls = {
