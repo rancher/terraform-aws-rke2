@@ -64,6 +64,8 @@
             tflint
             shellcheck
             tfswitch
+            actionlint
+            act
           ];
           shellHook = ''
             rm -rf "/usr/local/bin/switched-terraform"
