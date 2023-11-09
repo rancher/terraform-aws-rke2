@@ -16,6 +16,16 @@ jobs:
     - uses: nicknovitski/nix-develop@v1
     - run: cd examples/basic && terraform version && terraform init -upgrade && terraform validate
 
+  actionlint:
+    name: 'Lint Workflows'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: DeterminateSystems/nix-installer-action@main
+    - uses: DeterminateSystems/magic-nix-cache-action@main
+    - uses: nicknovitski/nix-develop@v1
+    - run: actionlint
+
   tflint:
     name: 'TFLint'
     runs-on: ubuntu-latest

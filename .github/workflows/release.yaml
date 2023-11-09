@@ -14,7 +14,6 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
-  user: write
 
 jobs:
   release:
@@ -35,6 +34,8 @@ jobs:
             ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       - uses: actions/checkout@v4
         if: steps.release-please.outputs.pr
+        with:
+          token: ${{secrets.GITHUB_TOKEN}}
       - uses: DeterminateSystems/nix-installer-action@main
         if: steps.release-please.outputs.pr
       - uses: DeterminateSystems/magic-nix-cache-action@main
@@ -48,9 +49,10 @@ jobs:
           role-session-name: ${{github.job}}-${{github.run_id}}-${{github.run_number}}-${{github.run_attempt}}
           aws-region: ${{env.AWS_REGION}}
       - run: cd ./tests && go test -v -timeout=40m -parallel=10
+        name: 'Terratest'
         if: steps.release-please.outputs.pr
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
       - uses: peter-evans/create-or-update-comment@v3
         name: 'Report Success'
         if: steps.release-please.outputs.pr
