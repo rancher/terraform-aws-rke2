@@ -34,15 +34,19 @@
           "selected" = "v0.70.0";
         };
         leftovers-urls = {
-          "x86_64-linux" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-linux-amd64";
           "x86_64-darwin" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-darwin-amd64";
           "aarch64-darwin" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-darwin-arm64";
-          "aarch64-linux" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-linux-arm64";
+          "x86_64-linux" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-linux-amd64";
+        };
+        leftovers-shas = {
+          "x86_64-linux" = "sha256-D2OPjLlV5xR3f+dVHu0ld6bQajD5Rv9GLCMCk9hXlu8=";
+          "x86_64-darwin" = "sha256-HV12kHqB14lGDm1rh9nD1n7Jvw0rCnxmjC9gusw7jfo=";
+          "aarch64-darwin" = "sha256-Tw7G538RYZrwIauN7kI68u6aKS4d/0Efh+dirL/kzoM=";
         };
         leftovers = pkgs.runCommand "leftovers-${leftovers-version.selected}" {} ''
           cp ${pkgs.fetchurl {
             url = leftovers-urls."${system}";
-            sha256 = "sha256-HV12kHqB14lGDm1rh9nD1n7Jvw0rCnxmjC9gusw7jfo=";
+            sha256 = leftovers-shas."${system}";
           }} $out
           chmod +x $out
         '';
