@@ -18,7 +18,7 @@ env:
 jobs:
   updatecli:
     runs-on: ubuntu-latest
-    if: github.ref == "${{env.DEFAULT_BRANCH_REF}}"
+    if: github.ref == ${{env.DEFAULT_BRANCH_REF}}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v4
