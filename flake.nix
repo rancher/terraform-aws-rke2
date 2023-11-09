@@ -61,6 +61,7 @@
             export PATH="$PATH:${leftovers-wrapper}/bin";
           '';
         };
+        packages.x86_64-linux.default = self.devShell;
       }
     );
 }
