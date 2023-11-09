@@ -30,12 +30,16 @@
         pkgs = nixpkgs.legacyPackages.${system};
 
         # get "leftovers" bin from release and add it to shell
-        leftovers-urls = {
-          "x86_64-linux" = "https://github.com/genevieve/leftovers/releases/download/v0.70.0/leftovers-v0.70.0-linux-amd64";
-          "x86_64-darwin" = "https://github.com/genevieve/leftovers/releases/download/v0.70.0/leftovers-v0.70.0-darwin-amd64";
-          "aarch64-darwin" = "https://github.com/genevieve/leftovers/releases/download/v0.70.0/leftovers-v0.70.0-darwin-arm64";
+        leftovers-version = {
+          "selected" = "v0.70.0";
         };
-        leftovers = pkgs.runCommand "leftovers-v0.70.0" {} ''
+        leftovers-urls = {
+          "x86_64-linux" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-linux-amd64";
+          "x86_64-darwin" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-darwin-amd64";
+          "aarch64-darwin" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-darwin-arm64";
+          "aarch64-linux" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-linux-arm64";
+        };
+        leftovers = pkgs.runCommand "leftovers-${leftovers-version.selected}" {} ''
           cp ${pkgs.fetchurl {
             url = leftovers-urls."${system}";
             sha256 = "sha256-HV12kHqB14lGDm1rh9nD1n7Jvw0rCnxmjC9gusw7jfo=";
@@ -45,10 +49,9 @@
         leftovers-wrapper = pkgs.writeShellScriptBin "leftovers" ''
           exec ${leftovers} "$@"
         '';
-
       in
       {
-        devShell = pkgs.mkShell {
+        devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             bashInteractive
             git
@@ -61,7 +64,6 @@
             export PATH="$PATH:${leftovers-wrapper}/bin";
           '';
         };
-        default = self.devShell;
       }
     );
 }
