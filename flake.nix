@@ -64,7 +64,8 @@
             tfswitch
           ];
           shellHook = ''
-            tfswitch 1.5.7;
+            rm -rf "$(pwd)/terraform"
+            tfswitch -b "$(pwd)/terraform" 1.5.7;
             export PATH="$PATH:${leftovers-wrapper}/bin";
           '';
         };
