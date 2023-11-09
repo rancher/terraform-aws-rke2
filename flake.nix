@@ -66,7 +66,7 @@
           shellHook = ''
             rm -rf "/usr/local/bin/switched-terraform"
             install -d "/usr/local/bin/switched-terraform"
-            tfswitch -b "/usr/local/bin/switched-terraform/terraform" 1.5.7;
+            tfswitch -b "/usr/local/bin/switched-terraform/terraform" "1.5.7" 2>&1 /dev/null;
             export PATH="$PATH:${leftovers-wrapper}/bin";
           '';
         };
