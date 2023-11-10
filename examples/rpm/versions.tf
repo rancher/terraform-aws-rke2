@@ -11,7 +11,7 @@ terraform {
     }
     github = {
       source  = "integrations/github"
-      version = ">= 5.32"
+      version = ">= 5.42"
     }
     aws = {
       source  = "hashicorp/aws"
@@ -23,6 +23,3 @@ terraform {
     }
   }
 }
-# Configure the GitHub Provider
-# the GITHUB_TOKEN environment variable must be set for this example to work
-provider "github" {}

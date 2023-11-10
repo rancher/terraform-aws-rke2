@@ -2,6 +2,9 @@ provider "aws" {
   region = "us-west-1" # you can optionally specify the region here
   # https://registry.terraform.io/providers/hashicorp/aws/latest/docs#aws-configuration-reference
 }
+# Configure the GitHub Provider
+# the GITHUB_TOKEN environment variable must be set for this example to work
+provider "github" {}
 
 locals {
   ssh_key_name       = var.ssh_key_name

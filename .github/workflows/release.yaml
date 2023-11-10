@@ -53,6 +53,7 @@ jobs:
         if: steps.release-please.outputs.pr
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          GITHUB_ORGANIZATION: ${{env.GITHUB_REPOSITORY_OWNER}}
       - uses: peter-evans/create-or-update-comment@v3
         name: 'Report Success'
         if: steps.release-please.outputs.pr
