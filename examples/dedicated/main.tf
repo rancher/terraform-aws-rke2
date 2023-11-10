@@ -1,6 +1,13 @@
-# example of how to set the region if not using aws config or environment variables
+# the GITHUB_TOKEN environment variable must be set for this example to work
+provider "github" {}
+# you must authenticate with AWS in the environment for this example to work
 provider "aws" {
   region = "us-west-1"
+  default_tags {
+    tags = {
+      Job = "tf-aws-rke2-ded-${local.identifier}"
+    }
+  }
 }
 
 locals {
