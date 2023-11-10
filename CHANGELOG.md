@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.3](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.2...v0.1.3) (2023-11-10)
+
+
+### Bug Fixes
+
+* add explicit token to terratest ([#34](https://github.com/rancher/terraform-aws-rke2/issues/34)) ([b775819](https://github.com/rancher/terraform-aws-rke2/commit/b775819e6d10b2ad7e84324d8ff1777b8c7a75d5))
+* add github org to environment variables ([#37](https://github.com/rancher/terraform-aws-rke2/issues/37)) ([3b6c4b4](https://github.com/rancher/terraform-aws-rke2/commit/3b6c4b4a28a6a4f852737f1a2889c5c6267168c5))
+* add terraform and leftovers to nix ([#32](https://github.com/rancher/terraform-aws-rke2/issues/32)) ([cd8998a](https://github.com/rancher/terraform-aws-rke2/commit/cd8998a9b115540c1d0958a3c2660da8fa9aacb1))
+* add token to actions ([#36](https://github.com/rancher/terraform-aws-rke2/issues/36)) ([35cb61c](https://github.com/rancher/terraform-aws-rke2/commit/35cb61c5ca43282f115661d92d81e713dd120fc9))
+* add user write to workflow token ([#35](https://github.com/rancher/terraform-aws-rke2/issues/35)) ([5aa3c79](https://github.com/rancher/terraform-aws-rke2/commit/5aa3c793fc447615be73306b9971b6bb403137f3))
+* try adding all permissions ([#38](https://github.com/rancher/terraform-aws-rke2/issues/38)) ([46a3150](https://github.com/rancher/terraform-aws-rke2/commit/46a315016696c5d32e855bd33c3d3f0f911e22e5))
+
 ## [0.1.2](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.1...v0.1.2) (2023-10-31)
 
 
