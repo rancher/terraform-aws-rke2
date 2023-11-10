@@ -23,6 +23,3 @@ terraform {
     }
   }
 }
-# Configure the GitHub Provider
-# the GITHUB_TOKEN environment variable must be set for this example to work
-provider "github" {}

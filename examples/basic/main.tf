@@ -1,3 +1,13 @@
+# the GITHUB_TOKEN environment variable must be set for this example to work
+provider "github" {}
+# you must authenticate with AWS in the environment for this example to work
+provider "aws" {
+  default_tags {
+    tags = {
+      Job = "tf-aws-rke2-basic-${var.identifier}"
+    }
+  }
+}
 
 locals {
   email    = "terraform-ci@suse.com"
