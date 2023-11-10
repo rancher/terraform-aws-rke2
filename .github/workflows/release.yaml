@@ -9,11 +9,12 @@ env:
   AWS_REGION: us-west-1
   AWS_ROLE: arn:aws:iam::270074865685:role/terraform-module-ci-test
 
-permissions:
-  id-token: write
-  contents: write
-  pull-requests: write
-  issues: write
+permissions: write-all
+  # permissions:
+    # id-token: write
+    # contents: write
+    # pull-requests: write
+    # issues: write
 
 jobs:
   release:
@@ -53,7 +54,7 @@ jobs:
         if: steps.release-please.outputs.pr
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-          GITHUB_ORGANIZATION: ${{env.GITHUB_REPOSITORY_OWNER}}
+          GITHUB_OWNER: rancher
       - uses: peter-evans/create-or-update-comment@v3
         name: 'Report Success'
         if: steps.release-please.outputs.pr
