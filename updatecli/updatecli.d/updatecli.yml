@@ -9,7 +9,7 @@
 name: "Introduce updatecli to repo and validate basic functionality"
 # Make sure we can pull in github repos from multiple orgs
 scms:
-  rke2:
+  terraform-aws-rke2:
     kind: "github"
     spec:
       user: "{{ .github.user }}"
