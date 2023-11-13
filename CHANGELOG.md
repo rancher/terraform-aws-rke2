@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.4](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.3...v0.1.4) (2023-11-10)
+
+
+### Bug Fixes
+
+* add 'Job' tag to all resources ([#42](https://github.com/rancher/terraform-aws-rke2/issues/42)) ([e99caef](https://github.com/rancher/terraform-aws-rke2/commit/e99caef1ec0d505db91e152194677eb6d8eef658))
+* add write-all to updatecli workflow ([#41](https://github.com/rancher/terraform-aws-rke2/issues/41)) ([07106b5](https://github.com/rancher/terraform-aws-rke2/commit/07106b59db2baf84890f670438308ee98080c384))
+* updatecli repoid typo fixed ([#39](https://github.com/rancher/terraform-aws-rke2/issues/39)) ([e9d2a9a](https://github.com/rancher/terraform-aws-rke2/commit/e9d2a9aa509217d0c2c9f1142f3f6f180259a4e5))
+
 ## [0.1.3](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.2...v0.1.3) (2023-11-10)
 
 
