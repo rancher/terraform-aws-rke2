@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.5...v0.1.6) (2023-11-28)
+
+
+### Bug Fixes
+
+* upgrade config mod ([#46](https://github.com/rancher/terraform-aws-rke2/issues/46)) ([868b8a1](https://github.com/rancher/terraform-aws-rke2/commit/868b8a1f5b5107ab97ae22498578cb78c1f6f395))
+
 ## [0.1.5](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.4...v0.1.5) (2023-11-28)
 
 
