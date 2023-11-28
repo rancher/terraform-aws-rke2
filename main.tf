@@ -106,7 +106,7 @@ module "install" {
     module.download,
   ]
   source              = "rancher/rke2-install/null"
-  version             = "v0.2.6"
+  version             = "v0.2.7"
   release             = local.rke2_version
   local_file_path     = local.local_file_path
   remote_file_path    = local.remote_file_path
@@ -119,4 +119,5 @@ module "install" {
   install_method      = local.install_method
   server_prep_script  = local.server_prep_script
   start               = local.start
+  generated_files     = [local.initial_config_name]
 }
