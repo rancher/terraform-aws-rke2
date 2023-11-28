@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.5](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.4...v0.1.5) (2023-11-28)
+
+
+### Bug Fixes
+
+* update install mod and configure generated files ([#43](https://github.com/rancher/terraform-aws-rke2/issues/43)) ([acc03b9](https://github.com/rancher/terraform-aws-rke2/commit/acc03b954aaf4605e6df7c64aac5f33ec71000c6))
+* upgrade the github provider, skip .42 ([#45](https://github.com/rancher/terraform-aws-rke2/issues/45)) ([7119ea8](https://github.com/rancher/terraform-aws-rke2/commit/7119ea871f29cf983a46ced7008b6c90185d73eb))
+
 ## [0.1.4](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.3...v0.1.4) (2023-11-10)
 
 
