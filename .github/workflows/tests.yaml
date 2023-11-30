@@ -12,6 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: DeterminateSystems/nix-installer-action@main
+    - run: sudo install -d /nix/store
     - name: 'Restore Nix Store Cache'
       id: cache-nix-store-restore
       uses: actions/cache/restore@v3
