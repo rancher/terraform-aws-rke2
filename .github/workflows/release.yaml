@@ -34,16 +34,44 @@ jobs:
           token: ${{secrets.GITHUB_TOKEN}}
       - uses: DeterminateSystems/nix-installer-action@main
         if: steps.release-please.outputs.pr
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - name: 'Restore Nix Store Cache'
         if: steps.release-please.outputs.pr
+        id: cache-nix-store-restore
+        uses: actions/cache/restore@v3
+        with:
+          path: /nix/store
+          key: nixstore
       - uses: nicknovitski/nix-develop@v1
         if: steps.release-please.outputs.pr
+      - name: 'Cache Nix Store'
+        if: steps.release-please.outputs.pr
+        id: cache-nix-store-save
+        uses: actions/cache/save@v3
+        with:
+          path: /nix/store
+          key: ${{ steps.cache-nix-store-restore.outputs.cache-primary-key }}
       - uses: aws-actions/configure-aws-credentials@v4
         if: steps.release-please.outputs.pr
         with:
           role-to-assume: ${{env.AWS_ROLE}}
           role-session-name: ${{github.job}}-${{github.run_id}}-${{github.run_number}}-${{github.run_attempt}}
           aws-region: ${{env.AWS_REGION}}
+      - name: 'Restore Terraform Cache'
+        if: steps.release-please.outputs.pr
+        id: cache-terraform-restore
+        uses: actions/cache/restore@v3
+        with:
+          path: ${{ github.workspace }}/.terraform
+          key: terraform
+      - run: terraform init -upgrade
+        if: steps.release-please.outputs.pr
+      - name: 'Cache Terraform'
+        if: steps.release-please.outputs.pr
+        id: cache-terraform-save
+        uses: actions/cache/save@v3
+        with:
+          path: ${{ github.workspace }}/.terraform
+          key: ${{ steps.cache-terraform-restore.outputs.cache-primary-key }}
       - run: cd ./tests && go test -v -timeout=40m -parallel=10
         name: 'Terratest'
         if: steps.release-please.outputs.pr
