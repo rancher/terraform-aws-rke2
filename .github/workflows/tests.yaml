@@ -26,16 +26,13 @@ jobs:
         path: /nix/store
         key: ${{ steps.cache-nix-store-restore.outputs.cache-primary-key }}
     - name: 'Restore Terraform Cache'
-      if: steps.release-please.outputs.pr
       id: cache-terraform-restore
       uses: actions/cache/restore@v3
       with:
         path: ${{ github.workspace }}/.terraform
         key: terraform
     - run: terraform init -upgrade
-      if: steps.release-please.outputs.pr
     - name: 'Cache Terraform'
-      if: steps.release-please.outputs.pr
       id: cache-terraform-save
       uses: actions/cache/save@v3
       with:
