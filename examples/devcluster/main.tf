@@ -5,7 +5,7 @@ provider "aws" {
   region = "us-west-1"
   default_tags {
     tags = {
-      Job = "tf-aws-rke2-dev-${local.identifier}"
+      Id = local.identifier
     }
   }
 }

@@ -264,3 +264,28 @@ variable "initial_config_name" {
   EOT
   default     = "50-initial-generated-config.yaml"
 }
+variable "extra_config_content" {
+  type        = string
+  description = <<-EOT
+    Additional config to add to the server.
+    Attributes in this content will override the generated initial config by default, this is determined by file name.
+    Join token and IP information is optional in this file, it handled by the generated initial config.
+    The initial config is designed to handle basic required information, allowing this config to manage other concerns.
+    If you have many different configs, consider merging them with terraform's yamlencode function.
+    This file will be written to the local_file_path location, changes will overwrite any file there.
+  EOT
+  default     = ""
+}
+variable "extra_config_name" {
+  type        = string
+  description = <<-EOT
+    Copy the extra config content to this file name on the node.
+    This will get copied to the /etc/rancher/rke2/config.yaml.d directory on the node.
+    It is important that this name ends in '.yaml'.
+    Files load in ascending order numerically then alphabetically, attributes of files loaded later override.
+    The initial generated config is named '50-initial-config.yaml', so the default '51-extra-rke2-config.yaml' loads
+      after the initial config and all attributes override it.
+    Renaming the file '49-extra-config.yaml' would have the initial generated config override this file.
+  EOT
+  default     = "51-extra-rke2-config.yaml"
+}
