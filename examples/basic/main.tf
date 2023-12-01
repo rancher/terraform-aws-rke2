@@ -4,7 +4,7 @@ provider "github" {}
 provider "aws" {
   default_tags {
     tags = {
-      Job = "tf-aws-rke2-basic-${var.identifier}"
+      Id = local.identifier
     }
   }
 }

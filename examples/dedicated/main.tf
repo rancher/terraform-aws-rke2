@@ -5,7 +5,7 @@ provider "aws" {
   region = "us-west-1"
   default_tags {
     tags = {
-      Job = "tf-aws-rke2-ded-${local.identifier}"
+      Id = local.identifier
     }
   }
 }
@@ -16,7 +16,7 @@ locals {
   agent_count         = 3
   cluster_size        = local.server_count + local.agent_count
   identifier          = var.identifier                                 # put a unique identifier here
-  prefix              = "tf-aws-rke2-${local.identifier}"              # this can be anything you want, it makes it marginally easier to find in AWS
+  prefix              = "tf-aws-rke2-ded-${local.identifier}"          # this can be anything you want, it makes it marginally easier to find in AWS
   username            = "tf-${local.identifier}"                       # WARNING: This must be less than 32 characters!
   rke2_version        = var.rke2_version                               # put your rke2 version here, must be a valid tag name like v1.21.6+rke2r1
   server_config       = "${abspath(path.root)}/configs/51-server.yaml" # put the path to your server config here, a default config named 50-generated-initial-config.yaml will manage joining for you
@@ -96,16 +96,17 @@ module "InitialServer" {
   ssh_username        = local.username
   ssh_key_name        = local.ssh_key_name
   # ssh_key_content     = local.ssh_key_content
-  local_file_path     = "${path.root}/${local.names["0"]}"
-  rke2_version        = local.rke2_version
-  join_token          = random_uuid.join_token.result
-  install_method      = "rpm" # requires "egress" security group type
-  skip_download       = true
-  retrieve_kubeconfig = true
-  server_type         = local.server_type
-  image_type          = local.image_type
-  server_prep_script  = local.server_prep_script
-  role                = "server"
+  local_file_path      = "${path.root}/${local.names["0"]}"
+  rke2_version         = local.rke2_version
+  join_token           = random_uuid.join_token.result
+  install_method       = "rpm" # requires "egress" security group type
+  skip_download        = true
+  retrieve_kubeconfig  = true
+  server_type          = local.server_type
+  image_type           = local.image_type
+  server_prep_script   = local.server_prep_script
+  role                 = "server"
+  extra_config_content = local.server_config
 }
 
 module "Servers" {
@@ -117,27 +118,28 @@ module "Servers" {
   ]
   source = "../../" # change this to "rancher/rke2/aws" per https://registry.terraform.io/modules/rancher/rke2/aws/latest
   # version = "v0.0.7" # when using this example you will need to set the version
-  for_each            = toset([for i in range(1, local.server_count) : local.names[tostring(i)]]) # "1","2"... less than server_count offset by 1 (initial server)
-  name                = each.key
-  owner               = local.owner
-  vpc_name            = local.names["0"] # reuse what we generated with initial server
-  subnet_name         = each.key         # each server gets its own subnet
-  subnet_cidr         = local.subnet_cidrs[each.key]
-  availability_zone   = local.availability_zones[each.key]
-  security_group_name = local.names["0"] # reuse what we generated with initial server
-  ssh_username        = local.username
-  ssh_key_name        = local.ssh_key_name # reuse what we generated with initial server
-  local_file_path     = local.file_paths[each.key]
-  rke2_version        = local.rke2_version
-  join_token          = random_uuid.join_token.result
-  join_url            = module.InitialServer.join_url
-  install_method      = "rpm"
-  skip_download       = true
-  retrieve_kubeconfig = false # we can reuse the kubeconfig downloaded with the initial server
-  server_type         = local.server_type
-  image_type          = local.image_type
-  server_prep_script  = local.server_prep_script
-  role                = "server"
+  for_each             = toset([for i in range(1, local.server_count) : local.names[tostring(i)]]) # "1","2"... less than server_count offset by 1 (initial server)
+  name                 = each.key
+  owner                = local.owner
+  vpc_name             = local.names["0"] # reuse what we generated with initial server
+  subnet_name          = each.key         # each server gets its own subnet
+  subnet_cidr          = local.subnet_cidrs[each.key]
+  availability_zone    = local.availability_zones[each.key]
+  security_group_name  = local.names["0"] # reuse what we generated with initial server
+  ssh_username         = local.username
+  ssh_key_name         = local.ssh_key_name # reuse what we generated with initial server
+  local_file_path      = local.file_paths[each.key]
+  rke2_version         = local.rke2_version
+  join_token           = random_uuid.join_token.result
+  join_url             = module.InitialServer.join_url
+  install_method       = "rpm"
+  skip_download        = true
+  retrieve_kubeconfig  = false # we can reuse the kubeconfig downloaded with the initial server
+  server_type          = local.server_type
+  image_type           = local.image_type
+  server_prep_script   = local.server_prep_script
+  role                 = "server"
+  extra_config_content = local.server_config
 }
 
 module "Agents" {
@@ -149,25 +151,26 @@ module "Agents" {
   ]
   source = "../../" # change this to "rancher/rke2/aws" per https://registry.terraform.io/modules/rancher/rke2/aws/latest
   # version = "v0.0.7" # when using this example you will need to set the version
-  for_each            = toset([for i in range(local.server_count, (local.server_count + local.agent_count)) : local.names[tostring(i)]]) # "3","4","5"... less than cluster_size offset by server_count
-  name                = each.key
-  owner               = local.owner
-  vpc_name            = local.names["0"] # reuse what we generated with initial server
-  subnet_name         = each.key         # each server gets its own subnet
-  subnet_cidr         = local.subnet_cidrs[each.key]
-  availability_zone   = local.availability_zones[each.key]
-  security_group_name = local.names["0"] # reuse what we generated with initial server
-  ssh_username        = local.username
-  ssh_key_name        = local.ssh_key_name # reuse what we generated with initial server
-  local_file_path     = local.file_paths[each.key]
-  rke2_version        = local.rke2_version
-  join_token          = random_uuid.join_token.result
-  join_url            = module.InitialServer.join_url
-  install_method      = "rpm"
-  skip_download       = true
-  retrieve_kubeconfig = false # we can reuse the kubeconfig downloaded with the initial server
-  server_type         = local.server_type
-  image_type          = local.image_type
-  server_prep_script  = local.server_prep_script
-  role                = "agent"
+  for_each             = toset([for i in range(local.server_count, (local.server_count + local.agent_count)) : local.names[tostring(i)]]) # "3","4","5"... less than cluster_size offset by server_count
+  name                 = each.key
+  owner                = local.owner
+  vpc_name             = local.names["0"] # reuse what we generated with initial server
+  subnet_name          = each.key         # each server gets its own subnet
+  subnet_cidr          = local.subnet_cidrs[each.key]
+  availability_zone    = local.availability_zones[each.key]
+  security_group_name  = local.names["0"] # reuse what we generated with initial server
+  ssh_username         = local.username
+  ssh_key_name         = local.ssh_key_name # reuse what we generated with initial server
+  local_file_path      = local.file_paths[each.key]
+  rke2_version         = local.rke2_version
+  join_token           = random_uuid.join_token.result
+  join_url             = module.InitialServer.join_url
+  install_method       = "rpm"
+  skip_download        = true
+  retrieve_kubeconfig  = false # we can reuse the kubeconfig downloaded with the initial server
+  server_type          = local.server_type
+  image_type           = local.image_type
+  server_prep_script   = local.server_prep_script
+  role                 = "agent"
+  extra_config_content = local.agent_config
 }

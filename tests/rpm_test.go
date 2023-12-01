@@ -1,6 +1,7 @@
 package test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/random"
@@ -10,7 +11,10 @@ import (
 
 func TestRpm(t *testing.T) {
 	t.Parallel()
-	uniqueID := random.UniqueId()
+	id := os.Getenv("IDENTIFIER")
+	if id == "" {
+		id = random.UniqueId()
+	}
 	directory := "rpm"
 	region := "us-west-1" // this must match the region set in the example
 	owner := "terraform-ci@suse.com"
@@ -18,7 +22,7 @@ func TestRpm(t *testing.T) {
 	terraformVars := map[string]interface{}{
 		"rke2_version": release,
 	}
-	terraformOptions, keyPair := setup(t, directory, region, owner, uniqueID, terraformVars)
+	terraformOptions, keyPair := setup(t, directory, region, owner, id, terraformVars)
 
 	sshAgent := ssh.SshAgentWithKeyPair(t, keyPair.KeyPair)
 	defer sshAgent.Stop()
@@ -27,5 +31,4 @@ func TestRpm(t *testing.T) {
 	defer teardown(t, directory, keyPair)
 	defer terraform.Destroy(t, terraformOptions)
 	terraform.InitAndApply(t, terraformOptions)
-
 }

@@ -34,8 +34,27 @@ locals {
   start               = var.start               # if this is true the module will not start the rke2 service
   initial_config_name = var.initial_config_name
   # config
-  join_token = var.join_token # this should be set, even if you are only deploying one server
-  join_url   = var.join_url   # this should be null if you are deploying the first server
+  join_token           = var.join_token           # this should be set, even if you are only deploying one server
+  join_url             = var.join_url             # this should be null if you are deploying the first server
+  extra_config_content = var.extra_config_content # put your custom config content here
+  extra_config_name    = var.extra_config_name    # override the default name for this config here
+}
+
+resource "null_resource" "write_extra_config" {
+  triggers = {
+    config_content = local.extra_config_content,
+  }
+  provisioner "local-exec" {
+    command = <<-EOT
+      set -e
+      set -x
+      install -d '${local.local_file_path}'
+      cat << EOF > '${local.local_file_path}/${local.extra_config_name}'
+      ${local.extra_config_content}
+      EOF
+      chmod 0600 '${local.local_file_path}/${local.extra_config_name}'
+    EOT
+  }
 }
 
 module "aws_access" {
@@ -106,12 +125,11 @@ module "install" {
     module.download,
   ]
   source              = "rancher/rke2-install/null"
-  version             = "v0.2.7"
+  version             = "v0.3.0"
   release             = local.rke2_version
   local_file_path     = local.local_file_path
   remote_file_path    = local.remote_file_path
   remote_workspace    = module.aws_server.workfolder
-  identifier          = module.aws_server.id
   ssh_ip              = module.aws_server.public_ip
   ssh_user            = local.username
   role                = local.role
@@ -119,5 +137,11 @@ module "install" {
   install_method      = local.install_method
   server_prep_script  = local.server_prep_script
   start               = local.start
-  generated_files     = [local.initial_config_name]
+  identifier = md5(join("-", [
+    # if any of these things change, redeploy rke2
+    module.aws_server.id,
+    local.rke2_version,
+    module.config.yaml_config,
+    local.extra_config_content,
+  ]))
 }
