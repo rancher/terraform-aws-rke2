@@ -106,7 +106,7 @@ module "InitialServer" {
   image_type           = local.image_type
   server_prep_script   = local.server_prep_script
   role                 = "server"
-  extra_config_content = local.server_config
+  extra_config_content = file(local.server_config)
 }
 
 module "Servers" {
@@ -139,7 +139,7 @@ module "Servers" {
   image_type           = local.image_type
   server_prep_script   = local.server_prep_script
   role                 = "server"
-  extra_config_content = local.server_config
+  extra_config_content = file(local.server_config)
 }
 
 module "Agents" {
@@ -172,5 +172,5 @@ module "Agents" {
   image_type           = local.image_type
   server_prep_script   = local.server_prep_script
   role                 = "agent"
-  extra_config_content = local.agent_config
+  extra_config_content = file(local.agent_config)
 }
