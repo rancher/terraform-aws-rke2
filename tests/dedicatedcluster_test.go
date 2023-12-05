@@ -16,7 +16,7 @@ func TestDedicatedCluster(t *testing.T) {
 		id = random.UniqueId()
 	}
 	directory := "dedicated"
-	region := "us-west-1"
+	region := "us-west-2"
 	owner := "terraform-ci@suse.com"
 	release := getLatestRelease(t, "rancher", "rke2")
 	terraformVars := map[string]interface{}{
