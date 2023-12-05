@@ -2,7 +2,7 @@
 provider "github" {}
 # you must authenticate with AWS in the environment for this example to work
 provider "aws" {
-  region = "us-west-1"
+  region = "us-west-2"
   default_tags {
     tags = {
       Id = local.identifier
@@ -25,7 +25,7 @@ locals {
   image_type          = "rhel-9"                                       # https://github.com/rancher/terraform-aws-server/blob/main/modules/image/types.tf
   security_group_type = "egress"                                       # https://github.com/rancher/terraform-aws-access/blob/main/modules/security_group/types.tf
   server_prep_script  = file("prep.sh")                                # put your server prep script here
-  start_timeout       = "5"                                            # wait 5 minutes for rke2 to start after enabling it
+  start_timeout       = "15"                                           # wait 15 minutes for rke2 to start after enabling it
 
   # We are generating random names for the servers here, you might want to simplify this for your use case, just pick some names
   # Keep in mind that these names must not be generated using resources, but they can use functions and expressions
