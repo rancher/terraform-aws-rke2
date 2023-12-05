@@ -39,7 +39,8 @@ jobs:
       with:
         path: ${{ github.workspace }}/.terraform
         key: ${{ steps.cache-terraform-restore.outputs.cache-primary-key }}
-    - run: cd examples/basic && terraform version && terraform init -upgrade && terraform validate
+    - run: cd examples/basic && terraform version && terraform init -upgrade && terraform validate && cd ../..
+    - run: terraform fmt -check -recursive
 
   actionlint:
     name: 'Lint Workflows'
