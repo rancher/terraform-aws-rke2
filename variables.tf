@@ -127,6 +127,28 @@ variable "server_type" {
   EOT
   default     = "large"
 }
+variable "server_cloudinit_timeout" {
+  type        = string
+  description = <<-EOT
+    The number of minutes to wait for cloud-init to reach status 'done'.
+    The default is '5' minutes, but cloud-init may take longer if installing many packages.
+    This is helpful when using the server_cloudinit_script to inject a script in cloud-init.
+  EOT
+  default     = "5"
+}
+variable "server_cloudinit_script" {
+  type        = string
+  description = <<-EOT
+    A script to add to the runcmd section of the cloud-init file.
+    This will be added in "string" mode, meaning it will be run in a single line entry.
+    This is helpful for simple things like installing packages or creating files.
+    Example cloud-init section when adding 'zypper install -y dns-tools':
+    runcmd:
+      - "zypper install -y dns-tools"
+    Pipes won't work.
+  EOT
+  default     = ""
+}
 variable "availability_zone" {
   type        = string
   description = <<-EOT
@@ -253,6 +275,15 @@ variable "start" {
     The server_prep_script will be run after install, then the module will stop.
   EOT
   default     = true
+}
+variable "start_timeout" {
+  type        = string
+  description = <<-EOT
+    The number of minutes to wait for rke2 to have status 'active' after enabling service.
+    Defaults to 5 minutes, it can be helpful to increase this number if you have custom configs that take a while to enable.
+    Especially if the configs require many things to download or if your download speeds are low.
+  EOT
+  default     = "5"
 }
 variable "initial_config_name" {
   type        = string

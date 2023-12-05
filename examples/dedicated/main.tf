@@ -25,6 +25,7 @@ locals {
   image_type          = "rhel-9"                                       # https://github.com/rancher/terraform-aws-server/blob/main/modules/image/types.tf
   security_group_type = "egress"                                       # https://github.com/rancher/terraform-aws-access/blob/main/modules/security_group/types.tf
   server_prep_script  = file("prep.sh")                                # put your server prep script here
+  start_timeout       = "5"                                            # wait 5 minutes for rke2 to start after enabling it
 
   # We are generating random names for the servers here, you might want to simplify this for your use case, just pick some names
   # Keep in mind that these names must not be generated using resources, but they can use functions and expressions
@@ -107,6 +108,7 @@ module "InitialServer" {
   server_prep_script   = local.server_prep_script
   role                 = "server"
   extra_config_content = file(local.server_config)
+  start_timeout        = local.start_timeout
 }
 
 module "Servers" {
@@ -140,6 +142,7 @@ module "Servers" {
   server_prep_script   = local.server_prep_script
   role                 = "server"
   extra_config_content = file(local.server_config)
+  start_timeout        = local.start_timeout
 }
 
 module "Agents" {
@@ -173,4 +176,5 @@ module "Agents" {
   server_prep_script   = local.server_prep_script
   role                 = "agent"
   extra_config_content = file(local.agent_config)
+  start_timeout        = local.start_timeout
 }

@@ -17,8 +17,10 @@ locals {
   ssh_key_name    = var.ssh_key_name
   ssh_key_content = var.ssh_key_content
   # server
-  server_name = local.name      # this module shouldn't override the server with server_id
-  server_type = var.server_type # this should be "" if the server already exists
+  server_name              = local.name      # this module shouldn't override the server with server_id
+  server_type              = var.server_type # this should be "" if the server already exists
+  server_cloudinit_timeout = var.server_cloudinit_timeout
+  server_cloudinit_script  = var.server_cloudinit_script
   # image
   image_type = var.image_type # this module shouldn't override the image with image_id
   # download
@@ -32,6 +34,7 @@ locals {
   install_method      = var.install_method      # this should be "tar" or "rpm", defaults to "tar"
   server_prep_script  = var.server_prep_script  # this should be "" if you don't want to run a script on the server before installing rke2
   start               = var.start               # if this is true the module will not start the rke2 service
+  start_timeout       = var.start_timeout
   initial_config_name = var.initial_config_name
   # config
   join_token           = var.join_token           # this should be set, even if you are only deploying one server
@@ -78,7 +81,7 @@ module "aws_server" {
     module.aws_access
   ]
   source              = "rancher/server/aws"
-  version             = "v0.1.0"
+  version             = "v0.1.1"
   name                = local.server_name
   owner               = local.owner
   type                = local.server_type # https://github.com/rancher/terraform-aws-server/blob/main/modules/server/types.tf
@@ -88,6 +91,8 @@ module "aws_server" {
   ssh_key             = module.aws_access.ssh_key.public_key
   subnet_name         = module.aws_access.subnet.tags.Name
   security_group_name = module.aws_access.security_group.tags.Name
+  cloudinit_script    = local.server_cloudinit_script
+  cloudinit_timeout   = local.server_cloudinit_timeout
 }
 
 # the idea here is to provide the least amount of config necessary to get a cluster up and running
@@ -125,7 +130,7 @@ module "install" {
     module.download,
   ]
   source              = "rancher/rke2-install/null"
-  version             = "v0.3.0"
+  version             = "v0.3.2"
   release             = local.rke2_version
   local_file_path     = local.local_file_path
   remote_file_path    = local.remote_file_path
@@ -137,6 +142,7 @@ module "install" {
   install_method      = local.install_method
   server_prep_script  = local.server_prep_script
   start               = local.start
+  start_timeout       = local.start_timeout
   identifier = md5(join("-", [
     # if any of these things change, redeploy rke2
     module.aws_server.id,
