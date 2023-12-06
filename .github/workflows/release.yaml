@@ -33,7 +33,7 @@ jobs:
           token: ${{secrets.GITHUB_TOKEN}}
       - uses: DeterminateSystems/nix-installer-action@main
         if: steps.release-please.outputs.pr
-      - run: install -d /nix/store
+      - run: sudo install -d /nix/store
         if: steps.release-please.outputs.pr
       - run: sudo chown -R "$(whoami)" /nix/store
         if: steps.release-please.outputs.pr
