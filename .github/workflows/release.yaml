@@ -33,9 +33,11 @@ jobs:
           token: ${{secrets.GITHUB_TOKEN}}
       - uses: DeterminateSystems/nix-installer-action@main
         if: steps.release-please.outputs.pr
-      - run: install -m 777 -d /nix/store
+      - run: install -d /nix/store
         if: steps.release-please.outputs.pr
       - run: sudo chown -R "$(whoami)" /nix/store
+        if: steps.release-please.outputs.pr
+      - run: sudo chmod 0755 /nix/store
         if: steps.release-please.outputs.pr
       - uses: actions/cache/restore@v3
         id: cache-nix-restore
