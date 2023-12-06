@@ -33,6 +33,8 @@ jobs:
           token: ${{secrets.GITHUB_TOKEN}}
       - uses: DeterminateSystems/nix-installer-action@main
         if: steps.release-please.outputs.pr
+      - run: sudo rm -rf /nix/store
+        if: steps.release-please.outputs.pr
       - run: sudo install -d /nix/store
         if: steps.release-please.outputs.pr
       - run: sudo chown -R "$(whoami)" /nix/store
@@ -44,7 +46,7 @@ jobs:
         if: steps.release-please.outputs.pr
         with:
           path: /nix/store
-          key: nixstore
+          key: nix-${{ hashFiles('**/flake.lock') }}
       - uses: nicknovitski/nix-develop@v1.1.0
         if: steps.release-please.outputs.pr
       - uses: actions/cache/save@v3
@@ -65,7 +67,7 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: ${{ github.workspace }}/.terraform
-          key: terraform
+          key: terraform-${{hashFiles('**/versions.tf','**/main.tf')}}
       - run: terraform init -upgrade
         if: steps.release-please.outputs.pr
       - name: 'Cache Terraform'
