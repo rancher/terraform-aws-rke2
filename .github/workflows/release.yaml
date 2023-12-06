@@ -36,7 +36,7 @@ jobs:
         if: steps.release-please.outputs.pr
       - run: install -m 777 -d /nix/store
         if: steps.release-please.outputs.pr
-      - run: sudo chown -R $(whoami) /nix/store
+      - run: sudo chown -R "$(whoami)" /nix/store
         if: steps.release-please.outputs.pr
       - uses: actions/cache/restore@v3
         id: cache-nix-restore
