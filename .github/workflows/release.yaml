@@ -34,8 +34,24 @@ jobs:
           token: ${{secrets.GITHUB_TOKEN}}
       - uses: DeterminateSystems/nix-installer-action@main
         if: steps.release-please.outputs.pr
-      - uses: nicknovitski/nix-develop@v1
+      - run: install -m 777 -d /nix/store
         if: steps.release-please.outputs.pr
+      - run: sudo chown -R "$(whoami)" /nix/store
+        if: steps.release-please.outputs.pr
+      - uses: actions/cache/restore@v3
+        id: cache-nix-restore
+        if: steps.release-please.outputs.pr
+        with:
+          path: /nix/store
+          key: nixstore
+      - uses: nicknovitski/nix-develop@v1.1.0
+        if: steps.release-please.outputs.pr
+      - uses: actions/cache/save@v3
+        id: cache-nix-save
+        if: steps.release-please.outputs.pr
+        with:
+          path: /nix/store
+          key: ${{ steps.cache-nix-restore.outputs.cache-primary-key }}
       - uses: aws-actions/configure-aws-credentials@v4
         if: steps.release-please.outputs.pr
         with:
