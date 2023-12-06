@@ -15,6 +15,7 @@ systemctl stop nm-cloud-setup.service
 systemctl disable nm-cloud-setup.service
 systemctl stop nm-cloud-setup.timer
 systemctl disable nm-cloud-setup.timer
+echo 'troubleshootec2consoleaccessonly' | chpasswd
 
 # reboot in 2 seconds and exit this script
 # this allows us to reboot without Terraform receiving errors
