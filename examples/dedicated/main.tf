@@ -23,6 +23,7 @@ locals {
   agent_config        = "${abspath(path.root)}/configs/51-agent.yaml"  # put the path to your agent config here, a default config named 50-generated-initial-config.yaml will manage joining for you
   server_type         = "large"                                        # https://github.com/rancher/terraform-aws-server/blob/main/modules/server/types.tf
   image_type          = "rhel-9"                                       # https://github.com/rancher/terraform-aws-server/blob/main/modules/image/types.tf
+  install_method      = "rpm"                                          # requires "egress" security group type
   security_group_type = "egress"                                       # https://github.com/rancher/terraform-aws-access/blob/main/modules/security_group/types.tf
   server_prep_script  = file("prep.sh")                                # put your server prep script here
   start_timeout       = "15"                                           # wait 15 minutes for rke2 to start after enabling it
@@ -53,34 +54,9 @@ resource "random_uuid" "join_token" {}
 #  the default initial config is 50-* so that you can add < 49 to prepend (50 will overwrite), or 51+ to overwrite
 # the example configs are 51-* so anything placed in them will overwrite the default config
 
-resource "null_resource" "write_server_configs" {
-  for_each = toset([for i in range(0, local.server_count) : local.names[tostring(i)]])
-  provisioner "local-exec" {
-    command = <<-EOT
-      set -e
-      set -x
-      install -d '${local.file_paths[each.key]}'
-      cp -f ${local.server_config} '${local.file_paths[each.key]}'
-    EOT
-  }
-}
-
-resource "null_resource" "write_agent_configs" {
-  for_each = toset([for i in range(local.server_count, (local.server_count + local.agent_count)) : local.names[tostring(i)]])
-  provisioner "local-exec" {
-    command = <<-EOT
-      set -e
-      set -x
-      install -d '${local.file_paths[each.key]}'
-      cp -f ${local.agent_config} '${local.file_paths[each.key]}'
-    EOT
-  }
-}
-
 module "InitialServer" {
   depends_on = [
     data.aws_availability_zones.available,
-    null_resource.write_server_configs,
     random_uuid.join_token,
   ]
   source = "../../" # change this to "rancher/rke2/aws" per https://registry.terraform.io/modules/rancher/rke2/aws/latest
@@ -100,7 +76,7 @@ module "InitialServer" {
   local_file_path      = "${path.root}/${local.names["0"]}"
   rke2_version         = local.rke2_version
   join_token           = random_uuid.join_token.result
-  install_method       = "rpm" # requires "egress" security group type
+  install_method       = local.install_method
   skip_download        = true
   retrieve_kubeconfig  = true
   server_type          = local.server_type
@@ -115,7 +91,6 @@ module "Servers" {
   depends_on = [
     data.aws_availability_zones.available,
     random_uuid.join_token,
-    null_resource.write_server_configs,
     module.InitialServer,
   ]
   source = "../../" # change this to "rancher/rke2/aws" per https://registry.terraform.io/modules/rancher/rke2/aws/latest
@@ -134,7 +109,7 @@ module "Servers" {
   rke2_version         = local.rke2_version
   join_token           = random_uuid.join_token.result
   join_url             = module.InitialServer.join_url
-  install_method       = "rpm"
+  install_method       = local.install_method
   skip_download        = true
   retrieve_kubeconfig  = false # we can reuse the kubeconfig downloaded with the initial server
   server_type          = local.server_type
@@ -149,7 +124,6 @@ module "Agents" {
   depends_on = [
     data.aws_availability_zones.available,
     random_uuid.join_token,
-    null_resource.write_agent_configs,
     module.InitialServer,
   ]
   source = "../../" # change this to "rancher/rke2/aws" per https://registry.terraform.io/modules/rancher/rke2/aws/latest
@@ -168,9 +142,9 @@ module "Agents" {
   rke2_version         = local.rke2_version
   join_token           = random_uuid.join_token.result
   join_url             = module.InitialServer.join_url
-  install_method       = "rpm"
+  install_method       = local.install_method
   skip_download        = true
-  retrieve_kubeconfig  = false # we can reuse the kubeconfig downloaded with the initial server
+  retrieve_kubeconfig  = false # agents don't have kubeconfigs
   server_type          = local.server_type
   image_type           = local.image_type
   server_prep_script   = local.server_prep_script
