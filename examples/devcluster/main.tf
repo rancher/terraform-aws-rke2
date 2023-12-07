@@ -17,7 +17,7 @@ locals {
   rke2_version         = var.rke2_version # the exact release tag, eg. v1.28.2+rke2r1
   identifier           = var.identifier   # simple random string to identify resources
   email                = "terraform-ci@suse.com"
-  name                 = "tf-aws-rke2-dev-${local.identifier}"
+  name                 = "tf-aws-rke2-dev"
   username             = "tf-${local.identifier}"              # WARNING: This must be less than 32 characters!
   server_prep_script   = file("${abspath(path.root)}/prep.sh") # a script that will run before start, after install
   configs              = "${abspath(path.root)}/config"        # add custom configs here, this is added to all servers, see "dedicated" example to place different configs on different nodes

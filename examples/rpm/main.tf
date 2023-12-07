@@ -15,7 +15,7 @@ locals {
   rke2_version         = var.rke2_version
   identifier           = var.identifier # simple random string to identify resources
   email                = "terraform-ci@suse.com"
-  name                 = "tf-aws-rke2-rpm-${local.identifier}"
+  name                 = "tf-aws-rke2-rpm"
   username             = "tf-${local.identifier}" # WARNING: This must be less than 32 characters!
   server_prep_script   = file("${path.root}/prep.sh")
   local_file_path      = "${abspath(path.root)}/config"
