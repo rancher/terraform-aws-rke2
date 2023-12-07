@@ -130,7 +130,7 @@ module "install" {
     module.download,
   ]
   source              = "rancher/rke2-install/null"
-  version             = "v0.3.2"
+  version             = "v0.3.3"
   release             = local.rke2_version
   local_file_path     = local.local_file_path
   remote_file_path    = local.remote_file_path
