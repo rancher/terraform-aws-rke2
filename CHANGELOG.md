@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.1.8](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.7...v0.1.8) (2023-12-07)
+
+
+### Bug Fixes
+
+* add a console password for troubleshooting using ec2 console ([#62](https://github.com/rancher/terraform-aws-rke2/issues/62)) ([ba81aaf](https://github.com/rancher/terraform-aws-rke2/commit/ba81aafcf4760654de58781b1a78441911173f29))
+* bump google-github-actions/release-please-action from 3 to 4 ([#53](https://github.com/rancher/terraform-aws-rke2/issues/53)) ([edb0af4](https://github.com/rancher/terraform-aws-rke2/commit/edb0af44a821b924714aea37c88d506af553b4ab))
+* fix prefix and remove unused name ([#68](https://github.com/rancher/terraform-aws-rke2/issues/68)) ([c5578e7](https://github.com/rancher/terraform-aws-rke2/commit/c5578e7b73dfa7537b3e2c6fd404102e8d478a14))
+* increase timeout to 15 min ([#56](https://github.com/rancher/terraform-aws-rke2/issues/56)) ([2ba0a5f](https://github.com/rancher/terraform-aws-rke2/commit/2ba0a5fdc5062295b3bf3dba87e978a86936236d))
+* install nix after restoring cache ([#64](https://github.com/rancher/terraform-aws-rke2/issues/64)) ([ef23060](https://github.com/rancher/terraform-aws-rke2/commit/ef23060995ad2cdeed168ace3eb1aa7005798973))
+* remove nix cache operations ([#57](https://github.com/rancher/terraform-aws-rke2/issues/57)) ([a8ab72f](https://github.com/rancher/terraform-aws-rke2/commit/a8ab72ffc21b208479285eee2a056ab2371081ad))
+* remove the id from the name in examples ([#67](https://github.com/rancher/terraform-aws-rke2/issues/67)) ([00b0097](https://github.com/rancher/terraform-aws-rke2/commit/00b0097847619f608fed7aaa070861a46c1e32d2))
+* remove the release title specification ([#59](https://github.com/rancher/terraform-aws-rke2/issues/59)) ([b5052f5](https://github.com/rancher/terraform-aws-rke2/commit/b5052f532e119e0f50fd69eade0331cd577fd706))
+* set permissions on /nix/store after setting owner ([#60](https://github.com/rancher/terraform-aws-rke2/issues/60)) ([0f38efa](https://github.com/rancher/terraform-aws-rke2/commit/0f38efa08cd769d2f03a27d8e609c151404892b6))
+* temp set the ec2 console password using passwd in example ([#63](https://github.com/rancher/terraform-aws-rke2/issues/63)) ([eb0400b](https://github.com/rancher/terraform-aws-rke2/commit/eb0400b0e2adc41794b084414edc5017179d82cd))
+* troubleshoot configs ([#58](https://github.com/rancher/terraform-aws-rke2/issues/58)) ([ffea124](https://github.com/rancher/terraform-aws-rke2/commit/ffea1249c3383403b93824cbe3d8d44240a5cfb4))
+* try to make ci and local environment match more closely ([#65](https://github.com/rancher/terraform-aws-rke2/issues/65)) ([7b3a5c4](https://github.com/rancher/terraform-aws-rke2/commit/7b3a5c44753e3667861587627afc921fe4141585))
+* update install mod to 0.3.3 ([#66](https://github.com/rancher/terraform-aws-rke2/issues/66)) ([f74df00](https://github.com/rancher/terraform-aws-rke2/commit/f74df00c9d63e61a902ed4fa5052efe715ed871d))
+* update mods and surface new options ([#55](https://github.com/rancher/terraform-aws-rke2/issues/55)) ([3a8413f](https://github.com/rancher/terraform-aws-rke2/commit/3a8413fa04789d52d88437c5067f3becdec56d2c))
+* upgrade install mod to v0.3 ([#50](https://github.com/rancher/terraform-aws-rke2/issues/50)) ([5e4d599](https://github.com/rancher/terraform-aws-rke2/commit/5e4d5999777b7a61b7eb17131fa1157766ae3add))
+* use sudo to ensure nix store path ([#61](https://github.com/rancher/terraform-aws-rke2/issues/61)) ([aefb483](https://github.com/rancher/terraform-aws-rke2/commit/aefb483bd9424d7b0a29c1d9592268524f7d47f1))
+* use the file function to get the extra config content ([#52](https://github.com/rancher/terraform-aws-rke2/issues/52)) ([d461a3b](https://github.com/rancher/terraform-aws-rke2/commit/d461a3b2b81da5c548c03cfe90b7b905c1cac36c))
+
 ## [0.1.7](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.6...v0.1.7) (2023-11-30)
 
 
