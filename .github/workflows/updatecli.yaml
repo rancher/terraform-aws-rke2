@@ -1,4 +1,4 @@
-name: "Updatecli: Dependency Management"
+name: "Updatecli"
 
 on:
   schedule:
