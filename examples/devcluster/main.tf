@@ -17,12 +17,11 @@ locals {
   rke2_version         = var.rke2_version # the exact release tag, eg. v1.28.2+rke2r1
   identifier           = var.identifier   # simple random string to identify resources
   email                = "terraform-ci@suse.com"
-  name                 = "tf-aws-rke2-dev"
+  prefix               = "tf-aws-rke2-dev"                     # this can be anything you want, it makes it marginally easier to find in AWS
   username             = "tf-${local.identifier}"              # WARNING: This must be less than 32 characters!
   server_prep_script   = file("${abspath(path.root)}/prep.sh") # a script that will run before start, after install
   configs              = "${abspath(path.root)}/config"        # add custom configs here, this is added to all servers, see "dedicated" example to place different configs on different nodes
   cluster_size         = 3                                     # this example provisions all servers the same, see the "dedicated" example to alter configs and roles
-  prefix               = "tf-devcluster-${local.identifier}"   # this can be anything you want, it makes it marginally easier to find in AWS
   server_type          = "small"                               # https://github.com/rancher/terraform-aws-server/blob/main/modules/server/types.tf
   image_type           = "rhel-8"                              # https://github.com/rancher/terraform-aws-server/blob/main/modules/image/types.tf
   extra_config_content = file("${local.configs}/config.yaml")
