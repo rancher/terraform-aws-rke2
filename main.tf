@@ -89,7 +89,7 @@ module "aws_server" {
   user                = local.username
   ssh_key_name        = local.ssh_key_name # derive this from local values rather than the module to avoid dependency issues
   ssh_key             = module.aws_access.ssh_key.public_key
-  subnet_name         = local.subnet_name # derive this from local values rather than the module to avoid dependency issues
+  subnet_name         = local.subnet_name         # derive this from local values rather than the module to avoid dependency issues
   security_group_name = local.security_group_name # derive this from local values rather than the module to avoid dependency issues
   cloudinit_script    = local.server_cloudinit_script
   cloudinit_timeout   = local.server_cloudinit_timeout
