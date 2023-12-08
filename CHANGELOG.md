@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.9](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.8...v0.1.9) (2023-12-08)
+
+
+### Bug Fixes
+
+* use local values rather than derived ones when possible ([#69](https://github.com/rancher/terraform-aws-rke2/issues/69)) ([c9099e4](https://github.com/rancher/terraform-aws-rke2/commit/c9099e42f7c06c1f4242a114a1040b2a68953284))
+
 ## [0.1.8](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.7...v0.1.8) (2023-12-07)
 
 
