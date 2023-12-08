@@ -18,7 +18,6 @@ locals {
   name                 = "tf-aws-rke2-rpm"
   username             = "tf-${local.identifier}" # WARNING: This must be less than 32 characters!
   server_prep_script   = file("${path.root}/prep.sh")
-  local_file_path      = "${abspath(path.root)}/config"
   extra_config_content = file("${abspath(path.root)}/config/extra-config.yaml")
 }
 resource "random_uuid" "join_token" {}
@@ -40,7 +39,7 @@ module "aws_rke2_rhel9_rpm" {
   availability_zone    = "us-west-1b"   # you can specify an availability zone name here https://us-west-1.console.aws.amazon.com/ec2/home?region=us-west-1#Settings:tab=zones, must match region!
   image_type           = "rhel-9"       # https://github.com/rancher/terraform-aws-server/blob/main/modules/image/types.tf
   install_method       = "rpm"          # use the RPM install method when installing rke2
-  local_file_path      = local.local_file_path
+  local_file_path      = "${path.root}/${local.name}"
   role                 = "server"                 # "server" or "agent", "server" for stand alone, see "dedicated" example for setting up clusters where different nodes have dedicated jobs
   security_group_type  = "egress"                 # allow downloading packages: https://github.com/rancher/terraform-aws-access/blob/main/modules/security_group/types.tf
   server_type          = "small"                  # smallest viable server: https://github.com/rancher/terraform-aws-server/blob/main/modules/server/types.tf

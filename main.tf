@@ -87,10 +87,10 @@ module "aws_server" {
   type                = local.server_type # https://github.com/rancher/terraform-aws-server/blob/main/modules/server/types.tf
   image               = local.image_type  # https://github.com/rancher/terraform-aws-server/blob/main/modules/image/types.tf
   user                = local.username
-  ssh_key_name        = module.aws_access.ssh_key.tags.Name
+  ssh_key_name        = local.ssh_key_name # derive this from local values rather than the module to avoid dependency issues
   ssh_key             = module.aws_access.ssh_key.public_key
-  subnet_name         = module.aws_access.subnet.tags.Name
-  security_group_name = module.aws_access.security_group.tags.Name
+  subnet_name         = local.subnet_name         # derive this from local values rather than the module to avoid dependency issues
+  security_group_name = local.security_group_name # derive this from local values rather than the module to avoid dependency issues
   cloudinit_script    = local.server_cloudinit_script
   cloudinit_timeout   = local.server_cloudinit_timeout
 }
@@ -149,5 +149,7 @@ module "install" {
     local.rke2_version,
     module.config.yaml_config,
     local.extra_config_content,
+    local.server_prep_script,
+    local.role,
   ]))
 }
