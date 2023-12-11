@@ -1,0 +1,11 @@
+override.*
+*_override.tf
+rke2*
+*.gz
+*.DS_*
+.terraform
+tmp
+50-*
+terraform.tfstate
+kubeconfig-*.yaml
+terraform.tfstate.backup

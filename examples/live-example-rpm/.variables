@@ -1,0 +1,9 @@
+export TF_IN_AUTOMATION=1
+export TF_CLI_ARGS_plan="--state /tmp/terraform.tfstate"
+export TF_CLI_ARGS_apply="--state /tmp/terraform.tfstate"
+export TF_CLI_ARGS_destroy="--state /tmp/terraform.tfstate"
+export TF_VAR_ip="$(curl -s 'https://api.ipify.org')"
+export ACME_SERVER_URL="https://acme-v02.api.letsencrypt.org/directory"
+
+# expects parse_git_branch function to be defined
+export PS1="\[\e[31m\]Dev:\[\e[m\] \[\e[32m\]\u\[\e[m\]\[\e[32m\]@\[\e[m\]\[\e[32m\]\h\[\e[m\] \[\e[34m\]\W\[\e[m\] \`parse_git_branch\` "
