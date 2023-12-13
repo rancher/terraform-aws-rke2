@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.10](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.9...v0.1.10) (2023-12-12)
+
+
+### Bug Fixes
+
+* add live-example-rpm ([#73](https://github.com/rancher/terraform-aws-rke2/issues/73)) ([b67d240](https://github.com/rancher/terraform-aws-rke2/commit/b67d240e6d7823a21330001334ea7918b21ae524))
+* bump actions/setup-go from 4 to 5 ([#71](https://github.com/rancher/terraform-aws-rke2/issues/71)) ([130b7fb](https://github.com/rancher/terraform-aws-rke2/commit/130b7fbf41a5787f61933ee367c47e2aa96368d1))
+* update access mod ([#74](https://github.com/rancher/terraform-aws-rke2/issues/74)) ([97b6615](https://github.com/rancher/terraform-aws-rke2/commit/97b66159f69103db04776267433483f131ec940b))
+* use proper default branch for Go ([#75](https://github.com/rancher/terraform-aws-rke2/issues/75)) ([47a46a5](https://github.com/rancher/terraform-aws-rke2/commit/47a46a5f569af350291e37aaecfa4faac01f7772))
+
 ## [0.1.9](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.8...v0.1.9) (2023-12-08)
 
 
