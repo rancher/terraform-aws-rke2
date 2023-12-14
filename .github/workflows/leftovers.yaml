@@ -1,0 +1,57 @@
+name: "Clean Up Leftovers"
+
+on:
+  schedule:
+    # At minute 30 past every 6th hour from 5 through 18 on every day-of-week from Monday through Friday.
+    # 6:30, 12:30, 18:30
+    - cron: '30 5-18/6 * * 1-5'
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+permissions: write-all
+
+jobs:
+  leftovers:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{secrets.GITHUB_TOKEN}}
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: nicknovitski/nix-develop@v1.1.0
+        with:
+          arguments: |
+            --ignore-environment \
+            --extra-experimental-features nix-command \
+            --extra-experimental-features flakes \
+            --keep HOME \
+            --keep SSH_AUTH_SOCK \
+            --keep GITHUB_TOKEN \
+            --keep AWS_ROLE \
+            --keep AWS_REGION \
+            --keep AWS_DEFAULT_REGION \
+            --keep AWS_ACCESS_KEY_ID \
+            --keep AWS_SECRET_ACCESS_KEY \
+            --keep AWS_SESSION_TOKEN \
+            --keep TERM \
+            ${{ github.workspace }}
+        - name: Get Ids
+          id: get_ids
+          run: |
+            DATA=$( \
+              curl -s --location \
+                --header 'Authorization: Bearer ${{secrets.GITHUB_TOKEN}}' \
+                '${{github.api_url}}/repos/${{github.repository}}/actions/runs' \
+              | jq -r '.workflow_runs[] | select(.created_at > (now - 86400)) | "\(.name |= ascii_downcase | .name)-\(.id)-\(.run_number)-\(.run_attempt)"' \
+              | jq -R -s -c 'split("\n")[:-1]' \
+            )
+            echo "::set-output name=data::$DATA"
+      # - uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: ${{env.AWS_ROLE}}
+      #     role-session-name: ${{github.job}}-${{github.run_id}}-${{github.run_number}}-${{github.run_attempt}}
+      #     aws-region: ${{env.AWS_REGION}}
+#      - run: |
+#         for i in steps.get_ids.outputs.data; for r in us-west-1 us-west-2; do leftovers -d --iaas=aws --aws-region=$r --filter=Id:$i; done;done;
