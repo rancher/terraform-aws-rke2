@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.11](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.10...v0.1.11) (2023-12-14)
+
+
+### Bug Fixes
+
+* introduce leftovers and configure updatecli to sign commits ([#77](https://github.com/rancher/terraform-aws-rke2/issues/77)) ([f0d3004](https://github.com/rancher/terraform-aws-rke2/commit/f0d300437231090d0da5cf403c2d73561467131d))
+
 ## [0.1.10](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.9...v0.1.10) (2023-12-12)
 
 
