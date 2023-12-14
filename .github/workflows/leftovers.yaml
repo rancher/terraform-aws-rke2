@@ -47,3 +47,4 @@ jobs:
             | jq -R -s -c 'split("\n")[:-1]' \
           )"
           echo ids="$DATA" >> "$GITHUB_OUTPUT"
+      - run: echo "${{ steps.get_ids.outputs.ids }}"
