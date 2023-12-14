@@ -1,4 +1,4 @@
-name: "Clean Up Leftovers"
+name: cleanup
 
 on:
   schedule:
@@ -43,7 +43,10 @@ jobs:
             curl -s --location \
               --header 'Authorization: Bearer ${{secrets.GITHUB_TOKEN}}' \
               '${{github.api_url}}/repos/${{github.repository}}/actions/runs' \
-            | jq -r '.workflow_runs[] | select(.created_at > (now - 86400)) | "\(.name |= ascii_downcase | .name)-\(.id)-\(.run_number)-\(.run_attempt)"' \
+            | jq -r '.workflow_runs[] \
+              | select(.created_at > (now - 86400)) \
+              | select((.name |= ascii_downcase | .name) == "release") \
+              | "\((.name |= ascii_downcase | .name))-\(.id)-\(.run_number)-\(.run_attempt)"' \
             | jq -R -s -c 'split("\n")[:-1]' \
           )"
           echo ids="$DATA" >> "$GITHUB_OUTPUT"

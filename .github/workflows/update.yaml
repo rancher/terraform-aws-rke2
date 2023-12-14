@@ -1,4 +1,4 @@
-name: "Updatecli"
+name: update
 
 on:
   schedule:
