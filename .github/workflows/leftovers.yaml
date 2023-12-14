@@ -13,11 +13,8 @@ permissions: write-all
 jobs:
   leftovers:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{secrets.GITHUB_TOKEN}}
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: nicknovitski/nix-develop@v1.1.0
@@ -37,21 +34,16 @@ jobs:
             --keep AWS_SESSION_TOKEN \
             --keep TERM \
             ${{ github.workspace }}
-        - name: Get Ids
-          id: get_ids
-          run: |
-            DATA=$( \
-              curl -s --location \
-                --header 'Authorization: Bearer ${{secrets.GITHUB_TOKEN}}' \
-                '${{github.api_url}}/repos/${{github.repository}}/actions/runs' \
-              | jq -r '.workflow_runs[] | select(.created_at > (now - 86400)) | "\(.name |= ascii_downcase | .name)-\(.id)-\(.run_number)-\(.run_attempt)"' \
-              | jq -R -s -c 'split("\n")[:-1]' \
-            )
-            echo "::set-output name=data::$DATA"
-      # - uses: aws-actions/configure-aws-credentials@v4
-      #   with:
-      #     role-to-assume: ${{env.AWS_ROLE}}
-      #     role-session-name: ${{github.job}}-${{github.run_id}}-${{github.run_number}}-${{github.run_attempt}}
-      #     aws-region: ${{env.AWS_REGION}}
-#      - run: |
-#         for i in steps.get_ids.outputs.data; for r in us-west-1 us-west-2; do leftovers -d --iaas=aws --aws-region=$r --filter=Id:$i; done;done;
+      - name: Get Ids
+        id: get_ids
+        # 86400 = 24 hours in seconds (24 * 60 * 60)
+        # you might increase this number if you need to look back further for leftovers
+        run: |
+          DATA="$( \
+            curl -s --location \
+              --header 'Authorization: Bearer ${{secrets.GITHUB_TOKEN}}' \
+              '${{github.api_url}}/repos/${{github.repository}}/actions/runs' \
+            | jq -r '.workflow_runs[] | select(.created_at > (now - 86400)) | "\(.name |= ascii_downcase | .name)-\(.id)-\(.run_number)-\(.run_attempt)"' \
+            | jq -R -s -c 'split("\n")[:-1]' \
+          )"
+          echo ids="$DATA" >> "$GITHUB_OUTPUT"
