@@ -19,6 +19,9 @@ scms:
       owner: rancher
       repository: terraform-aws-rke2
       branch: main
+      gpg:
+        sign: true
+        signingKey: '{{ requiredEnv .github.gpgtoken }}'
   go:
     kind: "github"
     spec:

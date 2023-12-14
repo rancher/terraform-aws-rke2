@@ -15,31 +15,35 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: nicknovitski/nix-develop@v1.1.0
         with:
-          go-version: 'stable'
-      - uses: updatecli/updatecli-action@v2
-      - name: 'Delete leftover UpdateCLI branches'
-        run: |
-          gh pr list \
-            --search "is:closed is:pr head:updatecli_" \
-            --json headRefName \
-            --jq ".[].headRefName" | sort -u > closed_prs_branches.txt
-          gh pr list \
-            --search "is:open is:pr head:updatecli_" \
-            --json headRefName \
-            --jq ".[].headRefName" | sort -u > open_prs_branches.txt
-          for branch in $(comm -23 closed_prs_branches.txt open_prs_branches.txt); do
-            if (git ls-remote --exit-code --heads origin "$branch"); then
-              echo "Deleting leftover UpdateCLI branch - $branch";
-              git push origin --delete "$branch";
-            fi
-          done
+          arguments: |
+            --ignore-environment \
+            --extra-experimental-features nix-command \
+            --extra-experimental-features flakes \
+            --keep HOME \
+            --keep SSH_AUTH_SOCK \
+            --keep GITHUB_TOKEN \
+            --keep AWS_ROLE \
+            --keep AWS_REGION \
+            --keep AWS_DEFAULT_REGION \
+            --keep AWS_ACCESS_KEY_ID \
+            --keep AWS_SECRET_ACCESS_KEY \
+            --keep AWS_SESSION_TOKEN \
+            --keep UPDATECLI_GPGTOKEN \
+            --keep UPDATECLI_GITHUB_TOKEN \
+            --keep UPDATECLI_GITHUB_ACTOR \
+            --keep GPG_SIGNING_KEY \
+            --keep TERM \
+            ${{ github.workspace }}
+      - run: echo -n "$GPG_SIGNING_KEY" | base64 --decode | gpg --import
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
       - name: Apply Updatecli
         # Never use '--debug' option, because it might leak the access tokens.
         run: "updatecli apply --clean --config ./updatecli/updatecli.d/ --values ./updatecli/values.yaml"
         env:
           UPDATECLI_GITHUB_ACTOR: ${{ github.actor }}
           UPDATECLI_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPDATECLI_GPGTOKEN: ${{ secrets.GPG_SIGNING_KEY }}
