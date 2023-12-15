@@ -45,7 +45,7 @@ jobs:
         # you might increase this number if you need to look back further for leftovers
         run: |
           DATA="$( \
-            curl -s --location \
+            curl -s \
               --header 'Authorization: Bearer ${{secrets.GITHUB_TOKEN}}' \
               '${{github.api_url}}/repos/${{github.repository}}/actions/runs' \
             | jq -r '.workflow_runs[] | select(.created_at > (now - 86400)) | select((.name |= ascii_downcase | .name) == "release") | "\((.name |= ascii_downcase | .name))-\(.id)-\(.run_number)-\(.run_attempt)"' \
@@ -73,10 +73,10 @@ jobs:
               if [ "$OUTPUT" != "" ]; then
                 echo "found some leftovers for $id in $region";
                 echo "please clean up with leftovers tool";
-                curl -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                   -d '{
                     "title": "Leftovers Found!",
-                    "body": "Leftovers were found in ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} in region '"$region"' with id '"$id"'",
+                    "body": "Leftovers were found in ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} in region '"$region"' with id '"$id"'\n ```'"$OUTPUT"'```",
                     "labels": ["leftovers"]
                   }' \
                   ${{ github.api_url }}/repos/${{ github.repository }}/issues;
