@@ -53,7 +53,7 @@ jobs:
       # WARNING! if '-d' is missing you will delete everything that is found
       - name: find-leftovers
         run: |
-          ID_LIST="${{ steps.get_ids.outputs.ids }}"
+          ID_LIST='${{ steps.get_ids.outputs.ids }}'
           DATA=$(jq -r .[] <<< "$ID_LIST")
           for id in $DATA; do
             for region in us-west-1 us-west-2; do
