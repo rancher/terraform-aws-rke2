@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.1.12](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.11...v0.1.12) (2023-12-15)
+
+
+### Bug Fixes
+
+* add a small line to validate leftover findings ([#79](https://github.com/rancher/terraform-aws-rke2/issues/79)) ([36fca7a](https://github.com/rancher/terraform-aws-rke2/commit/36fca7af899d1f85675159e97ecfa4145d2a92e9))
+* add aws auth to cleanup ([#85](https://github.com/rancher/terraform-aws-rke2/issues/85)) ([bb01545](https://github.com/rancher/terraform-aws-rke2/commit/bb01545a49c134d320e193fb943cc202dd8dd374))
+* add body func ([#94](https://github.com/rancher/terraform-aws-rke2/issues/94)) ([62b5b2a](https://github.com/rancher/terraform-aws-rke2/commit/62b5b2acd835dd605f240faf2b9a87f21b13afcb))
+* add filter for workflows in progress ([#102](https://github.com/rancher/terraform-aws-rke2/issues/102)) ([e96b616](https://github.com/rancher/terraform-aws-rke2/commit/e96b6166eb95b2409c8d315b92b1f31a952113fc))
+* add id to names in examples and add quotes to json for issue ([#95](https://github.com/rancher/terraform-aws-rke2/issues/95)) ([f36ffe4](https://github.com/rancher/terraform-aws-rke2/commit/f36ffe49cb5a07405294664dfb4cad6730c264b0))
+* add missing pipe ([#83](https://github.com/rancher/terraform-aws-rke2/issues/83)) ([8af3667](https://github.com/rancher/terraform-aws-rke2/commit/8af36670799ed39fc70b40e53be8a77b6fd1c9f2))
+* add output to issue ([#90](https://github.com/rancher/terraform-aws-rke2/issues/90)) ([358e5e4](https://github.com/rancher/terraform-aws-rke2/commit/358e5e4370020350585f03ac8d394cd90e5643ca))
+* add output to workflow ([#91](https://github.com/rancher/terraform-aws-rke2/issues/91)) ([0d126c4](https://github.com/rancher/terraform-aws-rke2/commit/0d126c463fb5775bae4bf9f2f5f88aaed00d1eb0))
+* break down leftovers script into functions and add output ([#93](https://github.com/rancher/terraform-aws-rke2/issues/93)) ([57fb1cb](https://github.com/rancher/terraform-aws-rke2/commit/57fb1cbf56b195c5d446543e5dae2506e419764d))
+* echo instead of return values in bash funcs ([#96](https://github.com/rancher/terraform-aws-rke2/issues/96)) ([57215ee](https://github.com/rancher/terraform-aws-rke2/commit/57215ee17bf6e9722cc7fe4582f1638662e0362c))
+* filter ids and improve workflow names ([#81](https://github.com/rancher/terraform-aws-rke2/issues/81)) ([a59cb1c](https://github.com/rancher/terraform-aws-rke2/commit/a59cb1cd5e1f1a4bced3f86662a13956ce4d038f))
+* jq needs a query ([#100](https://github.com/rancher/terraform-aws-rke2/issues/100)) ([55bd936](https://github.com/rancher/terraform-aws-rke2/commit/55bd93679b853a2f78ce28f6292ced7041261594))
+* put all jq in one line ([#82](https://github.com/rancher/terraform-aws-rke2/issues/82)) ([97872a6](https://github.com/rancher/terraform-aws-rke2/commit/97872a61770edabe09d05477b231e8f633bbb7bc))
+* remove lines from echos and all line feeds in json ([#99](https://github.com/rancher/terraform-aws-rke2/issues/99)) ([2ef6c3b](https://github.com/rancher/terraform-aws-rke2/commit/2ef6c3bd2f10716a70ce8259a6e752d291e51941))
+* single quote ids ([#84](https://github.com/rancher/terraform-aws-rke2/issues/84)) ([3bb6ac6](https://github.com/rancher/terraform-aws-rke2/commit/3bb6ac69042dab2308dbcbc9c2fea352efb2e204))
+* try using a file to process auth issues from leftovers ([#86](https://github.com/rancher/terraform-aws-rke2/issues/86)) ([bad1f5b](https://github.com/rancher/terraform-aws-rke2/commit/bad1f5bca7ebd4fd9d39a7757d09252c19659a1d))
+* use file ([#98](https://github.com/rancher/terraform-aws-rke2/issues/98)) ([1a41f88](https://github.com/rancher/terraform-aws-rke2/commit/1a41f884343cddd7fbc267c0998daef01e3787ab))
+* use file to hold data ([#97](https://github.com/rancher/terraform-aws-rke2/issues/97)) ([a785f03](https://github.com/rancher/terraform-aws-rke2/commit/a785f037c67723c156fdbc39b205d43c5ed31e8a))
+
 ## [0.1.11](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.10...v0.1.11) (2023-12-14)
 
 
