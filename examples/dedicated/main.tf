@@ -15,18 +15,18 @@ locals {
   server_count        = 3
   agent_count         = 3
   cluster_size        = local.server_count + local.agent_count
-  identifier          = var.identifier                                      # put a unique identifier here
+  identifier          = var.identifier                                        # put a unique identifier here
   prefix              = "tf-aws-rke2-ded-${substr(local.identifier, -4, -1)}" # this can be anything you want, it makes it marginally easier to find in AWS
-  username            = "tf-${local.identifier}"                            # WARNING: This must be less than 32 characters!
-  rke2_version        = var.rke2_version                                    # put your rke2 version here, must be a valid tag name like v1.21.6+rke2r1
-  server_config       = "${abspath(path.root)}/configs/51-server.yaml"      # put the path to your server config here, a default config named 50-generated-initial-config.yaml will manage joining for you
-  agent_config        = "${abspath(path.root)}/configs/51-agent.yaml"       # put the path to your agent config here, a default config named 50-generated-initial-config.yaml will manage joining for you
-  server_type         = "large"                                             # https://github.com/rancher/terraform-aws-server/blob/main/modules/server/types.tf
-  image_type          = "rhel-9"                                            # https://github.com/rancher/terraform-aws-server/blob/main/modules/image/types.tf
-  install_method      = "rpm"                                               # requires "egress" security group type
-  security_group_type = "egress"                                            # https://github.com/rancher/terraform-aws-access/blob/main/modules/security_group/types.tf
-  server_prep_script  = file("prep.sh")                                     # put your server prep script here
-  start_timeout       = "15"                                                # wait 15 minutes for rke2 to start after enabling it
+  username            = "tf-${local.identifier}"                              # WARNING: This must be less than 32 characters!
+  rke2_version        = var.rke2_version                                      # put your rke2 version here, must be a valid tag name like v1.21.6+rke2r1
+  server_config       = "${abspath(path.root)}/configs/51-server.yaml"        # put the path to your server config here, a default config named 50-generated-initial-config.yaml will manage joining for you
+  agent_config        = "${abspath(path.root)}/configs/51-agent.yaml"         # put the path to your agent config here, a default config named 50-generated-initial-config.yaml will manage joining for you
+  server_type         = "large"                                               # https://github.com/rancher/terraform-aws-server/blob/main/modules/server/types.tf
+  image_type          = "rhel-9"                                              # https://github.com/rancher/terraform-aws-server/blob/main/modules/image/types.tf
+  install_method      = "rpm"                                                 # requires "egress" security group type
+  security_group_type = "egress"                                              # https://github.com/rancher/terraform-aws-access/blob/main/modules/security_group/types.tf
+  server_prep_script  = file("prep.sh")                                       # put your server prep script here
+  start_timeout       = "15"                                                  # wait 15 minutes for rke2 to start after enabling it
 
   # We are generating random names for the servers here, you might want to simplify this for your use case, just pick some names
   # Keep in mind that these names must not be generated using resources, but they can use functions and expressions
