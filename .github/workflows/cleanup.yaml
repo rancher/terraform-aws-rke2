@@ -92,7 +92,7 @@ jobs:
             issue_body "$region" "$id" "$output" "$url" >> data.json
             echo -n '","labels":["leftovers"]}' >> data.json
             cat data.json
-            jq data.json
+            jq '.' data.json
             curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -d @data.json "${{ github.api_url }}/repos/${{ github.repository }}/issues"
           }
 
