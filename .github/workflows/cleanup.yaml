@@ -92,7 +92,7 @@ jobs:
             curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
               -d '{
                 "title": "Leftovers Found!",
-                "body": '"$body"',
+                "body": "'"$body"'",
                 "labels": ["leftovers"]
               }' \
               ${{ github.api_url }}/repos/${{ github.repository }}/issues

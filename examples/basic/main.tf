@@ -11,8 +11,8 @@ provider "aws" {
 
 locals {
   email    = "terraform-ci@suse.com"
-  name     = "tf-aws-rke2-basic"
-  username = "tf-${local.identifier}" # WARNING: This must be less than 32 characters!
+  name     = "tf-aws-rke2-basic-${substr(local.identifier, 0, 4)}" # id in name prevents ci collisions
+  username = "tf-${local.identifier}"                              # WARNING: This must be less than 32 characters!
 
   # I don't normally recommend using variables in root modules, but this allows tests to supply their own key and rke2 version
   ssh_key_name = var.ssh_key_name # I want ci to be able to generate a key that is specific to a single pipeline run
