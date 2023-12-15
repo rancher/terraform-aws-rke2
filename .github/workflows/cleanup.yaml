@@ -62,26 +62,52 @@ jobs:
       # WARNING! if '-d' is missing you will delete everything that is found
       - name: find-leftovers
         run: |
+          check_leftovers() {
+            local id="$1"
+            local region="$2"
+            echo "checking for leftovers in $region for $id"
+            leftovers -d --iaas=aws --aws-region="$region" --filter="$id" \
+              | grep -Pv 'is not authorized to perform|status code:|Access Denied' \
+              >> leftovers.output
+            return $?
+          }
+
+          post_issue() {
+            local id="$1"
+            local region="$2"
+            local output="$3"
+            echo "found some leftovers for $id in $region"
+            echo "please clean up with leftovers tool"
+            local issue_body
+            issue_body="$(
+            cat <<< "EOF"
+            Leftovers were found in region "$region" with id "$id"
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            \`\`\`
+            "$output"
+            \`\`\`
+            EOF
+            )";
+            curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -d '{
+                "title": "Leftovers Found!",
+                "body": '"$issue_body"',
+                "labels": ["leftovers"]
+              }' \
+              ${{ github.api_url }}/repos/${{ github.repository }}/issues
+          }
+
           ID_LIST='${{ steps.get_ids.outputs.ids }}'
           DATA=$(jq -r .[] <<< "$ID_LIST")
           echo "" > leftovers.output
+          REGIONS="us-west-1 us-west-2"
+
           for id in $DATA; do
-            for region in us-west-1 us-west-2; do
-              echo "checking for leftovers in $region for $id";
-              leftovers -d --iaas=aws --aws-region="$region" --filter="$id" | grep -v 'is not authorized to perform' | grep -v 'status code: 403' >> leftovers.output
-              OUTPUT="$(cat leftovers.output)"
-              if [ "$OUTPUT" != "" ]; then
-                echo "found some leftovers for $id in $region";
-                echo "please clean up with leftovers tool";
-                curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                  -d '{
-                    "title": "Leftovers Found!",
-                    "body": "Leftovers were found in ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} in region '"$region"' with id '"$id"'",
-                    "labels": ["leftovers"]
-                  }' \
-                  ${{ github.api_url }}/repos/${{ github.repository }}/issues;
-                echo "$OUTPUT";
+            for region in $REGIONS; do
+              if check_leftovers "$id" "$region"; then
+                output="$(cat leftovers.output)";
+                post_issue "$id" "$region" "$output";
                 exit 1;
-              fi;
-            done;
-          done;
+              fi
+            done
+          done
