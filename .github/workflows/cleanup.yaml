@@ -51,3 +51,28 @@ jobs:
           )"
           echo ids="$DATA" >> "$GITHUB_OUTPUT"
       - run: echo "${{ steps.get_ids.outputs.ids }}"
+      # rather than actually delete things, it errors and notifies so that you can run leftovers interactively
+      # WARNING! if '--filter=""' then you will find everything in a region
+      # WARNING! if '-d' is missing you will delete everything that is found
+      - name: find-leftovers
+        run: |
+          ID_LIST="${{ steps.get_ids.outputs.ids }}"
+          DATA=$(jq -r .[] <<< "$ID_LIST")
+          for id in $DATA; do
+            for region in us-west-1 us-west-2; do
+              echo "checking for leftovers in $region for $id";
+              OUTPUT="$(leftovers -d --iaas=aws --aws-region="$region" --filter="$id")";
+              if [ "$OUTPUT" -ne "" ]; then
+                echo "found some leftovers for $id in $region";
+                echo "please clean up with leftovers tool"
+                curl -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                  -d '{
+                    "title": "Leftovers Found!",
+                    "body": "Leftovers were found in ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} in region '"$region"' with id '"$id"'",
+                    "labels": ["leftovers"]
+                  }' \
+                  ${{ github.api_url }}/repos/${{ github.repository }}/issues
+                exit 1;
+              fi
+            done;
+          done;
