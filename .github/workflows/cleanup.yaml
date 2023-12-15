@@ -88,14 +88,12 @@ jobs:
             echo "found some leftovers for $id in $region"
             echo "please clean up with leftovers tool"
             local url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            body="$(issue_body "$region" "$id" "$output" "$url")"
-            curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -d '{
-                "title": "Leftovers Found!",
-                "body": "'"$body"'",
-                "labels": ["leftovers"]
-              }' \
-              ${{ github.api_url }}/repos/${{ github.repository }}/issues
+            echo '{"title":"Leftovers Found!","body":"' > data.json
+            issue_body "$region" "$id" "$output" "$url" >> data.json
+            echo '","labels":["leftovers"]}' >> data.json
+            cat data.json
+            jq data.json
+            curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -d @data.json "${{ github.api_url }}/repos/${{ github.repository }}/issues"
           }
 
           ID_LIST='${{ steps.get_ids.outputs.ids }}'
