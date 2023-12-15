@@ -76,10 +76,11 @@ jobs:
                 curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                   -d '{
                     "title": "Leftovers Found!",
-                    "body": "Leftovers were found in ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} in region '"$region"' with id '"$id"'\n ```'"$OUTPUT"'```",
+                    "body": "Leftovers were found in ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} in region '"$region"' with id '"$id"'",
                     "labels": ["leftovers"]
                   }' \
                   ${{ github.api_url }}/repos/${{ github.repository }}/issues;
+                echo "$OUTPUT";
                 exit 1;
               fi;
             done;
