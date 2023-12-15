@@ -10,6 +10,11 @@ on:
 
 permissions: write-all
 
+env:
+  AWS_REGION: us-west-1
+  AWS_ROLE: arn:aws:iam::270074865685:role/terraform-module-ci-test
+  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
 jobs:
   leftovers:
     runs-on: ubuntu-latest
@@ -47,7 +52,11 @@ jobs:
             | jq -R -s -c 'split("\n")[:-1]' \
           )"
           echo ids="$DATA" >> "$GITHUB_OUTPUT"
-      - run: echo "${{ steps.get_ids.outputs.ids }}"
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{env.AWS_ROLE}}
+          role-session-name: ${{github.job}}-${{github.run_id}}-${{github.run_number}}-${{github.run_attempt}}
+          aws-region: ${{env.AWS_REGION}}
       # rather than actually delete things, it errors and notifies so that you can run leftovers interactively
       # WARNING! if '--filter=""' then you will find everything in a region
       # WARNING! if '-d' is missing you will delete everything that is found
