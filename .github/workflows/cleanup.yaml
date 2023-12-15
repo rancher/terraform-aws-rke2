@@ -64,21 +64,23 @@ jobs:
         run: |
           ID_LIST='${{ steps.get_ids.outputs.ids }}'
           DATA=$(jq -r .[] <<< "$ID_LIST")
+          echo "" > leftovers.output
           for id in $DATA; do
             for region in us-west-1 us-west-2; do
               echo "checking for leftovers in $region for $id";
-              OUTPUT="$(leftovers -d --iaas=aws --aws-region="$region" --filter="$id")";
-              if [ "$OUTPUT" -ne "" ]; then
+              leftovers -d --iaas=aws --aws-region="$region" --filter="$id" | grep -v 'is not authorized to perform' | grep -v 'status code: 403' >> leftovers.output
+              OUTPUT="$(cat leftovers.output)"
+              if [ "$OUTPUT" != "" ]; then
                 echo "found some leftovers for $id in $region";
-                echo "please clean up with leftovers tool"
+                echo "please clean up with leftovers tool";
                 curl -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                   -d '{
                     "title": "Leftovers Found!",
                     "body": "Leftovers were found in ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} in region '"$region"' with id '"$id"'",
                     "labels": ["leftovers"]
                   }' \
-                  ${{ github.api_url }}/repos/${{ github.repository }}/issues
+                  ${{ github.api_url }}/repos/${{ github.repository }}/issues;
                 exit 1;
-              fi
+              fi;
             done;
           done;
