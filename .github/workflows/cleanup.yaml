@@ -71,27 +71,28 @@ jobs:
               >> leftovers.output
             return $?
           }
-
+          issue_body() {
+            local region="$1"
+            local id="$2"
+            local output="$3"
+            local url="$4"
+            found="Leftovers were found in region $region with id $id.\n"
+            tics='\n```\n'
+            BODY="$found $url $tics $output $tics"
+            return "$BODY"
+          }
           post_issue() {
             local id="$1"
             local region="$2"
             local output="$3"
             echo "found some leftovers for $id in $region"
             echo "please clean up with leftovers tool"
-            local issue_body
-            issue_body="$(
-            cat <<< "EOF"
-            Leftovers were found in region "$region" with id "$id"
-            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            \`\`\`
-            "$output"
-            \`\`\`
-            EOF
-            )";
+            local url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            body="$(issue_body "$region" "$id" "$output" "$url")"
             curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
               -d '{
                 "title": "Leftovers Found!",
-                "body": '"$issue_body"',
+                "body": '"$body"',
                 "labels": ["leftovers"]
               }' \
               ${{ github.api_url }}/repos/${{ github.repository }}/issues
