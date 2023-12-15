@@ -79,7 +79,7 @@ jobs:
             found="Leftovers were found in region $region with id $id.\n"
             tics='\n```\n'
             BODY="$found $url $tics $output $tics"
-            return "$BODY"
+            echo "$BODY"
           }
           post_issue() {
             local id="$1"
