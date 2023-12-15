@@ -76,10 +76,10 @@ jobs:
             local id="$2"
             local output="$3"
             local url="$4"
-            found="Leftovers were found in region $region with id $id.\n"
-            tics='\n```\n'
+            local found="Leftovers were found in region $region with id $id.\n"
+            local tics='\n```\n'
             BODY="$found $url $tics $output $tics"
-            echo "$BODY"
+            echo -n "$BODY"
           }
           post_issue() {
             local id="$1"
@@ -88,9 +88,9 @@ jobs:
             echo "found some leftovers for $id in $region"
             echo "please clean up with leftovers tool"
             local url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            echo '{"title":"Leftovers Found!","body":"' > data.json
+            echo -n '{"title":"Leftovers Found!","body":"' > data.json
             issue_body "$region" "$id" "$output" "$url" >> data.json
-            echo '","labels":["leftovers"]}' >> data.json
+            echo -n '","labels":["leftovers"]}' >> data.json
             cat data.json
             jq data.json
             curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -d @data.json "${{ github.api_url }}/repos/${{ github.repository }}/issues"
@@ -104,7 +104,7 @@ jobs:
           for id in $DATA; do
             for region in $REGIONS; do
               if check_leftovers "$id" "$region"; then
-                output="$(cat leftovers.output)";
+                output="$(awk '{printf "%s\\n", $0}' leftovers.output)";
                 post_issue "$id" "$region" "$output";
                 exit 1;
               fi
