@@ -89,10 +89,10 @@ jobs:
             echo "please clean up with leftovers tool"
             local url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             echo '{"title":"Leftovers Found!","body":"' > data.json
-            echo "$(issue_body "$region" "$id" "$output" "$url")" >> data.json
+            issue_body "$region" "$id" "$output" "$url" >> data.json
             echo '","labels":["leftovers"]}' >> data.json
             cat data.json
-            cat data.json | jq
+            jq data.json
             curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -d @data.json "${{ github.api_url }}/repos/${{ github.repository }}/issues"
           }
 
