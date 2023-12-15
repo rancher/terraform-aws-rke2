@@ -11,7 +11,7 @@ provider "aws" {
 
 locals {
   email    = "terraform-ci@suse.com"
-  name     = "tf-aws-rke2-basic-${substr(local.identifier, 0, 4)}" # id in name prevents ci collisions
+  name     = "tf-aws-rke2-basic-${substr(local.identifier, -4, -1)}" # id in name prevents ci collisions
   username = "tf-${local.identifier}"                              # WARNING: This must be less than 32 characters!
 
   # I don't normally recommend using variables in root modules, but this allows tests to supply their own key and rke2 version
