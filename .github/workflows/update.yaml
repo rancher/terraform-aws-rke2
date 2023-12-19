@@ -37,13 +37,12 @@ jobs:
             --keep GPG_SIGNING_KEY \
             --keep TERM \
             ${{ github.workspace }}
-      - run: echo -n "$GPG_SIGNING_KEY" | base64 --decode | gpg --import
-        env:
-          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
-      - name: Apply Updatecli
+      - name: Updatecli
         # Never use '--debug' option, because it might leak the access tokens.
-        run: "updatecli apply --clean --config ./updatecli/updatecli.d/ --values ./updatecli/values.yaml"
+        run: |
+          echo -n "${{ secrets.GPG_SIGNING_KEY }}" | base64 --decode | gpg --import
+          updatecli apply --clean --config ./updatecli/updatecli.d/ --values ./updatecli/values.yaml
         env:
           UPDATECLI_GITHUB_ACTOR: ${{ github.actor }}
           UPDATECLI_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          UPDATECLI_GPGTOKEN: ${{ secrets.GPG_SIGNING_KEY }}
+          UPDATECLI_GPGTOKEN: ${{ secrets.GPG_PUBLIC_KEY }}
