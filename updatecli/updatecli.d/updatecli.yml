@@ -21,7 +21,7 @@ scms:
       branch: main
       gpg:
         sign: true
-        signingKey: '{{ requiredEnv .github.gpgtoken }}'
+        signingKey: '{{ requiredEnv .github.gpg }}'
   go:
     kind: "github"
     spec:
