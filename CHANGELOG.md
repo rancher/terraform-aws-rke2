@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.13](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.12...v0.1.13) (2023-12-19)
+
+
+### Bug Fixes
+
+* updatecli should use a public key for a loaded private key ([#108](https://github.com/rancher/terraform-aws-rke2/issues/108)) ([eca825e](https://github.com/rancher/terraform-aws-rke2/commit/eca825e293497fb59e73edaed6e6a75aa245bda9))
+
 ## [0.1.12](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.11...v0.1.12) (2023-12-15)
 
 
