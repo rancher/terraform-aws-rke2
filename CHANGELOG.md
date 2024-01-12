@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.14](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.13...v0.1.14) (2024-01-12)
+
+
+### Bug Fixes
+
+* update the access module to 0.1.4 ([#111](https://github.com/rancher/terraform-aws-rke2/issues/111)) ([4bbf7a0](https://github.com/rancher/terraform-aws-rke2/commit/4bbf7a0a56a1136e3aa49ac0f5a7723294b8222c))
+* upgrade install, fix tests to deal with latest not stable ([#113](https://github.com/rancher/terraform-aws-rke2/issues/113)) ([2ae7005](https://github.com/rancher/terraform-aws-rke2/commit/2ae70050eac12365e369a322975acd67ebcf82a9))
+
 ## [0.1.13](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.12...v0.1.13) (2023-12-19)
 
 
