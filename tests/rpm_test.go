@@ -18,7 +18,7 @@ func TestRpm(t *testing.T) {
 	directory := "rpm"
 	region := "us-west-1" // this must match the region set in the example
 	owner := "terraform-ci@suse.com"
-	release := getLatestRelease(t, "rancher", "rke2")
+	release := "stable"
 	terraformVars := map[string]interface{}{
 		"rke2_version": release,
 	}
