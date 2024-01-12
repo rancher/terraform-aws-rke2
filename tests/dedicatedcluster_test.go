@@ -18,7 +18,7 @@ func TestDedicatedCluster(t *testing.T) {
 	directory := "dedicated"
 	region := "us-west-2"
 	owner := "terraform-ci@suse.com"
-	release := getLatestRelease(t, "rancher", "rke2")
+	release := "stable"
 	terraformVars := map[string]interface{}{
 		"rke2_version": release,
 	}

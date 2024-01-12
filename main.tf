@@ -27,7 +27,8 @@ locals {
   skip_download   = var.skip_download
   local_file_path = var.local_file_path
   # rke2
-  rke2_version        = var.rke2_version        # even when supplying your own files, please provide the release version to install
+  rke2_version        = var.rke2_version # even when supplying your own files, please provide the release version to install
+  rpm_channel         = var.rpm_channel
   role                = var.role                # this should be "server" or "agent", defaults to "server"
   remote_file_path    = var.remote_file_path    # this defaults to "/home/<username>/rke2"
   retrieve_kubeconfig = var.retrieve_kubeconfig # this defaults to false
@@ -130,8 +131,9 @@ module "install" {
     module.download,
   ]
   source              = "rancher/rke2-install/null"
-  version             = "v0.3.3"
+  version             = "v0.4.0"
   release             = local.rke2_version
+  rpm_channel         = local.rpm_channel
   local_file_path     = local.local_file_path
   remote_file_path    = local.remote_file_path
   remote_workspace    = module.aws_server.workfolder

@@ -18,7 +18,7 @@ func TestDevCluster(t *testing.T) {
 	directory := "devcluster"
 	region := "us-west-1"
 	owner := "terraform-ci@suse.com"
-	release := getLatestRelease(t, "rancher", "rke2")
+	release := "stable"
 	terraformVars := map[string]interface{}{
 		"rke2_version": release,
 	}

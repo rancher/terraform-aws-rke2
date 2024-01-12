@@ -204,6 +204,19 @@ variable "rke2_version" {
     This must match the tag name of the release you would like to install.
   EOT
 }
+variable "rpm_channel" {
+  type        = string
+  description = <<-EOT
+    The RPM channel for the rke2 version.
+    This should be 'stable', 'latest', or 'testing'.
+    If left empty, stable will be used.
+    Occassionally stable rpms do not exist for the rke2 version,
+      this will manifest as a 404 error on the download,
+      try setting this to 'latest' in that case.
+    If not setting the install_method to "rpm" then this can be ignored.
+  EOT
+  default     = ""
+}
 variable "remote_file_path" {
   type        = string
   description = <<-EOT
