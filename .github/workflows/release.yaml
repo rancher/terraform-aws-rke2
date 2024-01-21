@@ -40,7 +40,7 @@ jobs:
         if: steps.release-please.outputs.pr
       - run: sudo chmod 0755 /nix/store
         if: steps.release-please.outputs.pr
-      - uses: actions/cache/restore@v3
+      - uses: actions/cache/restore@v4
         id: cache-nix-restore
         if: steps.release-please.outputs.pr
         with:
@@ -66,7 +66,7 @@ jobs:
             --keep AWS_SESSION_TOKEN \
             --keep TERM \
             ${{ github.workspace }}
-      - uses: actions/cache/save@v3
+      - uses: actions/cache/save@v4
         id: cache-nix-save
         if: steps.release-please.outputs.pr
         with:
@@ -78,7 +78,7 @@ jobs:
           role-to-assume: ${{env.AWS_ROLE}}
           role-session-name: ${{github.job}}-${{github.run_id}}-${{github.run_number}}-${{github.run_attempt}}
           aws-region: ${{env.AWS_REGION}}
-      - uses: actions/cache/restore@v3
+      - uses: actions/cache/restore@v4
         id: cache-terraform-restore
         if: steps.release-please.outputs.pr
         with:
@@ -86,7 +86,7 @@ jobs:
           key: terraform-${{hashFiles('**/versions.tf','**/main.tf')}}
       - run: terraform init -upgrade
         if: steps.release-please.outputs.pr
-      - uses: actions/cache/save@v3
+      - uses: actions/cache/save@v4
         id: cache-terraform-save
         if: steps.release-please.outputs.pr
         with:

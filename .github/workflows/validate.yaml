@@ -29,13 +29,13 @@ jobs:
           --keep AWS_SESSION_TOKEN \
           --keep TERM \
           ${{ github.workspace }}
-    - uses: actions/cache/restore@v3
+    - uses: actions/cache/restore@v4
       id: cache-terraform-restore
       with:
         path: ${{ github.workspace }}/.terraform
         key: terraform
     - run: terraform init -upgrade
-    - uses: actions/cache/save@v3
+    - uses: actions/cache/save@v4
       id: cache-terraform-save
       with:
         path: ${{ github.workspace }}/.terraform
