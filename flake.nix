@@ -1,6 +1,8 @@
 {
+  # validate a flake with 'nix flake check .'
+  # alias the use of flakes with: "alias nix='nix --extra-experimental-features nix-command --extra-experimental-features flakes'"
+
   # WARNING! this is linux/mac only!
-  # tested on x86_64 MacBook Pro Sonoma and "ubuntu-latest" GitHub runner (linux x86_64)
   description = "A reliable testing environment";
 
   # https://status.nixos.org/ has the latest channels, it is recommended to use a commit hash
@@ -38,7 +40,7 @@
           };
           "aarch64-darwin"  = {
             "url" = "https://github.com/updatecli/updatecli/releases/download/${updatecli-version.selected}/updatecli_Darwin_arm64.tar.gz";
-            "sha" = "sha256-6dEz3DYrq+hQFVby6TmILWkMF3nL52mHcCoQtt5q6YM=";
+            "sha" = "sha256-5ctfz4DcHRmjImYzL9hgOaC9pyeYKQxkpdIAr3J1a6g=";
           };
           "x86_64-linux"    = {
             "url" = "https://github.com/updatecli/updatecli/releases/download/${updatecli-version.selected}/updatecli_Linux_x86_64.tar.gz";
@@ -70,7 +72,7 @@
           };
           "aarch64-darwin"  = {
             "url" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-darwin-arm64";
-            "sha" = "sha256-HV12kHqB14lGDm1rh9nD1n7Jvw0rCnxmjC9gusw7jfo=";
+            "sha" = "sha256-Tw7G538RYZrwIauN7kI68u6aKS4d/0Efh+dirL/kzoM=";
           };
           "x86_64-linux"    = {
             "url" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-linux-amd64";
@@ -87,33 +89,30 @@
         leftovers-wrapper = pkgs.writeShellScriptBin "leftovers" ''
           exec ${leftovers} "$@"
         '';
-
       in
       {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            act
             actionlint
             bashInteractive
             curl
             git
-            gnupg
-            go
+            go # need go for terratest
+            gnupg # need gpg for signing commits
             jq
             less
-            nix
-            openssh
+            openssh # need openssh for running remote provisioners
             shellcheck
             tflint
             tfswitch
+            vim
           ];
           shellHook = ''
-            # use tfswitch to create a terraform bin of the proper version and add it to the path
-            rm -rf "/usr/local/bin/switched-terraform";
-            install -d "/usr/local/bin/switched-terraform";
-            tfswitch -b "/usr/local/bin/switched-terraform/terraform" -d "1.5.7" 1.5.7 &>/dev/null;
-            export PATH="$PATH:${updatecli-wrapper}/bin:${leftovers-wrapper}/bin:/usr/local/bin/switched-terraform";
-            alias nix='nix --extra-experimental-features nix-command --extra-experimental-features flakes';
+            homebin=$HOME/bin;
+            install -d $homebin;
+            tfswitch -b $homebin/terraform 1.5.7 &>/dev/null;
+            export PATH="${updatecli-wrapper}/bin:${leftovers-wrapper}/bin:$homebin:$PATH";
+            export PS1="nix:# ";
           '';
         };
       }
