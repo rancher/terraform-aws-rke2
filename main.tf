@@ -63,7 +63,7 @@ resource "null_resource" "write_extra_config" {
 
 module "aws_access" {
   source              = "rancher/access/aws"
-  version             = "v0.1.4"
+  version             = "v1.0.0"
   owner               = local.owner
   vpc_name            = local.vpc_name
   vpc_cidr            = local.vpc_cidr
@@ -82,7 +82,7 @@ module "aws_server" {
     module.aws_access
   ]
   source              = "rancher/server/aws"
-  version             = "v0.1.1"
+  version             = "v0.1.2"
   name                = local.server_name
   owner               = local.owner
   type                = local.server_type # https://github.com/rancher/terraform-aws-server/blob/main/modules/server/types.tf
