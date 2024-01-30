@@ -41,7 +41,8 @@ jobs:
         # Never use '--debug' option, because it might leak the access tokens.
         run: |
           echo -n "${{ secrets.GPG_SIGNING_KEY }}" | base64 --decode | gpg --import
-          export UPDATECLI_GPGTOKEN="$(gpg --list-secret-keys --keyid-format=long 2>/dev/null | grep '^sec' | awk '{print $2}' | awk -F '/' '{print $2}')"
+          UPDATECLI_GPGTOKEN="$(gpg --list-secret-keys --keyid-format=long 2>/dev/null | grep '^sec' | awk '{print $2}' | awk -F '/' '{print $2}')"
+          export UPDATECLI_GPGTOKEN
           updatecli apply --clean --config ./updatecli/updatecli.d/ --values ./updatecli/values.yaml
         env:
           UPDATECLI_GITHUB_ACTOR: ${{ github.actor }}
