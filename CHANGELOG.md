@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.16](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.15...v0.1.16) (2024-01-30)
+
+
+### Bug Fixes
+
+* update yaml query and specify GPG token properly ([#119](https://github.com/rancher/terraform-aws-rke2/issues/119)) ([5e73cf7](https://github.com/rancher/terraform-aws-rke2/commit/5e73cf714d0423a4159f0bce39847167a5b66223))
+
 ## [0.1.15](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.14...v0.1.15) (2024-01-29)
 
 
