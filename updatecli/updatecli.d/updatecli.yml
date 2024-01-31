@@ -2,6 +2,8 @@
 # To test this:
 #   have "UPDATECLI_GITHUB_ACTOR" env set to your github username
 #   have "UPDATECLI_GITHUB_TOKEN" env set to your github token
+#   have a gpg agent running with a key loaded
+#   have "UPDATECLI_GPGTOKEN" env set to the id of the gpg key in your gpg agent
 #   have the latest version of updatecli installed
 #   'updatecli diff -v updatecli/values.yaml -c updatecli/updatecli.d/updatecli.yml'
 # In the future, more useful files should be added to this directory.

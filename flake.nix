@@ -97,6 +97,7 @@
             bashInteractive
             curl
             git
+            git-secrets
             go # need go for terratest
             gnupg # need gpg for signing commits
             jq
