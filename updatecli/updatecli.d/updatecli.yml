@@ -53,7 +53,7 @@ conditions:
     sourceid: goTag
     spec:
       file: "updatecli/validate.yml"
-      key: version
+      key: $.version
     failwhen: true #if set to true, continue to targets when condition is true rather than false
 
 # Validate the ability to generate branches, commits, what the commits look like, and what branches look like
@@ -68,7 +68,7 @@ targets:
     sourceid: goTag
     spec:
       file: "updatecli/validate.yml"
-      key: version
+      key: $.version
 
 # Validate generating a pull request
 actions:
