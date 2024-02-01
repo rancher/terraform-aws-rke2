@@ -40,12 +40,6 @@ jobs:
         if: steps.release-please.outputs.pr
       - run: sudo chmod 0755 /nix/store
         if: steps.release-please.outputs.pr
-      - uses: actions/cache/restore@v4
-        id: cache-nix-restore
-        if: steps.release-please.outputs.pr
-        with:
-          path: /nix/store
-          key: nix-${{ hashFiles('**/flake.lock') }}
       - uses: DeterminateSystems/nix-installer-action@main
         if: steps.release-please.outputs.pr
       - uses: nicknovitski/nix-develop@v1.1.0
@@ -64,14 +58,13 @@ jobs:
             --keep AWS_ACCESS_KEY_ID \
             --keep AWS_SECRET_ACCESS_KEY \
             --keep AWS_SESSION_TOKEN \
+            --keep UPDATECLI_GPGTOKEN \
+            --keep UPDATECLI_GITHUB_TOKEN \
+            --keep UPDATECLI_GITHUB_ACTOR \
+            --keep GPG_SIGNING_KEY \
+            --keep NIX_ENV_LOADED \
             --keep TERM \
             ${{ github.workspace }}
-      - uses: actions/cache/save@v4
-        id: cache-nix-save
-        if: steps.release-please.outputs.pr
-        with:
-          path: /nix/store
-          key: ${{ steps.cache-nix-restore.outputs.cache-primary-key }}
       - uses: aws-actions/configure-aws-credentials@v4
         if: steps.release-please.outputs.pr
         with:

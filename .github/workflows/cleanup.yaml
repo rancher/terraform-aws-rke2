@@ -37,6 +37,11 @@ jobs:
             --keep AWS_ACCESS_KEY_ID \
             --keep AWS_SECRET_ACCESS_KEY \
             --keep AWS_SESSION_TOKEN \
+            --keep UPDATECLI_GPGTOKEN \
+            --keep UPDATECLI_GITHUB_TOKEN \
+            --keep UPDATECLI_GITHUB_ACTOR \
+            --keep GPG_SIGNING_KEY \
+            --keep NIX_ENV_LOADED \
             --keep TERM \
             ${{ github.workspace }}
       - name: Get Ids
