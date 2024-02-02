@@ -47,11 +47,11 @@ jobs:
           gpg --list-secret-keys --keyid-format=long
 
           GPGTOKEN="$(gpg -q --list-secret-keys --keyid-format=long | grep 'no-reply@github.com>$' -B2 | grep '^sec'| awk '{print $2}' | awk -F '/' '{print $2}')"
-          GPGKEY="$(gpg --armor --export no-reply@github.com)"
+          #GPGKEY="$(gpg --armor --export no-reply@github.com)"
 
           git config --global user.name 'automation'
           git config --global user.email 'automation@users.noreply.github.com'
-          git config --global user.signingkey $GPGTOKEN
+          git config --global user.signingkey "$GPGTOKEN"
           git config --global commit.gpgsign true
 
           updatecli apply --clean --config ./updatecli/updatecli.d/ --values ./updatecli/values.yaml
