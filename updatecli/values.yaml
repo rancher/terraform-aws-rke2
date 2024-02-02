@@ -3,4 +3,5 @@ github:
   email: "41898282+github-actions[bot]@users.noreply.github.com"
   username: "UPDATECLI_GITHUB_ACTOR"
   token: "UPDATECLI_GITHUB_TOKEN"
-  gpg: "UPDATECLI_GPGTOKEN"
+  gpgtoken: "UPDATECLI_GPGTOKEN"
+  gpgkey: "UPDATECLI_GPGKEY"

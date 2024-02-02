@@ -45,8 +45,11 @@ jobs:
           echo -n "${{ secrets.GPG_SIGNING_KEY }}" | gpg --import
           gpg --list-secret-keys --keyid-format=long
           UPDATECLI_GPGTOKEN="$(gpg -q --list-secret-keys --keyid-format=long | grep 'no-reply@github.com>$' -B2 | grep '^sec'| awk '{print $2}' | awk -F '/' '{print $2}')"
+          UPDATECLI_GPGKEY="$(gpg --armor --export no-reply@github.com)"
           export UPDATECLI_GPGTOKEN
+          export UPDATECLI_GPGKEY
           echo "updatecli_gpgtoken is $UPDATECLI_GPGTOKEN"
+          echo "updatecli_gpgkey is $UPDATECLI_GPGKEY"
           updatecli apply --clean --config ./updatecli/updatecli.d/ --values ./updatecli/values.yaml
         env:
           UPDATECLI_GITHUB_ACTOR: ${{ github.actor }}
