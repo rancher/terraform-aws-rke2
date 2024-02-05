@@ -19,6 +19,21 @@ scms:
       owner: rancher
       repository: terraform-aws-rke2
       branch: main
+      gpg:
+        signingkey: |
+          -----BEGIN PGP PUBLIC KEY BLOCK-----
+          mDMEYitSPBYJKwYBBAHaRw8BAQdAR3mMGagDsa1P2HziXehsurCBw5ak58aNnfPP
+          uRQtcq60SlVwZGF0ZWNsaSBUZXN0aW5nIEtleSAoVXNlIGZvciB0ZXN0aW5nIGNv
+          bW1pdCBzaWduaW5nKSA8aW5mb0B1cGRhdGVjbGkuaW8+iI8EExYKADcWIQSfbrE/
+          jBl2/jyNP1zp/q0C4DwCsAUCYitSPAIbAwULCQgHAwQVCgkIBRYDAgEAAh4FAheA
+          AAoJEOn+rQLgPAKwbFwBALgzusdciqTZVvzTT/MG9Rtba6FPUUR/3pZn0t5mYrT4
+          AQDQjBipUNWOwQ6T7teBJuqZS2hFU6oMDv9cSzjNjrxQArg4BGIrUjwSCisGAQQB
+          l1UBBQEBB0CAKp9rGdo2JojPTnq/I2ZqPx8YydCTPDKQzRGv54bSDgMBCAeIeAQY
+          FgoAIBYhBJ9usT+MGXb+PI0/XOn+rQLgPAKwBQJiK1I8AhsMAAoJEOn+rQLgPAKw
+          fH0A/2ZmCpmuGN4grG8UJwAbCHzrbTuWV456R2k6+MxKMiDmAQD5pOgx+Xs0PXyz
+          rxOShppuh5wlhB0xMsx4iZJmRczPDQ==
+          =FiJF
+          -----END PGP PUBLIC KEY BLOCK-----
   go:
     kind: "github"
     spec:
