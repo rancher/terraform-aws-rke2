@@ -63,7 +63,7 @@ resource "null_resource" "write_extra_config" {
 
 module "aws_access" {
   source              = "rancher/access/aws"
-  version             = "v1.0.0"
+  version             = "1.0.1"
   owner               = local.owner
   vpc_name            = local.vpc_name
   vpc_cidr            = local.vpc_cidr
