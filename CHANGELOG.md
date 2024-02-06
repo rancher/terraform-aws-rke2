@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.17](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.16...v0.1.17) (2024-02-06)
+
+
+### Bug Fixes
+
+* add gitleaks and fix update workflow ([#122](https://github.com/rancher/terraform-aws-rke2/issues/122)) ([9ab8b27](https://github.com/rancher/terraform-aws-rke2/commit/9ab8b275a216057701b03e8b4eb4b67627070b99))
+* bump actions/cache from 3 to 4 ([#114](https://github.com/rancher/terraform-aws-rke2/issues/114)) ([7a5f17e](https://github.com/rancher/terraform-aws-rke2/commit/7a5f17ecb8a22ab93ad83453cc5d26e6d32415d2))
+* bump peter-evans/create-or-update-comment from 3 to 4 ([#116](https://github.com/rancher/terraform-aws-rke2/issues/116)) ([4d592d0](https://github.com/rancher/terraform-aws-rke2/commit/4d592d0406f836f7fb12dd403c820770c3768407))
+* pass gpg information through to updatecli ([#124](https://github.com/rancher/terraform-aws-rke2/issues/124)) ([9744a85](https://github.com/rancher/terraform-aws-rke2/commit/9744a85436fffae29598d753b6370b80ed947fb9))
+* update rancher/access/aws requirement from v1.0.0 to 1.0.1 ([#126](https://github.com/rancher/terraform-aws-rke2/issues/126)) ([5b36721](https://github.com/rancher/terraform-aws-rke2/commit/5b367212aa92efcc999c1546035f869ab0beea14))
+* upgrade mod patches ([#128](https://github.com/rancher/terraform-aws-rke2/issues/128)) ([b76ad5e](https://github.com/rancher/terraform-aws-rke2/commit/b76ad5ef59515c145bde7e59aa16b278566d212b))
+* use gpg key instead of token ([#123](https://github.com/rancher/terraform-aws-rke2/issues/123)) ([f8ebfff](https://github.com/rancher/terraform-aws-rke2/commit/f8ebfffc1e862a70776663188ed2b50007aa9b83))
+
 ## [0.1.16](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.15...v0.1.16) (2024-01-30)
 
 
