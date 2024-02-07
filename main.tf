@@ -63,12 +63,13 @@ resource "null_resource" "write_extra_config" {
 
 module "aws_access" {
   source              = "rancher/access/aws"
-  version             = "1.0.2"
+  version             = "v1.1.0"
   owner               = local.owner
   vpc_name            = local.vpc_name
   vpc_cidr            = local.vpc_cidr
   subnet_name         = local.subnet_name
   subnet_cidr         = local.subnet_cidr
+  subnet_public_ip    = true # always map a public ip to servers deployed using this mod, we need this to install
   availability_zone   = local.availability_zone
   security_group_name = local.security_group_name
   security_group_type = local.security_group_type # https://github.com/rancher/terraform-aws-access/blob/main/modules/security_group/types.tf
@@ -82,7 +83,7 @@ module "aws_server" {
     module.aws_access
   ]
   source              = "rancher/server/aws"
-  version             = "v0.1.3"
+  version             = "v0.2.0"
   name                = local.server_name
   owner               = local.owner
   type                = local.server_type # https://github.com/rancher/terraform-aws-server/blob/main/modules/server/types.tf
