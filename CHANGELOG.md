@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.18](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.17...v0.1.18) (2024-02-07)
+
+
+### Bug Fixes
+
+* update modules and add public ip flag ([#129](https://github.com/rancher/terraform-aws-rke2/issues/129)) ([59415f9](https://github.com/rancher/terraform-aws-rke2/commit/59415f9593ff4643af1c84ef2ca4d42dcd6d9722))
+
 ## [0.1.17](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.16...v0.1.17) (2024-02-06)
 
 
