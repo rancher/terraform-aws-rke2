@@ -105,7 +105,7 @@ module "config" {
     module.aws_server,
   ]
   source            = "rancher/rke2-config/local"
-  version           = "v0.1.1"
+  version           = "0.1.3"
   token             = local.join_token
   server            = local.join_url # should not be added to the initial server
   advertise-address = module.aws_server.private_ip
