@@ -119,7 +119,7 @@ module "config" {
 module "download" {
   count   = (local.skip_download == true ? 0 : 1)
   source  = "rancher/rke2-download/github"
-  version = "v0.1.0"
+  version = "0.1.1"
   release = local.rke2_version
   path    = local.local_file_path
 }
