@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.19](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.18...v0.1.19) (2024-02-13)
+
+
+### Bug Fixes
+
+* dont reboot during cloud-init ([#138](https://github.com/rancher/terraform-aws-rke2/issues/138)) ([2278091](https://github.com/rancher/terraform-aws-rke2/commit/2278091d6cdbc1292887e8d797aed99e77f87c9e))
+* set tf req and update mods ([#136](https://github.com/rancher/terraform-aws-rke2/issues/136)) ([e778143](https://github.com/rancher/terraform-aws-rke2/commit/e778143ce4dc4d2d66521f12a8fd93ea2b9ff439))
+
 ## [0.1.18](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.17...v0.1.18) (2024-02-07)
 
 
