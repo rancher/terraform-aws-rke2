@@ -63,13 +63,12 @@ resource "null_resource" "write_extra_config" {
 
 module "aws_access" {
   source              = "rancher/access/aws"
-  version             = "v1.1.0"
+  version             = "v1.1.1"
   owner               = local.owner
   vpc_name            = local.vpc_name
   vpc_cidr            = local.vpc_cidr
   subnet_name         = local.subnet_name
   subnet_cidr         = local.subnet_cidr
-  subnet_public_ip    = true # always map a public ip to servers deployed using this mod, we need this to install
   availability_zone   = local.availability_zone
   security_group_name = local.security_group_name
   security_group_type = local.security_group_type # https://github.com/rancher/terraform-aws-access/blob/main/modules/security_group/types.tf
@@ -83,7 +82,7 @@ module "aws_server" {
     module.aws_access
   ]
   source              = "rancher/server/aws"
-  version             = "v0.2.0"
+  version             = "v0.3.0"
   name                = local.server_name
   owner               = local.owner
   type                = local.server_type # https://github.com/rancher/terraform-aws-server/blob/main/modules/server/types.tf
@@ -95,6 +94,7 @@ module "aws_server" {
   security_group_name = local.security_group_name # derive this from local values rather than the module to avoid dependency issues
   cloudinit_script    = local.server_cloudinit_script
   cloudinit_timeout   = local.server_cloudinit_timeout
+  add_public_ip       = true # we need a public ip to login and install rke2, if looking for something to just boot a preconfigured image, try using the server mod directly
 }
 
 # the idea here is to provide the least amount of config necessary to get a cluster up and running
@@ -105,7 +105,7 @@ module "config" {
     module.aws_server,
   ]
   source            = "rancher/rke2-config/local"
-  version           = "v0.1.1"
+  version           = "v0.1.3"
   token             = local.join_token
   server            = local.join_url # should not be added to the initial server
   advertise-address = module.aws_server.private_ip
@@ -119,7 +119,7 @@ module "config" {
 module "download" {
   count   = (local.skip_download == true ? 0 : 1)
   source  = "rancher/rke2-download/github"
-  version = "v0.1.0"
+  version = "v0.1.1"
   release = local.rke2_version
   path    = local.local_file_path
 }
@@ -132,7 +132,7 @@ module "install" {
     module.download,
   ]
   source              = "rancher/rke2-install/null"
-  version             = "v0.4.0"
+  version             = "v1.0.2"
   release             = local.rke2_version
   rpm_channel         = local.rpm_channel
   local_file_path     = local.local_file_path
