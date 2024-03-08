@@ -11,9 +11,8 @@ provider "aws" {
 }
 
 locals {
-  owner        = "terraform-ci@suse.com" # put your email here
-  ssh_key_name = var.ssh_key_name        # this must already exist in AWS, it must have a tag with 'Name' = <this value>
   # ssh_key_content       = file(var.ssh_key_path) # if you want the module to create the keypair object in AWS for you, specify the contents of the public key like this
+  ssh_key_name         = var.ssh_key_name # this must already exist in AWS, it must have a tag with 'Name' = <this value>
   rke2_version         = var.rke2_version # the exact release tag, eg. v1.28.2+rke2r1
   identifier           = var.identifier   # simple random string to identify resources
   email                = "terraform-ci@suse.com"
