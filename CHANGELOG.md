@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.20](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.19...v0.1.20) (2024-03-09)
+
+
+### Bug Fixes
+
+* Update mods ([#141](https://github.com/rancher/terraform-aws-rke2/issues/141)) ([2e14c9e](https://github.com/rancher/terraform-aws-rke2/commit/2e14c9e02eb416c4fbe791e344a51f4483df4423))
+* use zipmap to avoid ambiguous map ([#143](https://github.com/rancher/terraform-aws-rke2/issues/143)) ([13389d9](https://github.com/rancher/terraform-aws-rke2/commit/13389d9c1a7906abef249782c090291756a60ca8))
+
 ## [0.1.19](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.18...v0.1.19) (2024-02-13)
 
 
