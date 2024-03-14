@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.22](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.21...v0.1.22) (2024-03-14)
+
+
+### Bug Fixes
+
+* upgrade to the latest server mod ([#146](https://github.com/rancher/terraform-aws-rke2/issues/146)) ([d162bed](https://github.com/rancher/terraform-aws-rke2/commit/d162bed9c36d29108bea86c23a0f8fa0266bd31f))
+
 ## [0.1.21](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.20...v0.1.21) (2024-03-14)
 
 
