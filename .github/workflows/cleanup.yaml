@@ -20,31 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-      - uses: nicknovitski/nix-develop@v1.1.0
-        with:
-          arguments: |
-            --ignore-environment \
-            --extra-experimental-features nix-command \
-            --extra-experimental-features flakes \
-            --keep HOME \
-            --keep SSH_AUTH_SOCK \
-            --keep GITHUB_TOKEN \
-            --keep AWS_ROLE \
-            --keep AWS_REGION \
-            --keep AWS_DEFAULT_REGION \
-            --keep AWS_ACCESS_KEY_ID \
-            --keep AWS_SECRET_ACCESS_KEY \
-            --keep AWS_SESSION_TOKEN \
-            --keep UPDATECLI_GPGTOKEN \
-            --keep UPDATECLI_GITHUB_TOKEN \
-            --keep UPDATECLI_GITHUB_ACTOR \
-            --keep GPG_SIGNING_KEY \
-            --keep NIX_ENV_LOADED \
-            --keep TERM \
-            ${{ github.workspace }}
+      - uses: matttrach/nix-installer-action@main
       - name: Get Ids
+        shell: 'nix develop --ignore-environment --extra-experimental-features nix-command --extra-experimental-features flakes --keep HOME --keep SSH_AUTH_SOCK --keep GITHUB_TOKEN --keep ZONE --keep AWS_ROLE --keep AWS_REGION --keep AWS_DEFAULT_REGION --keep AWS_ACCESS_KEY_ID --keep AWS_SECRET_ACCESS_KEY --keep AWS_SESSION_TOKEN --keep UPDATECLI_GPGTOKEN --keep UPDATECLI_GITHUB_TOKEN --keep UPDATECLI_GITHUB_ACTOR --keep GPG_SIGNING_KEY --keep NIX_ENV_LOADED --keep TERM --command bash -e {0}'
         id: get_ids
         # 86400 = 24 hours in seconds (24 * 60 * 60)
         # you might increase this number if you need to look back further for leftovers
@@ -66,6 +44,7 @@ jobs:
       # WARNING! if '--filter=""' then you will find everything in a region
       # WARNING! if '-d' is missing you will delete everything that is found
       - name: find-leftovers
+        shell: 'nix develop --ignore-environment --extra-experimental-features nix-command --extra-experimental-features flakes --keep HOME --keep SSH_AUTH_SOCK --keep GITHUB_TOKEN --keep ZONE --keep AWS_ROLE --keep AWS_REGION --keep AWS_DEFAULT_REGION --keep AWS_ACCESS_KEY_ID --keep AWS_SECRET_ACCESS_KEY --keep AWS_SESSION_TOKEN --keep UPDATECLI_GPGTOKEN --keep UPDATECLI_GITHUB_TOKEN --keep UPDATECLI_GITHUB_ACTOR --keep GPG_SIGNING_KEY --keep NIX_ENV_LOADED --keep TERM --command bash -e {0}'
         run: |
           check_leftovers() {
             local id="$1"
