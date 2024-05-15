@@ -58,6 +58,7 @@
               gotestfmt
               gotestsum
               jq
+              kubectl
               leftovers
               less
               openssh

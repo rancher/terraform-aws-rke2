@@ -21,6 +21,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: matttrach/nix-installer-action@main
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{env.AWS_ROLE}}
+          role-session-name: ${{github.job}}-${{github.run_id}}-${{github.run_number}}-${{github.run_attempt}}
+          aws-region: ${{env.AWS_REGION}}
       - name: Get Ids
         shell: 'nix develop --ignore-environment --extra-experimental-features nix-command --extra-experimental-features flakes --keep HOME --keep SSH_AUTH_SOCK --keep GITHUB_TOKEN --keep ZONE --keep AWS_ROLE --keep AWS_REGION --keep AWS_DEFAULT_REGION --keep AWS_ACCESS_KEY_ID --keep AWS_SECRET_ACCESS_KEY --keep AWS_SESSION_TOKEN --keep UPDATECLI_GPGTOKEN --keep UPDATECLI_GITHUB_TOKEN --keep UPDATECLI_GITHUB_ACTOR --keep GPG_SIGNING_KEY --keep NIX_ENV_LOADED --keep TERM --command bash -e {0}'
         id: get_ids
@@ -35,11 +40,6 @@ jobs:
             | jq -R -s -c 'split("\n")[:-1]' \
           )"
           echo ids="$DATA" >> "$GITHUB_OUTPUT"
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{env.AWS_ROLE}}
-          role-session-name: ${{github.job}}-${{github.run_id}}-${{github.run_number}}-${{github.run_attempt}}
-          aws-region: ${{env.AWS_REGION}}
       # rather than actually delete things, it errors and notifies so that you can run leftovers interactively
       # WARNING! if '--filter=""' then you will find everything in a region
       # WARNING! if '-d' is missing you will delete everything that is found

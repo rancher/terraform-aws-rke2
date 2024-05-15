@@ -11,6 +11,9 @@ git_status() {
       fi
     fi
 }
+get_repo_basename() {
+  basename "$(git rev-parse --show-toplevel)"
+}
 
 get_repo_owner() {
   REPO="$(basename "$(git rev-parse --show-toplevel)")"
@@ -175,6 +178,10 @@ reset_state() {
   cd "$dir" || return;
 }
 
+ts(){
+  stty cols 450
+}
+
 set_terminal_size(){
   row="$1"
   col="$2"
@@ -196,20 +203,26 @@ run_tests() {
   if [ -d "./tests" ]; then
     cd tests
   fi
-  cat <<'EOF'> /tmp/terraform-aws-server-test-processor
+  echo "" > /tmp/terraform-aws-rke2-test.log
+  cat <<'EOF'> /tmp/terraform-aws-rke2-test-processor
 echo "Passed: "
-cat /tmp/terraform-aws-server-test.log | jq -r '. | select(.Action == "pass") | select(.Test != null).Test'
+cat /tmp/terraform-aws-rke2-test.log | jq -r '. | select(.Action == "pass") | select(.Test != null).Test'
 echo " "
 echo "Failed: "
-cat /tmp/terraform-aws-server-test.log | jq -r '. | select(.Action == "fail") | select(.Test != null).Test'
+FAILED_TESTS="$(jq -r '. | select(.Action == "fail") | select(.Test != null).Test' /tmp/terraform-aws-rke2-test.log)"
+for TEST in $FAILED_TESTS; do
+  echo "$TEST"
+  jq --arg TEST "$TEST" -r 'select(.Test == $TEST) | select(.Output != null) | select(.Output | contains("Error")).Output' /tmp/terraform-aws-rke2-test.log | grep -v '^$'
+  echo " "
+done
 echo " "
 EOF
-  chmod +x /tmp/terraform-aws-server-test-processor
+  chmod +x /tmp/terraform-aws-rke2-test-processor
 
   gotestsum \
     --format=standard-verbose \
-    --jsonfile /tmp/terraform-aws-server-test.log \
-    --post-run-command "bash /tmp/terraform-aws-server-test-processor" \
+    --jsonfile /tmp/terraform-aws-rke2-test.log \
+    --post-run-command "bash /tmp/terraform-aws-rke2-test-processor" \
     -- \
     -parallel=10 \
     -timeout=80m \
@@ -219,8 +232,10 @@ EOF
 }
 
 get_leftovers() {
-  id=$1
+  reg=$1
+  id=$2
   for region in us-west-1 us-west-2 us-east-1 us-east-2; do
+    if [ -n "$reg" && "$region" != "$reg" ]; then continue; fi
     echo "leftovers in $region:"
     if [ -n "$id" ]; then
       leftovers -d --iaas=aws --aws-region="$region" --filter="$id";
