@@ -48,3 +48,8 @@ variable "ingress_controller" {
   description = "The ingress controller to use. Must be 'nginx' or 'traefik'."
   default     = "nginx"
 }
+variable "cluster_size" {
+  type        = number
+  description = "The number of nodes to create."
+  default     = 3
+}

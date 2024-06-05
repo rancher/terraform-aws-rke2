@@ -382,17 +382,14 @@ variable "server_image" {
 }
 
 variable "server_image_type" {
-  type        = string
+  type = string
+  # NOTE: te image list is specific to supported image types for all install types (rpm and tar)
   description = <<-EOT
     The designation of server "image" from the ./image/types.tf file, this relates the AWS AMI information.
     Please be aware that some images require a subscription and will have additional cost over usage of the server.
     Current images are:
         "sles-15",
-        "sles-15-byos",
-        "sles-15-cis",
-        "sle-micro-55-llc",
-        "sle-micro-55-ltd",
-        "sle-micro-55-byos",
+        "sle-micro-55",
         "rhel-8-cis",
         "ubuntu-20",
         "ubuntu-22",
@@ -405,11 +402,7 @@ variable "server_image_type" {
     condition = (
       var.server_image_type == "" ? true : contains([
         "sles-15",
-        "sles-15-byos",
-        "sles-15-cis",
-        "sle-micro-55-llc",
-        "sle-micro-55-ltd",
-        "sle-micro-55-byos",
+        "sle-micro-55",
         "rhel-8-cis",
         "ubuntu-20",
         "ubuntu-22",
@@ -422,11 +415,7 @@ variable "server_image_type" {
     error_message = <<-EOT
       If specified, this must be one of
         "sles-15",
-        "sles-15-byos",
-        "sles-15-cis",
-        "sle-micro-55-llc",
-        "sle-micro-55-ltd",
-        "sle-micro-55-byos",
+        "sle-micro-55",
         "rhel-8-cis",
         "ubuntu-20",
         "ubuntu-22",
@@ -436,7 +425,7 @@ variable "server_image_type" {
         "rhel-9"
     EOT
   }
-  default = "sle-micro-55-byos"
+  default = "sle-micro-55"
 }
 
 variable "server_cloudinit_use_strategy" {
@@ -737,6 +726,16 @@ variable "install_remote_file_path" {
   EOT
   default     = ""
 }
+variable "install_prep_script" {
+  type        = string
+  description = <<-EOT
+    The contents of a script to run on the server before installing RKE2.
+    This is helpful when you need to install packages or configure the server before installing RKE2.
+    Such as installing selinux policies before using the rpm install method.
+    This script will be run as root.
+  EOT
+  default     = ""
+}
 variable "install_start_prep_script" {
   type        = string
   description = <<-EOT
@@ -821,6 +820,25 @@ variable "config_supplied_name" {
     Please see https://docs.rke2.io/install/configuration#multiple-config-files for more information.
   EOT
   default     = "51-rke2-config.yaml"
+}
+variable "config_join_url" {
+  type        = string
+  description = <<-EOT
+    When config_use_strategy is 'default' or 'merge',
+    if this is set, a line will be added to the config pointing to this server as the server to join.
+    If this isn't set then the server url will not be set automatically in the config and it will start a new cluster.
+    example value: https://192.168.0.1:9345 or https://initial.server.domain:9345
+  EOT
+  default     = ""
+}
+variable "config_join_token" {
+  type        = string
+  description = <<-EOT
+    When config_use_strategy is 'default' or 'merge',
+    if this is set, a line will be added to the config with this join token.
+    If this isn't set, then a line will be added to the config with a random join token.
+  EOT
+  default     = ""
 }
 
 #####

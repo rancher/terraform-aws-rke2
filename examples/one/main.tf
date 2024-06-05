@@ -8,22 +8,36 @@ provider "aws" {
 }
 
 locals {
-  identifier   = var.identifier # this is a random unique string that can be used to identify resources in the cloud provider
-  email        = "terraform-ci@suse.com"
-  example      = "allinone"
-  project_name = "tf-${substr(md5(join("-", [local.example, local.identifier])), 0, 5)}"
-  username     = "tf-${local.identifier}"
-  vpc_cidr     = "10.0.255.0/24"   # gives 256 usable addresses from .1 to .254, but AWS reserves .1 to .4 and .255, leaving .5 to .254
-  subnet_cidr  = "10.0.255.224/28" # gives 18 usable addresses from .225 to .238, but AWS reserves .225 to .228 and .238, leaving .229 to .237
-  server_ip    = "10.0.255.229"
-  runner_ip    = chomp(data.http.myip.response_body)
-  ssh_key      = var.key
-  ssh_key_name = var.key_name
-  zone         = var.zone
-  rke2_version = var.rke2_version
-  image        = var.os
+  identifier         = var.identifier # this is a random unique string that can be used to identify resources in the cloud provider
+  email              = "terraform-ci@suse.com"
+  example            = "one"
+  project_name       = "tf-${substr(md5(join("-", [local.example, local.identifier])), 0, 5)}"
+  username           = "tf-${local.identifier}"
+  ip_family          = var.ip_family          # not currently in use, TODO: add dualstack functionality
+  ingress_controller = var.ingress_controller # not currently in use, TODO: add traefik functionality
+  vpc_cidr           = "10.0.0.0/16"
+  subnet_cidr        = cidrsubnet(local.vpc_cidr, 1, 0)    # get the first subnet when dividing the vpc_cidr into 2 /17 subnets
+  server_ip          = cidrhost(local.subnet_cidr, 5)      # AWS reserves the first 4 usable addresses
+  runner_ip          = chomp(data.http.myip.response_body) # "runner" is the server running Terraform
+  ssh_key            = var.key
+  ssh_key_name       = var.key_name
+  zone               = var.zone
+  rke2_version       = var.rke2_version
+  image              = var.os
+  install_method     = var.install_method
+  install_prep_script = (
+    strcontains(local.image, "sles-15") ? file("${path.root}/suse_prep.sh") :
+    (strcontains(local.image, "ubuntu") ? file("${path.root}/ubuntu_prep.sh") :
+      (strcontains(local.image, "rhel") ? file("${path.root}/rhel_prep.sh") :
+  "")))
+  download     = (local.install_method == "tar" ? "download" : "skip")
+  cni          = var.cni
+  config_strat = (local.cni == "canal" ? "default" : "merge")
+  cni_file     = (local.cni == "cilium" ? "${path.root}/cilium.yaml" : (local.cni == "calico" ? "${path.root}/calico.yaml" : ""))
+  cni_config   = (local.cni_file != "" ? file(local.cni_file) : "")
   # WARNING! Local file path needs to be isolated, don't use the same path as your terraform files
-  local_file_path = (var.file_path != "" ? var.file_path : "${abspath(path.root)}/rke2")
+  local_file_path = (var.file_path != "" ? (var.file_path == path.root ? "${abspath(path.root)}/rke2" : var.file_path) : "${abspath(path.root)}/rke2")
+  workfolder      = (strcontains(local.image, "cis") ? "/var/tmp" : "/home/${local.username}")
 }
 
 data "http" "myip" {
@@ -57,7 +71,7 @@ module "this" {
   }
   project_security_group_use_strategy = "create"
   project_security_group_name         = "${local.project_name}-sg"
-  project_security_group_type         = "project"
+  project_security_group_type         = (local.install_method == "rpm" ? "egress" : "project") # rpm install requires downloading dependencies
   project_load_balancer_use_strategy  = "create"
   project_load_balancer_name          = "${local.project_name}-lb"
   project_load_balancer_access_cidrs = {
@@ -101,30 +115,26 @@ module "this" {
     aws_keypair_use_strategy = "select"
     ssh_key_name             = local.ssh_key_name
     public_ssh_key           = local.ssh_key
-    user_workfolder          = "/home/${local.username}"
+    user_workfolder          = local.workfolder
     timeout                  = 5
   }
-  server_add_domain         = true
-  server_domain_name        = "${local.project_name}-${random_pet.server.id}.${local.zone}"
-  server_domain_zone        = local.zone
-  server_add_eip            = false
-  install_use_strategy      = "tar"
-  local_file_use_strategy   = "download"
-  local_file_path           = local.local_file_path
-  install_rke2_version      = local.rke2_version
-  install_rpm_channel       = "stable"
-  install_remote_file_path  = "/home/${local.username}/rke2"
-  install_role              = "server"
-  install_start             = true
-  install_start_prep_script = file("${path.root}/prep.sh")
-  install_start_timeout     = 5
-  config_use_strategy       = "default"
-  config_default_name       = "50-default-config.yaml"
-  retrieve_kubeconfig       = true
-}
-data "local_sensitive_file" "kubeconfig" {
-  depends_on = [
-    module.this,
-  ]
-  filename = "${local.local_file_path}/kubeconfig"
+  server_add_domain        = true
+  server_domain_name       = "${local.project_name}-${random_pet.server.id}.${local.zone}"
+  server_domain_zone       = local.zone
+  server_add_eip           = false
+  install_use_strategy     = local.install_method
+  local_file_use_strategy  = local.download
+  local_file_path          = local.local_file_path
+  install_rke2_version     = local.rke2_version
+  install_rpm_channel      = "stable"
+  install_remote_file_path = "${local.workfolder}/rke2"
+  install_role             = "server"
+  install_start            = true
+  install_prep_script      = local.install_prep_script
+  install_start_timeout    = 5
+  config_use_strategy      = local.config_strat
+  config_default_name      = "50-default-config.yaml"
+  config_supplied_content  = local.cni_config
+  config_supplied_name     = "51-cni-config.yaml"
+  retrieve_kubeconfig      = true
 }

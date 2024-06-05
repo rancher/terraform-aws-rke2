@@ -27,15 +27,20 @@ notReady() {
 }
 
 TIMEOUT=5 # 5 minutes
+TIMEOUT_MINUTES=$((TIMEOUT * 60))
 INTERVAL=10 # 10 seconds
-START_TIME=$(date +%s)
-END_TIME=$((start_time + TIMEOUT * 60))
+MAX=$((TIMEOUT_MINUTES / INTERVAL))
+INDEX=0
 
 while notReady; do
-  if [[ $(date +%s) < $END_TIME ]]; then
+  if [[ $INDEX -lt $MAX ]]; then
+    echo "Waiting for nodes to be ready..."
+    INDEX=$((INDEX + 1))
     sleep $INTERVAL;
   else
-    kubectl get nodes -o jsonpath="$JSONPATH" || true
+    echo "Timeout reached. Nodes are not ready..."
+    kubectl get nodes || true
+    kubectl get all -A
     exit 1
   fi
 done

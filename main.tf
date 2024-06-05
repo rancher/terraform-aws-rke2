@@ -96,6 +96,7 @@ locals {
   install_rke2_version      = var.install_rke2_version
   install_rpm_channel       = var.install_rpm_channel
   install_remote_file_path  = var.install_remote_file_path
+  install_prep_script       = var.install_prep_script
   install_start_prep_script = var.install_start_prep_script
   install_role              = var.install_role
   install_start             = var.install_start
@@ -108,11 +109,23 @@ locals {
   config_supplied_name    = var.config_supplied_name
   config_supplied_content = var.config_supplied_content
   retrieve_kubeconfig     = var.retrieve_kubeconfig # this defaults to false
-  join_token              = (local.config_supplied_content == "" ? random_uuid.join_token.result : yamldecode(local.config_supplied_content).join_token)
-  join_url                = ""
+  config_join_url         = var.config_join_url
+  config_join_token       = var.config_join_token
+
+  join_token = (local.config_mod == 1 ?
+    (
+      local.config_join_token != "" ? local.config_join_token : # if the user supplied a token, use it
+      (
+        can(yamldecode(local.config_supplied_content).token) ? # if the user supplied a config with a join_token
+        yamldecode(local.config_supplied_content).token :      # use the token from the config
+        random_uuid.join_token.result                          # fall back to the random uuid
+      )
+    ) : "" # leave empty if the config_mod isn't used
+  )
+
   install_identifier = md5(join("-", [
     # if any of these things change, redeploy rke2
-    module.server.server[0].id,
+    module.server[0].server.id,
     local.install_rke2_version,
     local.install_start_prep_script,
     local.install_role,
@@ -122,7 +135,7 @@ locals {
 module "project" {
   count                       = local.project_mod
   source                      = "rancher/access/aws"
-  version                     = "v2.2.0"
+  version                     = "v2.2.1"
   vpc_use_strategy            = local.project_vpc_use_strategy
   vpc_name                    = local.project_vpc_name
   vpc_cidr                    = local.project_vpc_cidr
@@ -139,11 +152,10 @@ module "project" {
 }
 
 module "server" {
-  depends_on = [
-    module.project
-  ]
+  count                        = local.server_mod
+  depends_on                   = [module.project]
   source                       = "rancher/server/aws"
-  version                      = "v1.0.0"
+  version                      = "v1.0.3"
   server_use_strategy          = local.server_use_strategy
   server_id                    = local.server_id
   server_name                  = local.server_name
@@ -169,28 +181,54 @@ module "server" {
 
 resource "random_uuid" "join_token" {
   keepers = {
-    server = module.server.server[0].id
+    server = module.server[0].server.id
   }
 }
 
 # the idea here is to provide the least amount of config necessary to get a cluster up and running
 # if a user wants to provide their own config, they can put it in the local_file_path or supply it as a string
-module "default_config" {
-  count = local.config_mod
+module "default_config_initial" {
+  count = (local.config_join_url == "" ? local.config_mod : 0)
   depends_on = [
     module.project,
     module.server,
   ]
-  source  = "rancher/rke2-config/local"
-  version = "v0.1.3"
-  token   = local.join_token
-  #server            = "https://${module.server.server[0].private_ip}:9345"
-  advertise-address = module.server.server[0].private_ip
-  tls-san           = compact([(can(module.server.server[0].public_ip) ? module.server.server[0].public_ip : ""), module.server.server[0].private_ip])
-  node-external-ip  = [(can(module.server.server[0].public_ip) ? module.server.server[0].public_ip : module.server.server[0].private_ip)]
-  node-ip           = [module.server.server[0].private_ip]
-  local_file_path   = local.local_file_path
-  local_file_name   = local.config_default_name
+  source            = "rancher/rke2-config/local"
+  version           = "v0.1.3"
+  token             = local.join_token
+  advertise-address = module.server[0].server.private_ip
+  tls-san = compact([
+    local.server_domain_name,
+    local.project_domain,
+    module.server[0].server.private_ip,
+    (can(module.server[0].server.public_ip) ? module.server[0].server.public_ip : ""),
+  ])
+  node-external-ip = [(can(module.server[0].server.public_ip) ? module.server[0].server.public_ip : module.server[0].server.private_ip)]
+  node-ip          = [module.server[0].server.private_ip]
+  local_file_path  = local.local_file_path
+  local_file_name  = local.config_default_name
+}
+module "default_config_additional" {
+  count = (local.config_join_url != "" ? local.config_mod : 0)
+  depends_on = [
+    module.project,
+    module.server,
+  ]
+  source            = "rancher/rke2-config/local"
+  version           = "v0.1.3"
+  token             = local.join_token
+  server            = local.config_join_url
+  advertise-address = module.server[0].server.private_ip
+  tls-san = compact([
+    local.server_domain_name,
+    local.project_domain,
+    module.server[0].server.private_ip,
+    (can(module.server[0].server.public_ip) ? module.server[0].server.public_ip : ""),
+  ])
+  node-external-ip = [(can(module.server[0].server.public_ip) ? module.server[0].server.public_ip : module.server[0].server.private_ip)]
+  node-ip          = [module.server[0].server.private_ip]
+  local_file_path  = local.local_file_path
+  local_file_name  = local.config_default_name
 }
 
 module "download" {
@@ -224,23 +262,25 @@ module "install" {
   depends_on = [
     module.project,
     module.server,
-    module.default_config,
+    module.default_config_initial,
+    module.default_config_additional,
     module.download,
   ]
-  source              = "rancher/rke2-install/null"
-  version             = "v1.0.10"
-  release             = local.install_rke2_version
-  rpm_channel         = local.install_rpm_channel
-  local_file_path     = local.local_file_path
-  remote_file_path    = local.install_remote_file_path
-  remote_workspace    = module.server.image[0].workfolder
-  ssh_ip              = module.server.server[0].public_ip
-  ssh_user            = local.server_user.user
-  role                = local.install_role
-  retrieve_kubeconfig = local.retrieve_kubeconfig
-  install_method      = local.install_use_strategy
-  server_prep_script  = local.install_start_prep_script
-  start               = local.install_start
-  start_timeout       = local.install_start_timeout
-  identifier          = local.install_identifier
+  source                     = "rancher/rke2-install/null"
+  version                    = "v1.1.6"
+  release                    = local.install_rke2_version
+  rpm_channel                = local.install_rpm_channel
+  local_file_path            = local.local_file_path
+  remote_file_path           = local.install_remote_file_path
+  remote_workspace           = module.server[0].image.workfolder
+  ssh_ip                     = module.server[0].server.public_ip
+  ssh_user                   = local.server_user.user
+  role                       = local.install_role
+  retrieve_kubeconfig        = local.retrieve_kubeconfig
+  install_method             = local.install_use_strategy
+  server_prep_script         = local.install_start_prep_script
+  server_install_prep_script = local.install_prep_script
+  start                      = local.install_start
+  start_timeout              = local.install_start_timeout
+  identifier                 = local.install_identifier
 }
