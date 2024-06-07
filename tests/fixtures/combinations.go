@@ -78,7 +78,7 @@ func getCombos(data map[string][]string, indexes []map[string]int, keys []string
 }
 
 func getData() (map[string][]string, []string, error){
-  fixtures         := []string{"one", "ha", "splitRole"}
+  fixtures         := []string{"one", "ha", "splitrole"} // these must match the example directory names
   installTypes     := []string{"rpm", "tar"}
   cni              := []string{"canal", "calico", "cilium"}
   operatingSystems := []string{
@@ -92,7 +92,7 @@ func getData() (map[string][]string, []string, error){
     "rhel-9",
     "rhel-8",
   }
-  ipFamilies         := []string{"ipv4", "ipv6", "dualstack"} // can one of these combine? ipv4/dualstack or dualstack/ipv6
+  ipFamilies         := []string{"ipv4", "ipv6", "dualstack"}
   ingressControllers := []string{"nginx","traefik"}
 
   releases, err := GetReleases()
@@ -100,7 +100,7 @@ func getData() (map[string][]string, []string, error){
 		return nil, nil, err
 	}
   if len(releases) == 0 {
-    err := errors.New("No releases found!")
+    err := errors.New("no releases found")
     return nil, nil, err
   }
 

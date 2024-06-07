@@ -17,7 +17,7 @@ locals {
   cluster_size        = local.server_count + local.agent_count
   identifier          = var.identifier                                        # put a unique identifier here
   prefix              = "tf-aws-rke2-ded-${substr(local.identifier, -4, -1)}" # this can be anything you want, it makes it marginally easier to find in AWS
-  username            = "tf-${local.identifier}"                              # WARNING: This must be less than 32 characters!
+  username            = lower(substr("tf-${local.identifier}", 0, 32))        # WARNING: This must be less than 32 characters!
   rke2_version        = var.rke2_version                                      # put your rke2 version here, must be a valid tag name like v1.21.6+rke2r1
   server_config       = "${abspath(path.root)}/configs/51-server.yaml"        # put the path to your server config here, a default config named 50-generated-initial-config.yaml will manage joining for you
   agent_config        = "${abspath(path.root)}/configs/51-agent.yaml"         # put the path to your agent config here, a default config named 50-generated-initial-config.yaml will manage joining for you

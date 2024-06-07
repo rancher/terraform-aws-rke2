@@ -17,7 +17,7 @@ locals {
   identifier           = var.identifier   # simple random string to identify resources
   email                = "terraform-ci@suse.com"
   prefix               = "tf-aws-rke2-dev-${substr(local.identifier, -4, -1)}" # id in name prevents ci collisions
-  username             = "tf-${local.identifier}"                              # WARNING: This must be less than 32 characters!
+  username             = lower(substr("tf-${local.identifier}", 0, 32))        # WARNING: This must be less than 32 characters!
   server_prep_script   = file("${abspath(path.root)}/prep.sh")                 # a script that will run before start, after install
   configs              = "${abspath(path.root)}/config"                        # add custom configs here, this is added to all servers, see "dedicated" example to place different configs on different nodes
   cluster_size         = 3                                                     # this example provisions all servers the same, see the "dedicated" example to alter configs and roles

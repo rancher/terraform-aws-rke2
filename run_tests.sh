@@ -24,7 +24,7 @@ EOF
     --jsonfile /tmp/test.log \
     --post-run-command "bash /tmp/test-processor" \
     -- \
-    -parallel=10 \
+    -parallel=20 \
     -timeout=80m \
     "$@"
 }

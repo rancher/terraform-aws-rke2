@@ -12,7 +12,7 @@ locals {
   email           = "terraform-ci@suse.com"
   example         = "simple"
   project_name    = "tf-${substr(md5(join("-", [local.example, local.identifier])), 0, 5)}"
-  username        = "tf-${local.identifier}"
+  username        = lower(substr("tf-${local.identifier}", 0, 32))
   runner_ip       = chomp(data.http.myip.response_body)
   ssh_key         = var.key
   ssh_key_name    = var.key_name

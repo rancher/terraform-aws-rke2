@@ -821,6 +821,16 @@ variable "config_supplied_name" {
   EOT
   default     = "51-rke2-config.yaml"
 }
+variable "config_join_strategy" {
+  type        = string
+  description = <<-EOT
+    The strategy to use for joining nodes.
+    Can be 'skip' or 'join'.
+    When joining, please supply the config_join_token and config_join_url.
+    If the install_role is 'agent' this will be automatically set to 'join'.
+  EOT
+  default     = "skip"
+}
 variable "config_join_url" {
   type        = string
   description = <<-EOT
@@ -837,9 +847,20 @@ variable "config_join_token" {
     When config_use_strategy is 'default' or 'merge',
     if this is set, a line will be added to the config with this join token.
     If this isn't set, then a line will be added to the config with a random join token.
+    It is important for this to be the same for all servers in a cluster.
   EOT
   default     = ""
 }
+# variable "config_agent_join_token" {
+#   type        = string
+#   description = <<-EOT
+#     When config_use_strategy is 'default' or 'merge',
+#     if this is set, a line will be added to the config with this join token.
+#     If this isn't set, then a line will be added to the config with a random join token.
+#     It is important for this to be the same for all servers in a cluster.
+#   EOT
+#   default     = ""
+# }
 
 #####
 # Feature: retrieve kubeconfig

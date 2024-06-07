@@ -12,7 +12,7 @@ locals {
   email              = "terraform-ci@suse.com"
   example            = "one"
   project_name       = "tf-${substr(md5(join("-", [local.example, local.identifier])), 0, 5)}"
-  username           = "tf-${local.identifier}"
+  username           = lower(substr("tf-${local.identifier}", 0, 32))
   ip_family          = var.ip_family          # not currently in use, TODO: add dualstack functionality
   ingress_controller = var.ingress_controller # not currently in use, TODO: add traefik functionality
   vpc_cidr           = "10.0.0.0/16"

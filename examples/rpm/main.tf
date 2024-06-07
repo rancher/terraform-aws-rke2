@@ -15,8 +15,8 @@ locals {
   rke2_version         = var.rke2_version
   identifier           = var.identifier # simple random string to identify resources
   email                = "terraform-ci@suse.com"
-  name                 = "tf-${substr(local.identifier, -4, -1)}" # id in name prevents ci collisions
-  username             = "tf-${local.identifier}"                 # WARNING: This must be less than 32 characters!
+  name                 = "tf-${substr(local.identifier, -4, -1)}"       # id in name prevents ci collisions
+  username             = lower(substr("tf-${local.identifier}", 0, 32)) # WARNING: This must be less than 32 characters!
   server_prep_script   = file("${path.root}/prep.sh")
   init_script          = file("${path.root}/init.sh")
   extra_config_content = file("${abspath(path.root)}/config/extra-config.yaml")
