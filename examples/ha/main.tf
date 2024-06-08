@@ -5,7 +5,6 @@ provider "aws" {
       Owner = local.email
     }
   }
-  region = "us-west-2" # this region has at least 3 availability zones
 }
 
 locals {
@@ -47,7 +46,7 @@ locals {
   # cluster scale options
   cluster_size = var.cluster_size
   project_subnets = { for i in range(length(data.aws_availability_zones.available.names)) :
-    "${data.aws_availability_zones.available.names[i]}-sn" => {
+    "${data.aws_availability_zones.available.names[i]}-${local.identifier}" => {
       "cidr"              = cidrsubnet(local.vpc_cidr, (length(data.aws_availability_zones.available.names) - 1), (i))
       "availability_zone" = data.aws_availability_zones.available.names[i]
       public              = true
@@ -55,7 +54,7 @@ locals {
   }
   server_ids = [for i in range(local.cluster_size) : "${local.project_name}-${substr(md5(uuidv5("dns", tostring(i))), 0, 4)}"]
   server_subnets = { for i in range(local.cluster_size) :
-    local.server_ids[i] => "${data.aws_availability_zones.available.names[i % length(data.aws_availability_zones.available.names)]}-sn"
+    local.server_ids[i] => "${data.aws_availability_zones.available.names[i % length(data.aws_availability_zones.available.names)]}-${local.identifier}"
   }
   subnet_servers = { for server, subnet in local.server_subnets :
     subnet => [for k, v in local.server_subnets : k if v == subnet]
