@@ -6,7 +6,7 @@ on:
     - main
 
 env:
-  AWS_REGION: us-west-1
+  AWS_REGION: us-west-2
   AWS_ROLE: arn:aws:iam::270074865685:role/terraform-module-ci-test
   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
@@ -72,10 +72,7 @@ jobs:
           IDENTIFIER: ${{github.job}}-${{github.run_id}}-${{github.run_number}}-${{github.run_attempt}}
           ZONE: ${{secrets.ZONE}}
         run: |
-          go version
-          cd ${{github.workspace}}/tests
-          go test -v -timeout=60m -parallel=10
-          cd ${{github.workspace}}
+          ./run_tests.sh
       - uses: peter-evans/create-or-update-comment@v4
         name: 'Report Success'
         if: steps.release-please.outputs.pr
