@@ -19,7 +19,6 @@ variable "project_use_strategy" {
   }
   default = "create"
 }
-
 variable "project_name" {
   type        = string
   description = <<-EOT
@@ -127,10 +126,10 @@ variable "project_subnets" {
     If you are expecting high availability, make sure there are at least three availability zones in the region you are deploying to.
     WARNING! The key for this argument must not be derived from a resource, it must be static.
   EOT
-  default = { "default" = {
-    cidr              = "", # will be generated based on the vpc cidr
-    availability_zone = "", # just get the first one
-    public            = false,
+  default = { "project" = {
+    cidr              = "",   # will be generated based on the vpc cidr
+    availability_zone = "",   # just get the first one
+    public            = true, # set to public for ssh access by default
   } }
 }
 

@@ -108,7 +108,7 @@ locals {
   config_default_name     = var.config_default_name
   config_supplied_name    = var.config_supplied_name
   config_supplied_content = var.config_supplied_content
-  retrieve_kubeconfig     = var.retrieve_kubeconfig # this defaults to false
+  retrieve_kubeconfig     = var.retrieve_kubeconfig
   config_join_strategy    = var.config_join_strategy
   config_join_url         = var.config_join_url
   config_join_token       = var.config_join_token
@@ -142,6 +142,9 @@ locals {
     local.install_start_prep_script,
     local.install_role,
   ]))
+
+
+  node_external_ip = [(can(module.server[0].server.public_ip) ? module.server[0].server.public_ip : module.server[0].server.private_ip)]
 }
 
 module "project" {
@@ -222,7 +225,7 @@ module "default_config_initial_server" {
   ])
   token = local.join_token
   # agent-token      = local.agent_join_token
-  node-external-ip = [(can(module.server[0].server.public_ip) ? module.server[0].server.public_ip : module.server[0].server.private_ip)]
+  node-external-ip = local.node_external_ip
   node-ip          = [module.server[0].server.private_ip]
   node-name        = local.server_name
   local_file_path  = local.local_file_path
@@ -239,7 +242,7 @@ module "default_config_additional_server" {
   advertise-address = module.server[0].server.private_ip
   token             = local.join_token
   server            = local.config_join_url
-  node-external-ip  = [(can(module.server[0].server.public_ip) ? module.server[0].server.public_ip : module.server[0].server.private_ip)]
+  node-external-ip  = local.node_external_ip
   node-ip           = [module.server[0].server.private_ip]
   node-name         = local.server_name
   local_file_path   = local.local_file_path
@@ -255,7 +258,7 @@ module "default_config_agent" {
   version          = "v0.1.3"
   token            = local.join_token
   server           = local.config_join_url
-  node-external-ip = [(can(module.server[0].server.public_ip) ? module.server[0].server.public_ip : module.server[0].server.private_ip)]
+  node-external-ip = local.node_external_ip
   node-ip          = [module.server[0].server.private_ip]
   node-name        = local.server_name
   local_file_path  = local.local_file_path

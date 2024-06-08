@@ -78,14 +78,6 @@ func rma(t *testing.T, path string){
   require.NoError(t, err)
 }
 
-func GetLatestRelease(t *testing.T, owner string, repo string) string {
-  ghClient := github.NewClient(nil)
-  release, _, err := ghClient.Repositories.GetLatestRelease(context.Background(), owner, repo)
-  require.NoError(t, err)
-  version := *release.TagName
-  return version
-}
-
 func GenerateKey(t *testing.T, d *FixtureData)(*aws.Ec2Keypair) {
   keyPairName := fmt.Sprintf("tf-%s", d.Id)
   keyPair := aws.CreateAndImportEC2KeyPair(t, d.Region, keyPairName)
@@ -213,8 +205,19 @@ func filterDuplicateMinors(vers []string) ([]string) {
   }
   return fv
 }
-// get the Git root for the given directory
+// get the Git root for the given directory, or the current working directory if dir is empty
 func GetGitRoot(dir string) (string, error) {
+  var err error
+  if dir == "" {
+    wd, err := os.Getwd()
+    if err != nil {
+      return "", err
+    }
+    dir, err = filepath.Abs(wd)
+    if err != nil {
+      return "",err
+    }
+  }
   repo, err := git.PlainOpen(dir)
   if err != nil {
       return "", err

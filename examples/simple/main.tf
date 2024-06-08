@@ -26,11 +26,10 @@ data "http" "myip" {
 }
 
 module "this" {
-  source               = "../../" # this source is dev use only, see https://registry.terraform.io/modules/rancher/rke2/aws/latest
-  project_name         = local.project_name
-  project_admin_cidrs  = ["${local.runner_ip}/32"]
-  project_domain       = "${local.project_name}.${local.zone}"
-  project_access_cidrs = ["${local.runner_ip}}/32"] # allow access to the project from these cidrs
+  source              = "../../" # this source is dev use only, see https://registry.terraform.io/modules/rancher/rke2/aws/latest
+  project_name        = local.project_name
+  project_admin_cidrs = ["${local.runner_ip}/32"]
+  project_domain      = "${local.project_name}.${local.zone}"
   server_user = {
     user                     = local.username
     aws_keypair_use_strategy = "select"

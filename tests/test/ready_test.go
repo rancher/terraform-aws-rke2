@@ -27,15 +27,15 @@ func TestMatrix(t *testing.T) {
 
   // only use a few combos for now, we can expand later
   selection := []string{
-    // "sles-15-canal-latest-one-rpm-ipv4-nginx",
-    // "sles-15-calico-stable-one-rpm-ipv4-nginx",
-    // "sle-micro-55-canal-old-one-rpm-ipv4-nginx",
-    // "sle-micro-55-canal-old-one-tar-ipv4-nginx",
-    // "sle-micro-55-cilium-latest-one-rpm-ipv4-nginx",
-    // "rhel-8-cis-cilium-latest-one-rpm-ipv4-nginx",
+    "sles-15-canal-latest-one-rpm-ipv4-nginx",
+    "sles-15-calico-stable-one-rpm-ipv4-nginx",
+    "sle-micro-55-canal-old-one-rpm-ipv4-nginx",
+    "sle-micro-55-canal-old-one-tar-ipv4-nginx",
+    "sle-micro-55-cilium-latest-one-rpm-ipv4-nginx",
+    "rhel-8-cis-cilium-latest-one-rpm-ipv4-nginx",
     "ubuntu-22-canal-stable-one-tar-ipv4-nginx",
-    // "sles-15-canal-latest-ha-rpm-ipv4-nginx",
-    // "sle-micro-55-canal-latest-splitrole-rpm-ipv4-nginx",
+    "sles-15-canal-latest-ha-rpm-ipv4-nginx",
+    "sle-micro-55-canal-latest-splitrole-rpm-ipv4-nginx",
   }
 
   combinations := make(map[string]map[string]string)

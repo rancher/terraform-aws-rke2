@@ -4,6 +4,9 @@ run_tests() {
   if [ -d "./tests" ]; then
     cd tests
   fi
+  if [ -d "./test" ]; then
+    cd test
+  fi
   cat <<'EOF'> /tmp/test-processor
 echo "Passed: "
 cat /tmp/test.log | jq -r '. | select(.Action == "pass") | select(.Test != null).Test'
