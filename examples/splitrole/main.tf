@@ -15,8 +15,10 @@ locals {
   project_name = "tf-${substr(md5(join("-", [local.example, local.identifier])), 0, 5)}"
 
   # deployment options
-  username           = lower(substr("tf-${local.identifier}", 0, 32))
-  ip_family          = var.ip_family          # not currently in use, TODO: add dualstack functionality
+  username = lower(substr("tf-${local.identifier}", 0, 32))
+  # tflint-ignore: terraform_unused_declarations
+  ip_family = var.ip_family # not currently in use, TODO: add dualstack functionality
+  # tflint-ignore: terraform_unused_declarations
   ingress_controller = var.ingress_controller # not currently in use, TODO: add traefik functionality
   vpc_cidr           = "10.0.0.0/16"
   runner_ip          = chomp(data.http.myip.response_body) # "runner" is the server running Terraform

@@ -340,6 +340,7 @@ variable "server_private_ip" {
 }
 
 variable "server_image_use_strategy" {
+  type        = string
   description = <<-EOT
     The strategy to use for selecting an image.
     This can be "find" to use our selection of types, "select" to select an image by id, or "skip" to do nothing.

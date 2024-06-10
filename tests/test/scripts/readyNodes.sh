@@ -16,6 +16,7 @@ notReady() {
   # worker-node   Ready MemoryPressure
   # worker-node2  EtcVoter Ready
   # worker-node3  
+  # shellcheck disable=SC2060,SC2140
   NOT_READY="$(echo "$NODES" | grep -v "Ready" | tr -d ["\t","\n"," ","'"] || true)"
   if [ -n "$NOT_READY" ]; then
     # Some nodes are not ready
@@ -44,4 +45,7 @@ while notReady; do
     exit 1
   fi
 done
+
+kubectl get nodes || true
+kubectl get all -A || true
 exit 0

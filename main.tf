@@ -22,7 +22,7 @@ locals {
   project_load_balancer_name         = (var.project_load_balancer_name != "" ? var.project_load_balancer_name : (local.project_name != "" ? "${local.project_name}-lb" : ""))
   project_load_balancer_access_cidrs = (
     var.project_load_balancer_access_cidrs != null ? var.project_load_balancer_access_cidrs : (
-      local.project_admin_cidrs != [] ? {
+      length(local.project_admin_cidrs) > 0 ? {
         default = {
           port     = "443"
           protocol = "tcp"
@@ -60,7 +60,7 @@ locals {
 
   server_load_balancer_target_groups = (
     local.server_indirect_access_use_strategy == "skip" ? [] :
-    (var.server_load_balancer_target_groups != [] ? var.server_load_balancer_target_groups :
+    (length(var.server_load_balancer_target_groups) > 0 ? var.server_load_balancer_target_groups :
     ["${local.project_load_balancer_name}-${keys(local.project_load_balancer_access_cidrs)[0]}"])
   )
 
@@ -68,7 +68,7 @@ locals {
   server_direct_access_use_strategy = var.server_direct_access_use_strategy
   server_access_addresses = (
     var.server_access_addresses != null ? var.server_access_addresses : (
-      local.project_admin_cidrs != [] ? {
+      length(local.project_admin_cidrs) > 0 ? {
         adminSsh = {
           port     = 22
           protocol = "tcp"

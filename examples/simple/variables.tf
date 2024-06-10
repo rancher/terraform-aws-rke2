@@ -18,11 +18,6 @@ variable "rke2_version" {
   type        = string
   description = "The rke2 version to install."
 }
-variable "os" {
-  type        = string
-  description = "The operating system to deploy."
-  default     = "sle-micro-55"
-}
 variable "file_path" {
   type        = string
   description = "The local file path to stage or retrieve files."

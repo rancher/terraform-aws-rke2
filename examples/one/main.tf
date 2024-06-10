@@ -8,12 +8,14 @@ provider "aws" {
 }
 
 locals {
-  identifier         = var.identifier # this is a random unique string that can be used to identify resources in the cloud provider
-  email              = "terraform-ci@suse.com"
-  example            = "one"
-  project_name       = "tf-${substr(md5(join("-", [local.example, local.identifier])), 0, 5)}"
-  username           = lower(substr("tf-${local.identifier}", 0, 32))
-  ip_family          = var.ip_family          # not currently in use, TODO: add dualstack functionality
+  identifier   = var.identifier # this is a random unique string that can be used to identify resources in the cloud provider
+  email        = "terraform-ci@suse.com"
+  example      = "one"
+  project_name = "tf-${substr(md5(join("-", [local.example, local.identifier])), 0, 5)}"
+  username     = lower(substr("tf-${local.identifier}", 0, 32))
+  # tflint-ignore: terraform_unused_declarations
+  ip_family = var.ip_family # not currently in use, TODO: add dualstack functionality
+  # tflint-ignore: terraform_unused_declarations
   ingress_controller = var.ingress_controller # not currently in use, TODO: add traefik functionality
   vpc_cidr           = "10.0.0.0/16"
   subnet_cidr        = cidrsubnet(local.vpc_cidr, 1, 0)    # get the first subnet when dividing the vpc_cidr into 2 /17 subnets
