@@ -311,7 +311,12 @@ func createTestDirectories(t *testing.T, id string) error {
 	if err != nil {
 		return err
 	}
-	tdd := fwd + "/tests/test/data/" + id
+	tdd := fwd + "/tests/test/data"
+	err = os.Mkdir(tdd, 0755)
+	if err != nil {
+		return err
+	}
+	tdd = fwd + "/tests/test/data/" + id
 	err = os.Mkdir(tdd, 0755)
 	if err != nil {
 		return err
