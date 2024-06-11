@@ -22,6 +22,11 @@ func GetCombinations(t *testing.T) {
 }
 
 func TestMatrix(t *testing.T) {
+	t.Logf("%s", os.Getenv("IDENTIFIER"))
+	t.Logf("%s", os.Getenv("ZONE"))
+	if os.Getenv("GITHUB_TOKEN") == "" {
+		t.Fatal("GITHUB_TOKEN is not set")
+	}
 	cc, err := fit.GetCombinations(t)
 	require.NoError(t, err)
 
