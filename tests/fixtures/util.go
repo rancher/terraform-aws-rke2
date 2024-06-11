@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
-	git "github.com/go-git/go-git/v5"
 	"github.com/google/go-github/v53/github"
 	aws "github.com/gruntwork-io/terratest/modules/aws"
 	g "github.com/gruntwork-io/terratest/modules/git"
@@ -241,37 +240,14 @@ func filterDuplicateMinors(vers []string) []string {
 	return fv
 }
 
-// get the Git root for the given directory, or the current working directory if dir is empty
-func GetGitRoot(dir string) (string, error) {
-	var err error
-	if dir == "" {
-		wd, err := os.Getwd()
-		if err != nil {
-			return "", err
-		}
-		dir, err = filepath.Abs(wd)
-		if err != nil {
-			return "", err
-		}
-	}
-	repo, err := git.PlainOpen(dir)
-	if err != nil {
-		return "", err
-	}
-
-	// Get the worktree to access the filesystem
-	worktree, err := repo.Worktree()
-	if err != nil {
-		return "", err
-	}
-
-	// Get the absolute path of the worktree
-	absPath := worktree.Filesystem.Root()
-	return absPath, nil
-}
-
 func CreateFixture(t *testing.T, combo map[string]string) (string, FixtureData, error) {
+	repoRoot, err := filepath.Abs(g.GetRepoRoot(t))
+	if err != nil {
+		return "", FixtureData{}, err
+	}
+
 	var fixtureData FixtureData
+	fixtureData.Id = getId()
 	fixtureData.Name = combo["fixture"]
 	fixtureData.InstallType = combo["installType"]
 	fixtureData.OperatingSystem = combo["operatingSystem"]
@@ -279,9 +255,18 @@ func CreateFixture(t *testing.T, combo map[string]string) (string, FixtureData, 
 	fixtureData.Cni = combo["cni"]
 	fixtureData.IpFamily = combo["ipFamily"]
 	fixtureData.IngressController = combo["ingressController"]
-	fixtureData.ExampleDirectory = g.GetRepoRoot(t) + "/examples/" + fixtureData.Name
 	fixtureData.Owner = "terraform-ci@suse.com"
-	setFixtureData(t, &fixtureData)
+	fixtureData.ExampleDirectory = repoRoot + "/examples/" + fixtureData.Name
+	fixtureData.DataDirectory = repoRoot + "/tests/test/data/" + fixtureData.Id
+	fixtureData.Region = getRegion()
+	fixtureData.AcmeServer = getAcmeServer()
+	fixtureData.Zone = os.Getenv("ZONE")
+
+	err = createTestDirectories(t, fixtureData.Id)
+	if err != nil {
+		return "", fixtureData, err
+	}
+
 	kubeconfig := create(t, &fixtureData)
 	if kubeconfig == "{}" {
 		t.Log("Kubeconfig not found")
@@ -292,54 +277,54 @@ func CreateFixture(t *testing.T, combo map[string]string) (string, FixtureData, 
 	return fixtureData.DataDirectory + "/kubeconfig", fixtureData, nil
 }
 
-func setFixtureData(t *testing.T, data *FixtureData) {
-	setId(data)
-	setTestDirectory(t, data)
-	data.Region = os.Getenv("AWS_REGION")
-	if data.Region == "" {
-		data.Region = os.Getenv("AWS_DEFAULT_REGION")
-	}
-	if data.Region == "" {
-		data.Region = "us-west-2"
-	}
-	data.Zone = os.Getenv("ZONE")
+func getAcmeServer() string {
 	acmeserver := os.Getenv("ACME_SERVER_URL")
 	if acmeserver == "" {
 		os.Setenv("ACME_SERVER_URL", "https://acme-staging-v02.api.letsencrypt.org/directory")
 	}
-	data.AcmeServer = acmeserver
+	return acmeserver
 }
 
-func setId(f *FixtureData) {
+func getRegion() string {
+	region := os.Getenv("AWS_REGION")
+	if region == "" {
+		region = os.Getenv("AWS_DEFAULT_REGION")
+	}
+	if region == "" {
+		region = "us-west-2"
+	}
+	return region
+}
+
+func getId() string {
 	id := os.Getenv("IDENTIFIER")
 	if id == "" {
 		id = random.UniqueId()
 	}
 	id += "-" + random.UniqueId()
-	f.Id = id
+	return id
 }
 
-func setTestDirectory(t *testing.T, f *FixtureData) error {
-	var err error
-	wd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	fwd, err := filepath.Abs(wd)
-	if err != nil {
-		return err
-	}
+func createTestDirectories(t *testing.T, id string) error {
 	gwd := g.GetRepoRoot(t)
-	f.ExampleDirectory = gwd + "/examples/" + f.Name
-	tdd := fwd + "/data/" + f.Id
+	fwd, err := filepath.Abs(gwd)
+	if err != nil {
+		return err
+	}
+	tdd := fwd + "/tests/test/data/" + id
 	err = os.Mkdir(tdd, 0755)
 	if err != nil {
 		return err
 	}
-	testDataDirectory, err := filepath.Abs(tdd)
+	tdd = fwd + "/tests/test/data/" + id + "/test"
+	err = os.Mkdir(tdd, 0755)
 	if err != nil {
 		return err
 	}
-	f.DataDirectory = testDataDirectory
+	tdd = fwd + "/tests/test/data/" + id + "/install"
+	err = os.Mkdir(tdd, 0755)
+	if err != nil {
+		return err
+	}
 	return nil
 }

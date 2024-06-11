@@ -72,7 +72,7 @@ jobs:
           IDENTIFIER: ${{github.job}}-${{github.run_id}}-${{github.run_number}}-${{github.run_attempt}}
           ZONE: ${{secrets.ZONE}}
         run: |
-          ./run_tests.sh
+          sudo ./run_tests.sh
       - uses: peter-evans/create-or-update-comment@v4
         name: 'Report Success'
         if: steps.release-please.outputs.pr
