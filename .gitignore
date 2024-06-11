@@ -2,6 +2,7 @@
 *.terraform.*
 *.terraform
 terraform*
+!.terraform.lock.hcl
 override.*
 *_override.tf
 !terraform.md
@@ -20,3 +21,5 @@ examples/*/51-*
 examples/**/51-*
 *.lock
 *.DS_*
+tests/test/data/*
+examples/*/data/*
