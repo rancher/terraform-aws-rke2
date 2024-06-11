@@ -69,7 +69,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
           GITHUB_OWNER: rancher
-          IDENTIFIER: ${{github.job}}-${{github.run_id}}-${{github.run_number}}-${{github.run_attempt}}
+          IDENTIFIER: ${{github.run_id}}
           ZONE: ${{secrets.ZONE}}
         run: |
           ./run_tests.sh
