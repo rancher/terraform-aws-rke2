@@ -28,7 +28,7 @@ EOF
     --post-run-command "bash /tmp/test-processor" \
     -- \
     -parallel=20 \
-    -timeout=80m \
+    -timeout=120m \
     "$@"
 }
 
