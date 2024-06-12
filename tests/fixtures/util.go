@@ -313,22 +313,22 @@ func createTestDirectories(t *testing.T, id string) error {
 	}
 	tdd := fwd + "/tests/test/data"
 	err = os.Mkdir(tdd, 0755)
-	if err != nil {
+	if err != nil && !os.IsExist(err) {
 		return err
 	}
 	tdd = fwd + "/tests/test/data/" + id
 	err = os.Mkdir(tdd, 0755)
-	if err != nil {
+	if err != nil && !os.IsExist(err) {
 		return err
 	}
 	tdd = fwd + "/tests/test/data/" + id + "/test"
 	err = os.Mkdir(tdd, 0755)
-	if err != nil {
+	if err != nil && !os.IsExist(err) {
 		return err
 	}
 	tdd = fwd + "/tests/test/data/" + id + "/install"
 	err = os.Mkdir(tdd, 0755)
-	if err != nil {
+	if err != nil && !os.IsExist(err) {
 		return err
 	}
 	return nil
