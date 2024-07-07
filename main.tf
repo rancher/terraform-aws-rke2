@@ -150,7 +150,7 @@ locals {
 module "project" {
   count                       = local.project_mod
   source                      = "rancher/access/aws"
-  version                     = "v2.2.1"
+  version                     = "3.0.2"
   vpc_use_strategy            = local.project_vpc_use_strategy
   vpc_name                    = local.project_vpc_name
   vpc_cidr                    = local.project_vpc_cidr
