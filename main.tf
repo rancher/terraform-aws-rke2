@@ -170,7 +170,7 @@ module "server" {
   count                        = local.server_mod
   depends_on                   = [module.project]
   source                       = "rancher/server/aws"
-  version                      = "v1.0.4"
+  version                      = "1.1.1"
   server_use_strategy          = local.server_use_strategy
   server_id                    = local.server_id
   server_name                  = local.server_name
