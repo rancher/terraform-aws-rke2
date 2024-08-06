@@ -26,13 +26,15 @@ func GenerateOptions(t *testing.T, d *FixtureData) *terraform.Options {
 
 	retryableTerraformErrors := map[string]string{
 		// The reason is unknown, but eventually these succeed after a few retries.
-		".*unable to verify signature.*":                    "Failed due to transient network error.",
-		".*unable to verify checksum.*":                     "Failed due to transient network error.",
-		".*no provider exists with the given name.*":        "Failed due to transient network error.",
-		".*registry service is unreachable.*":               "Failed due to transient network error.",
-		".*connection reset by peer.*":                      "Failed due to transient network error.",
-		".*TLS handshake timeout.*":                         "Failed due to transient network error.",
-		".*Error: disassociating EC2 EIP.*does not exist.*": "Failed to delete EIP because interface is already gone",
+		".*unable to verify signature.*":                                           "Failed due to transient network error.",
+		".*unable to verify checksum.*":                                            "Failed due to transient network error.",
+		".*no provider exists with the given name.*":                               "Failed due to transient network error.",
+		".*registry service is unreachable.*":                                      "Failed due to transient network error.",
+		".*connection reset by peer.*":                                             "Failed due to transient network error.",
+		".*TLS handshake timeout.*":                                                "Failed due to transient network error.",
+		".*ssh: handshake failed:.*":                                               "Failed due to transient network error.",
+		".*destroy\\.go.*Error: disassociating EC2 EIP.*does not exist.*":          "Failed to delete EIP because interface is already gone",
+		".*destroy\\.go.*Error: modifying EC2 Network Interface.*does not exist.*": "Failed to delete non existent interface",
 	}
 
 	var opt = terraform.Options{
@@ -44,21 +46,27 @@ func GenerateOptions(t *testing.T, d *FixtureData) *terraform.Options {
 }
 
 func Teardown(t *testing.T, f *FixtureData) {
+	_, err := terraform.DestroyE(t, f.TfOptions)
+	if err != nil {
+		t.Logf("Failed to destroy: %s", err)
+	}
 	f.SshAgent.Stop()
-	terraform.Destroy(t, f.TfOptions)
 	aws.DeleteEC2KeyPair(t, f.SshKeyPair)
 	rma(t, fmt.Sprintf("%s/.terraform", f.ExampleDirectory))
 	rma(t, fmt.Sprintf("%s/rke2", f.ExampleDirectory))
 	rma(t, fmt.Sprintf("%s/tmp", f.ExampleDirectory))
 	rma(t, fmt.Sprintf("%s/terraform.tfstate", f.ExampleDirectory))
 	rma(t, fmt.Sprintf("%s/terraform.tfstate.backup", f.ExampleDirectory))
+	rma(t, fmt.Sprintf("%s/.terraform.lock.hcl", f.ExampleDirectory))
+	rma(t, fmt.Sprintf("%s/data/%s", f.ExampleDirectory, f.Id))
 	rm(t, fmt.Sprintf("%s/kubeconfig-*.yaml", f.ExampleDirectory))
 	rm(t, fmt.Sprintf("%s/tf-*", f.ExampleDirectory))
 	rm(t, fmt.Sprintf("%s/50-*.yaml", f.ExampleDirectory))
-	if t.Failed() {
-		t.Logf("Test failed, not cleaning up test directory %s", f.DataDirectory)
-		return
-	}
+
+	// if t.Failed() {
+	// 	t.Logf("Test failed, not cleaning up test directory %s", f.DataDirectory)
+	// 	return
+	// }
 	rma(t, f.DataDirectory)
 }
 
@@ -130,15 +138,16 @@ func GenerateSshAgent(t *testing.T, d *FixtureData) *ssh.SshAgent {
 	return ssh.SshAgentWithKeyPair(t, d.SshKeyPair.KeyPair)
 }
 
-func GetRke2Releases() (string, string, string, error) {
+func GetRke2Releases(t *testing.T) (string, string, string, error) {
 	releases, err := getRke2Releases()
 	if err != nil {
 		return "", "", "", err
 	}
-	versions := filterPrerelease(releases)
+	versions := filterPrerelease(t, releases)
 	if len(versions) == 0 {
 		return "", "", "", errors.New("no eligible versions found")
 	}
+	t.Logf("Eligible versions found: %v", len(versions))
 	sortVersions(&versions)
 	v := filterDuplicateMinors(versions)
 	latest := v[0]
@@ -169,14 +178,15 @@ func getRke2Releases() ([]*github.RepositoryRelease, error) {
 	client := github.NewClient(tokenClient)
 
 	var releases []*github.RepositoryRelease
-	releases, _, err := client.Repositories.ListReleases(context.Background(), "rancher", "rke2", &github.ListOptions{})
+	releases, _, err := client.Repositories.ListReleases(context.Background(), "rancher", "rke2", &github.ListOptions{Page: 0, PerPage: 100})
 	if err != nil {
 		return nil, err
 	}
 
 	return releases, nil
 }
-func filterPrerelease(r []*github.RepositoryRelease) []string {
+func filterPrerelease(t *testing.T, r []*github.RepositoryRelease) []string {
+	t.Logf("Repositories to filter: %v", len(r))
 	var versions []string
 	for _, release := range r {
 		version := release.GetTagName()
@@ -224,8 +234,8 @@ func filterDuplicateMinors(vers []string) []string {
 		vp := strings.Split(v[1:], "+") //["1.30.1","rke2r3"]
 		pp := strings.Split(p[1:], "+") //["1.30.1","rke2r2"]
 		if vp[0] != pp[0] {
-			vpp := strings.Split(vp[0], ".") //["1","30","1]
-			ppp := strings.Split(pp[0], ".") //["1","30","1]
+			vpp := strings.Split(vp[0], ".") //["1","30","1"]
+			ppp := strings.Split(pp[0], ".") //["1","30","1"]
 			if vpp[1] != ppp[1] {
 				fv = append(fv, v)
 				//[
@@ -256,8 +266,8 @@ func CreateFixture(t *testing.T, combo map[string]string) (string, FixtureData, 
 	fixtureData.IpFamily = combo["ipFamily"]
 	fixtureData.IngressController = combo["ingressController"]
 	fixtureData.Owner = "terraform-ci@suse.com"
-	fixtureData.ExampleDirectory = repoRoot + "/examples/" + fixtureData.Name
-	fixtureData.DataDirectory = repoRoot + "/tests/test/data/" + fixtureData.Id
+	fixtureData.ExampleDirectory = repoRoot + "/test/test_relay"
+	fixtureData.DataDirectory = repoRoot + "/test/tests/data/" + fixtureData.Id
 	fixtureData.Region = getRegion()
 	fixtureData.AcmeServer = getAcmeServer()
 	fixtureData.Zone = os.Getenv("ZONE")
@@ -311,22 +321,23 @@ func createTestDirectories(t *testing.T, id string) error {
 	if err != nil {
 		return err
 	}
-	tdd := fwd + "/tests/test/data"
+	dataDir := "/test/tests/data/"
+	tdd := fwd + dataDir
 	err = os.Mkdir(tdd, 0755)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
-	tdd = fwd + "/tests/test/data/" + id
+	tdd = fwd + dataDir + id
 	err = os.Mkdir(tdd, 0755)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
-	tdd = fwd + "/tests/test/data/" + id + "/test"
+	tdd = fwd + dataDir + id + "/test"
 	err = os.Mkdir(tdd, 0755)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
-	tdd = fwd + "/tests/test/data/" + id + "/install"
+	tdd = fwd + dataDir + id + "/install"
 	err = os.Mkdir(tdd, 0755)
 	if err != nil && !os.IsExist(err) {
 		return err

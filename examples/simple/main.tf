@@ -30,6 +30,7 @@ module "this" {
   project_name        = local.project_name
   project_admin_cidrs = ["${local.runner_ip}/32"]
   project_domain      = "${local.project_name}.${local.zone}"
+  project_domain_zone = local.zone
   server_user = {
     user                     = local.username
     aws_keypair_use_strategy = "select"

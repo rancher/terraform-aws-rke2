@@ -7,7 +7,7 @@ terraform {
     }
     random = {
       source  = "hashicorp/random"
-      version = ">= 3.5.1"
+      version = ">= 3.5"
     }
     aws = {
       source  = "hashicorp/aws"
@@ -19,11 +19,27 @@ terraform {
     }
     acme = {
       source  = "vancluever/acme"
-      version = ">= 2.0"
+      version = ">= 2.23"
     }
     github = {
       source  = "integrations/github"
-      version = "6.2.1"
+      version = ">= 6.2"
+    }
+    time = {
+      source  = "hashicorp/time"
+      version = ">= 0.11"
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = ">= 3.2"
+    }
+    cloudinit = {
+      source  = "hashicorp/cloudinit"
+      version = ">= 2.3"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = ">= 4.0"
     }
   }
 }

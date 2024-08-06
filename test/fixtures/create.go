@@ -23,7 +23,7 @@ type FixtureData struct {
 	IngressController string
 	Region            string
 	Owner             string
-	ExampleDirectory  string
+	ExampleDirectory  string // This is actually the test_relay directory
 	Zone              string
 	AcmeServer        string
 	SshAgent          *ssh.SshAgent
@@ -45,22 +45,22 @@ func create(t *testing.T, d *FixtureData) string {
 		return ""
 	}
 	d.SshAgent = GenerateSshAgent(t, d)
+	terraformOptions.SshAgent = d.SshAgent
 
-	installDataDir := d.DataDirectory + "/install"
 	testDataDir := d.DataDirectory + "/test"
 
 	terraformOptions.Vars = map[string]interface{}{
 		"rke2_version":       d.Release,
 		"os":                 d.OperatingSystem,
-		"file_path":          installDataDir,
 		"zone":               d.Zone,
 		"key_name":           d.SshKeyPair.Name,
-		"key":                d.SshKeyPair.PublicKey,
+		"key":                d.SshKeyPair.KeyPair.PublicKey,
 		"identifier":         d.Id,
 		"install_method":     d.InstallType,
 		"cni":                d.Cni,
 		"ip_family":          d.IpFamily,
 		"ingress_controller": d.IngressController,
+		"fixture":            d.Name,
 	}
 
 	terraformOptions.EnvVars = map[string]string{
@@ -73,14 +73,13 @@ func create(t *testing.T, d *FixtureData) string {
 		"TF_CLI_ARGS_output":  "-state=" + testDataDir + "/tfstate",
 	}
 
-	terraformOptions.SshAgent = d.SshAgent
 	terraformOptions.Upgrade = true
 
 	d.TfOptions = terraformOptions
 
 	_, err = terraform.InitAndApplyE(t, d.TfOptions)
 	if err != nil {
-		terraform.Destroy(t, d.TfOptions)
+		Teardown(t, d)
 		t.Fatalf("Error creating cluster: %s", err)
 		return ""
 	}

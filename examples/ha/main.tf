@@ -58,8 +58,9 @@ locals {
   server_subnets = { for i in range(local.cluster_size) :
     local.server_ids[i] => "${data.aws_availability_zones.available.names[i % length(data.aws_availability_zones.available.names)]}-${local.identifier}"
   }
-  subnet_servers = { for server, subnet in local.server_subnets :
-    subnet => [for k, v in local.server_subnets : k if v == subnet]
+  subnet_servers = { for subnet, servers in
+    { for server, subnet in local.server_subnets : subnet => [for k, v in local.server_subnets : k if v == subnet]... } :
+    subnet => flatten(setunion(servers))
   }
   server_ips = { for i in range(local.cluster_size) :
     # local.server_subnets[server_ids[i]] = subnet id which is ("${data.aws_availability_zones.available.names[i]}-sn") eg. "us-west-2b-sn"

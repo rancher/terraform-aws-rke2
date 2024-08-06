@@ -8,10 +8,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	aws "github.com/gruntwork-io/terratest/modules/aws"
-	//fit "github.com/rancher/terraform-aws-rke2/tests/fixtures"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/google/go-github/v53/github"
+	aws "github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/gruntwork-io/terratest/modules/git"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/shell"
