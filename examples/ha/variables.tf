@@ -45,11 +45,17 @@ variable "ip_family" {
 }
 variable "ingress_controller" {
   type        = string
-  description = "The ingress controller to use. Must be 'nginx' or 'traefik'."
+  description = "The ingress controller to use. Must be 'nginx' or 'traefik'. Currently only supports 'nginx'."
   default     = "nginx"
 }
 variable "cluster_size" {
   type        = number
   description = "The number of nodes to create."
   default     = 3
+}
+variable "runner_ip" {
+  type        = string
+  description = "The runner may have multiple IP addresses, use this to specify which one to use."
+  # by default we will find the ip address using "https://ipinfo.io/ip"
+  default = ""
 }

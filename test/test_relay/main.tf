@@ -13,8 +13,8 @@ provider "acme" {
 
 locals {
   identifier         = var.identifier
-  project_name       = "tf-${substr(md5(join("-", [md5(local.identifier)])), 0, 5)}-${local.identifier}"
-  username           = lower(substr("tf-${local.identifier}", 0, 32))
+  project_name       = substr("tf-${substr(md5(join("-", [md5(local.identifier)])), 0, 5)}-${local.identifier}", 0, 20)
+  username           = lower(local.project_name)
   image              = "sles-15"
   ip                 = chomp(data.http.myip.response_body)
   ssh_key            = var.key
@@ -43,7 +43,6 @@ locals {
   runner_ip          = (local.ip_family == "ipv6" ? module.runner.server.ipv6_addresses[0] : module.runner.server.public_ip)
   cluster_ip         = (local.ip_family == "ipv6" ? "[${data.external.output.result.server_ip}]" : data.external.output.result.server_ip)
   cluster_url        = data.external.output.result.api
-  cluster_access     = "https://${local.cluster_url}:6443" #"https://${local.cluster_ip}:6443"
 }
 
 data "http" "myip" {
@@ -363,36 +362,7 @@ resource "terraform_data" "init" {
     ]
   }
 }
-resource "terraform_data" "plan" {
-  depends_on = [
-    module.access,
-    module.runner,
-    local_file.terraform_vars,
-    terraform_data.copy_fixture,
-    terraform_data.copy_vars,
-    terraform_data.copy_module,
-    terraform_data.init,
-  ]
-  triggers_replace = {
-    fixtures = md5(jsonencode(terraform_data.copy_fixture[*]))
-    vars     = terraform_data.copy_vars.id
-    module   = md5(jsonencode(terraform_data.copy_module[*]))
-    init     = terraform_data.init.id
-  }
-  connection {
-    type        = "ssh"
-    user        = local.username
-    script_path = "${local.home_remote_path}/plan"
-    agent       = true
-    host        = module.runner.server.public_ip
-  }
-  provisioner "remote-exec" {
-    inline = [<<-EOT
-      ${local.fit_remote_path}/terraform_command.sh plan -var-file="${local.vars_remote_path}"
-    EOT
-    ]
-  }
-}
+
 resource "terraform_data" "destroy" {
   depends_on = [
     module.access,
@@ -402,7 +372,6 @@ resource "terraform_data" "destroy" {
     terraform_data.copy_vars,
     terraform_data.copy_module,
     terraform_data.init,
-    terraform_data.plan,
   ]
   triggers_replace = {
     ip              = module.runner.server.public_ip,
@@ -435,7 +404,6 @@ resource "terraform_data" "apply" {
     terraform_data.copy_vars,
     terraform_data.copy_module,
     terraform_data.init,
-    terraform_data.plan,
     terraform_data.destroy,
   ]
   triggers_replace = {
@@ -443,7 +411,6 @@ resource "terraform_data" "apply" {
     vars     = terraform_data.copy_vars.id
     module   = md5(jsonencode(terraform_data.copy_module[*]))
     init     = terraform_data.init.id
-    plan     = terraform_data.plan.id
     destroy  = terraform_data.destroy.id
   }
   connection {
@@ -470,7 +437,6 @@ resource "terraform_data" "output" {
     terraform_data.copy_vars,
     terraform_data.copy_module,
     terraform_data.init,
-    terraform_data.plan,
     terraform_data.destroy,
     terraform_data.apply,
   ]
@@ -479,7 +445,6 @@ resource "terraform_data" "output" {
     vars     = terraform_data.copy_vars.id
     module   = md5(jsonencode(terraform_data.copy_module[*]))
     init     = terraform_data.init.id
-    plan     = terraform_data.plan.id
     destroy  = terraform_data.destroy.id
     apply    = terraform_data.apply.id
   }
@@ -514,7 +479,6 @@ data "external" "output" {
     terraform_data.copy_vars,
     terraform_data.copy_module,
     terraform_data.init,
-    terraform_data.plan,
     terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
@@ -535,12 +499,11 @@ resource "local_file" "kubeconfig" {
     terraform_data.copy_vars,
     terraform_data.copy_module,
     terraform_data.init,
-    terraform_data.plan,
     terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
   ]
-  content  = replace(data.external.output.result.kubeconfig, "${data.external.output.result.api}:6443", "${module.runner.server.public_ip}:6443")
+  content  = replace(data.external.output.result.kubeconfig, data.external.output.result.api, "https://${module.runner.server.public_ip}:6443")
   filename = "${local.data_local_path}/kubeconfig"
 }
 
@@ -553,7 +516,6 @@ resource "local_file" "k8s_key" {
     terraform_data.copy_vars,
     terraform_data.copy_module,
     terraform_data.init,
-    terraform_data.plan,
     terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
@@ -571,7 +533,6 @@ resource "local_file" "k8s_cert" {
     terraform_data.copy_vars,
     terraform_data.copy_module,
     terraform_data.init,
-    terraform_data.plan,
     terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
@@ -589,7 +550,6 @@ resource "local_file" "k8s_ca" {
     terraform_data.copy_vars,
     terraform_data.copy_module,
     terraform_data.init,
-    terraform_data.plan,
     terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
@@ -599,7 +559,7 @@ resource "local_file" "k8s_ca" {
   filename = "${local.data_local_path}/k8s.ca"
 }
 
-resource "terraform_data" "copy_kubeconfig" {
+resource "terraform_data" "copy_certs" {
   depends_on = [
     module.access,
     module.runner,
@@ -608,7 +568,6 @@ resource "terraform_data" "copy_kubeconfig" {
     terraform_data.copy_vars,
     terraform_data.copy_module,
     terraform_data.init,
-    terraform_data.plan,
     terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
@@ -623,7 +582,6 @@ resource "terraform_data" "copy_kubeconfig" {
     vars     = terraform_data.copy_vars.id
     module   = md5(jsonencode(terraform_data.copy_module[*]))
     init     = terraform_data.init.id
-    plan     = terraform_data.plan.id
     destroy  = terraform_data.destroy.id
     apply    = terraform_data.apply.id
     output   = terraform_data.output.id
@@ -631,7 +589,7 @@ resource "terraform_data" "copy_kubeconfig" {
   connection {
     type        = "ssh"
     user        = local.username
-    script_path = "${local.home_remote_path}/copy_kubeconfig"
+    script_path = "${local.home_remote_path}/copy_certs"
     agent       = true
     host        = module.runner.server.public_ip
   }
@@ -658,7 +616,6 @@ resource "terraform_data" "get_cluster_certs" {
     terraform_data.copy_vars,
     terraform_data.copy_module,
     terraform_data.init,
-    terraform_data.plan,
     terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
@@ -680,20 +637,20 @@ resource "terraform_data" "get_cluster_certs" {
   provisioner "remote-exec" {
     inline = [<<-EOT
       if [ "ipv6" = "${local.ip_family}" ]; then
-        ssh -o StrictHostKeyChecking=no ${local.username}@${data.external.output.result.server_ip} "sudo cp /var/lib/rancher/rke2/server/tls/server-ca.crt /home/${local.username}/server_ca.crt"
-        ssh -o StrictHostKeyChecking=no ${local.username}@${data.external.output.result.server_ip} "sudo cp /var/lib/rancher/rke2/server/tls/server-ca.key /home/${local.username}/server_ca.key"
-        ssh -o StrictHostKeyChecking=no ${local.username}@${data.external.output.result.server_ip} "sudo chown ${local.username} /home/${local.username}/server_ca.crt"
-        ssh -o StrictHostKeyChecking=no ${local.username}@${data.external.output.result.server_ip} "sudo chown ${local.username} /home/${local.username}/server_ca.key"
-        scp -o StrictHostKeyChecking=no ${local.username}@\[${data.external.output.result.server_ip}\]:/home/${local.username}/server_ca.crt ${local.home_remote_path}/server.crt
-        scp -o StrictHostKeyChecking=no ${local.username}@\[${data.external.output.result.server_ip}\]:/home/${local.username}/server_ca.key ${local.home_remote_path}/server.key
+        ssh -o StrictHostKeyChecking=no ${data.external.output.result.username}@${data.external.output.result.server_ip} "sudo cp /var/lib/rancher/rke2/server/tls/server-ca.crt /home/${data.external.output.result.username}/server_ca.crt"
+        ssh -o StrictHostKeyChecking=no ${data.external.output.result.username}@${data.external.output.result.server_ip} "sudo cp /var/lib/rancher/rke2/server/tls/server-ca.key /home/${data.external.output.result.username}/server_ca.key"
+        ssh -o StrictHostKeyChecking=no ${data.external.output.result.username}@${data.external.output.result.server_ip} "sudo chown ${data.external.output.result.username} /home/${data.external.output.result.username}/server_ca.crt"
+        ssh -o StrictHostKeyChecking=no ${data.external.output.result.username}@${data.external.output.result.server_ip} "sudo chown ${data.external.output.result.username} /home/${data.external.output.result.username}/server_ca.key"
+        scp -o StrictHostKeyChecking=no ${data.external.output.result.username}@\[${data.external.output.result.server_ip}\]:/home/${data.external.output.result.username}/server_ca.crt ${local.home_remote_path}/server.crt
+        scp -o StrictHostKeyChecking=no ${data.external.output.result.username}@\[${data.external.output.result.server_ip}\]:/home/${data.external.output.result.username}/server_ca.key ${local.home_remote_path}/server.key
       else
         # ipv4
-        ssh -o StrictHostKeyChecking=no ${local.username}@${data.external.output.result.server_ip} "sudo cp /var/lib/rancher/rke2/server/tls/server-ca.crt /home/${local.username}/server_ca.crt"
-        ssh -o StrictHostKeyChecking=no ${local.username}@${data.external.output.result.server_ip} "sudo cp /var/lib/rancher/rke2/server/tls/server-ca.key /home/${local.username}/server_ca.key"
-        ssh -o StrictHostKeyChecking=no ${local.username}@${data.external.output.result.server_ip} "sudo chown ${local.username} /home/${local.username}/server_ca.crt"
-        ssh -o StrictHostKeyChecking=no ${local.username}@${data.external.output.result.server_ip} "sudo chown ${local.username} /home/${local.username}/server_ca.key"
-        scp -o StrictHostKeyChecking=no ${local.username}@${data.external.output.result.server_ip}:/home/${local.username}/server_ca.crt ${local.home_remote_path}/server.crt
-        scp -o StrictHostKeyChecking=no ${local.username}@${data.external.output.result.server_ip}:/home/${local.username}/server_ca.key ${local.home_remote_path}/server.key
+        ssh -o StrictHostKeyChecking=no ${data.external.output.result.username}@${data.external.output.result.server_ip} "sudo cp /var/lib/rancher/rke2/server/tls/server-ca.crt /home/${data.external.output.result.username}/server_ca.crt"
+        ssh -o StrictHostKeyChecking=no ${data.external.output.result.username}@${data.external.output.result.server_ip} "sudo cp /var/lib/rancher/rke2/server/tls/server-ca.key /home/${data.external.output.result.username}/server_ca.key"
+        ssh -o StrictHostKeyChecking=no ${data.external.output.result.username}@${data.external.output.result.server_ip} "sudo chown ${data.external.output.result.username} /home/${data.external.output.result.username}/server_ca.crt"
+        ssh -o StrictHostKeyChecking=no ${data.external.output.result.username}@${data.external.output.result.server_ip} "sudo chown ${data.external.output.result.username} /home/${data.external.output.result.username}/server_ca.key"
+        scp -o StrictHostKeyChecking=no ${data.external.output.result.username}@${data.external.output.result.server_ip}:/home/${data.external.output.result.username}/server_ca.crt ${local.home_remote_path}/server.crt
+        scp -o StrictHostKeyChecking=no ${data.external.output.result.username}@${data.external.output.result.server_ip}:/home/${data.external.output.result.username}/server_ca.key ${local.home_remote_path}/server.key
       fi
     EOT
     ]
@@ -709,7 +666,6 @@ resource "terraform_data" "stop_proxy" {
     terraform_data.copy_vars,
     terraform_data.copy_module,
     terraform_data.init,
-    terraform_data.plan,
     terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
@@ -754,7 +710,6 @@ resource "terraform_data" "proxy" {
     terraform_data.copy_vars,
     terraform_data.copy_module,
     terraform_data.init,
-    terraform_data.plan,
     terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
@@ -770,7 +725,6 @@ resource "terraform_data" "proxy" {
     vars     = terraform_data.copy_vars.id
     module   = md5(jsonencode(terraform_data.copy_module[*]))
     init     = terraform_data.init.id
-    plan     = terraform_data.plan.id
     destroy  = terraform_data.destroy.id
     apply    = terraform_data.apply.id
     output   = terraform_data.output.id
@@ -825,7 +779,7 @@ resource "terraform_data" "proxy" {
           ssl_verify_client off;
 
           location / {
-            proxy_pass ${local.cluster_access};
+            proxy_pass ${local.cluster_url};
             proxy_ssl_server_name on;
             proxy_ssl_verify on;
             proxy_ssl_verify_depth 2;

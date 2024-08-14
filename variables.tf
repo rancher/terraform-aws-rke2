@@ -442,9 +442,6 @@ variable "server_image_type" {
         "ubuntu-22",
         "rhel-8",
         "rhel-9"
-        # "rocky-8", // this image is having issues accepting a key
-        # "ubuntu-20", // having trouble installing the proper repos
-        # "liberty-7", // can't get the repos right for this one
   EOT
   validation {
     condition = (
@@ -455,9 +452,6 @@ variable "server_image_type" {
         "ubuntu-22",
         "rhel-8",
         "rhel-9",
-        # "rocky-8",
-        # "liberty-7",
-        # "ubuntu-20",
       ], var.server_image_type)
     )
     error_message = <<-EOT
@@ -468,9 +462,6 @@ variable "server_image_type" {
         "ubuntu-22",
         "rhel-8",
         "rhel-9"
-        # "ubuntu-20",
-        # "rocky-8",
-        # "liberty-7",
     EOT
   }
   default = "sle-micro-55"
@@ -901,6 +892,24 @@ variable "config_join_token" {
     It is important for this to be the same for all servers in a cluster.
   EOT
   default     = ""
+}
+variable "config_cluster_cidr" {
+  type        = list(string)
+  description = <<-EOT
+    Specify the cluster's CIDR when adding control plane nodes.
+    This is ignored on initial node, it will be pulled from the project vpc cidr.
+    This is only used on nodes hosting the Kubernetes API.
+  EOT
+  default     = []
+}
+variable "config_service_cidr" {
+  type        = list(string)
+  description = <<-EOT
+    Specify the cluster's service CIDR when adding control plane nodes.
+    This is ignored on initial node, it will be generated from the project vpc cidr.
+    This is only used on nodes hosting the Kubernetes API.
+  EOT
+  default     = []
 }
 
 #####

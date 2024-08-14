@@ -87,12 +87,16 @@ func TestMatrix(t *testing.T) {
 		t.Run(k, func(t *testing.T) {
 			t.Parallel()
 			t.Logf("Running test for %s", k)
-			//kubeconfigPath, _, err := fit.CreateFixture(t, v)
 			kubeconfigPath, d, err := fit.CreateFixture(t, v)
-			defer fit.Teardown(t, &d)
-			require.NoError(t, err)
+			if err != nil {
+				t.Logf("Error creating cluster: %s", err)
+				fit.Teardown(t, &d)
+			}
+			t.Logf("Fixture %s created, checking...", k)
 			assert.NotEmpty(t, kubeconfigPath)
 			checkReady(t, kubeconfigPath)
+			t.Log("Test complete, tearing down...")
+			fit.Teardown(t, &d)
 		})
 	}
 }

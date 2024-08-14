@@ -26,7 +26,18 @@ output "server_kubeconfig" {
   EOT
   sensitive   = true
 }
-
+output "server_rke2_config" {
+  value = (
+    local.server_mod == 1 && local.project_mod == 1 ?
+    (fileexists("${local.local_file_path}/${local.config_default_name}") ? file("${local.local_file_path}/${local.config_default_name}") : null) :
+    null
+  )
+  description = <<-EOT
+    The main rke2 config set on the server.
+    This will only be set on the initial server which should be deployed with the project.
+    That means that this will be null unless both the project and the server are created.
+  EOT
+}
 output "join_url" {
   value       = (local.config_join_url != "" ? local.config_join_url : "https://${module.server[0].server.private_ip}:9345")
   description = <<-EOT
@@ -40,6 +51,20 @@ output "join_token" {
     The token for a server to join this cluster.
   EOT
   sensitive   = true
+}
+
+output "cluster_cidr" {
+  value       = local.cluster_cidr
+  description = <<-EOT
+    The CIDR configured for the cluster.
+  EOT
+}
+
+output "service_cidr" {
+  value       = local.service_cidr
+  description = <<-EOT
+    The CIDR configured for the cluster's services.
+  EOT
 }
 
 output "project_domain" {
@@ -64,7 +89,7 @@ output "project_domain_tls_certificate" {
   )
 }
 
-output "subnets" {
+output "project_subnets" {
   value = local.project_subnets
 }
 
@@ -106,4 +131,15 @@ output "project_vpc" {
   description = <<-EOT
     The VPC object from AWS.
   EOT
+}
+
+output "project_security_group" {
+  value = (
+    length(module.project) > 0 ?
+    {
+      id   = module.project[0].security_group.id
+      name = module.project[0].security_group.name
+    } :
+    null
+  )
 }

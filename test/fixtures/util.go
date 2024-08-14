@@ -277,13 +277,15 @@ func CreateFixture(t *testing.T, combo map[string]string) (string, FixtureData, 
 		return "", fixtureData, err
 	}
 
-	kubeconfig := create(t, &fixtureData)
+	kubeconfig, err := create(t, &fixtureData)
+	if err != nil {
+		t.Errorf("Error creating fixture: %v", err)
+	}
 	if kubeconfig == "{}" {
 		t.Log("Kubeconfig not found")
 		return "", fixtureData, errors.New("kubeconfig not found")
 	}
 	os.WriteFile(fixtureData.DataDirectory+"/kubeconfig", []byte(kubeconfig), 0644)
-
 	return fixtureData.DataDirectory + "/kubeconfig", fixtureData, nil
 }
 

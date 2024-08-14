@@ -32,17 +32,15 @@ type FixtureData struct {
 	TfVars            map[string]interface{}
 }
 
-// This generates the One example fixture; a single node Rke2 cluster.
-// Outputs the kubeconfig or "" on failure.
-func create(t *testing.T, d *FixtureData) string {
+func create(t *testing.T, d *FixtureData) (string, error) {
 	var err error
 	terraformOptions := GenerateOptions(t, d)
 	t.Logf("Git Root: %s", d.ExampleDirectory)
 	d.SshKeyPair, err = GenerateKey(t, d)
 	if err != nil {
-		t.Fatalf("Error creating key pair: %s", err)
+		t.Errorf("Error creating key pair: %s", err)
 		aws.DeleteEC2KeyPair(t, d.SshKeyPair)
-		return ""
+		return "", err
 	}
 	d.SshAgent = GenerateSshAgent(t, d)
 	terraformOptions.SshAgent = d.SshAgent
@@ -79,9 +77,8 @@ func create(t *testing.T, d *FixtureData) string {
 
 	_, err = terraform.InitAndApplyE(t, d.TfOptions)
 	if err != nil {
-		Teardown(t, d)
-		t.Fatalf("Error creating cluster: %s", err)
-		return ""
+		t.Errorf("Error creating cluster: %s", err)
+		return "", err
 	}
 
 	output := terraform.OutputJson(t, terraformOptions, "")
@@ -95,9 +92,9 @@ func create(t *testing.T, d *FixtureData) string {
 	var data OutputData
 	err = json.Unmarshal([]byte(output), &data)
 	if err != nil {
-		t.Fatalf("Error unmarshalling Json: %v", err)
+		t.Errorf("Error unmarshalling Json: %v", err)
 	}
 	assert.NotEmpty(t, data.Kubeconfig.Value)
 	t.Logf("kubeconfig: %s", data.Kubeconfig.Value)
-	return data.Kubeconfig.Value
+	return data.Kubeconfig.Value, nil
 }

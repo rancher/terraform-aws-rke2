@@ -27,7 +27,6 @@ locals {
     strcontains(local.image, "sles") ? "${path.root}/sles_prep.sh" :
     strcontains(local.image, "rhel") ? "${path.root}/rhel_prep.sh" :
     strcontains(local.image, "ubuntu") ? "${path.root}/ubuntu_prep.sh" :
-    strcontains(local.image, "liberty") ? "${path.root}/rhel_prep.sh" :
     ""
   )
   install_prep_script = (local.install_prep_script_file == "" ? "" :
@@ -102,7 +101,6 @@ module "this" {
   server_use_strategy              = "create"
   server_name                      = "${local.project_name}-${random_pet.server.id}"
   server_type                      = "small" # smallest viable control plane node (actually t3.medium)
-  server_security_group_name       = "${local.project_name}-sg"
   server_image_use_strategy        = "find"
   server_image_type                = local.image
   server_cloudinit_use_strategy    = "skip" # cloud-init not available for sle-micro

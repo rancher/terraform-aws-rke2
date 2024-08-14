@@ -62,13 +62,30 @@ locals {
 
   project_subnets = (length(module.project) > 0 ? module.project[0].subnets : null)
   # tflint-ignore: terraform_unused_declarations
-  fail_no_subnets         = ((local.project_mod == 1 && local.project_subnet_use_strategy == "create" && length(local.project_subnets) == 0) ? one([jsonencode(local.project_subnets), "missing_project_subnets"]) : false)
+  fail_no_subnets = (
+    (
+      local.project_mod == 1 &&
+      local.project_subnet_use_strategy == "create" &&
+      local.project_subnets != null &&
+      (local.project_subnets == null ? false : (length(local.project_subnets) == 0 ? true : false))
+    ) ?
+    one([jsonencode(local.project_subnets), "missing_project_subnets"]) :
+    false
+  )
   first_project_subnet    = (local.project_subnets != null ? local.project_subnets[keys(local.project_subnets)[0]] : null)
   first_project_subnet_az = (local.first_project_subnet != null ? local.first_project_subnet.availability_zone : null)
   server_az               = (var.server_availability_zone != "" ? var.server_availability_zone : local.first_project_subnet_az)
+
   # tflint-ignore: terraform_unused_declarations
-  fail_no_server_az  = ((local.server_mod == 1 && local.server_az == null) ? one([local.server_az, "missing_server_availability_zone"]) : false)
-  server_subnet_name = (local.project_mod == 1 ? [for s in module.project[0].subnets : s.tags.Name if s.availability_zone == local.server_az][0] : null)
+  fail_no_server_az = ((local.server_mod == 1 && local.server_az == null) ? one([local.server_az, "missing_server_availability_zone"]) : false)
+
+  server_subnet_name = (
+    local.project_mod == 1 ? [for s in module.project[0].subnets : s.tags.Name if s.availability_zone == local.server_az][0] :
+    var.server_subnet_name
+  )
+
+  # tflint-ignore: terraform_unused_declarations
+  fail_no_server_subnet = ((local.server_mod == 1 && local.server_subnet_name == "") ? one([local.server_subnet_name, "missing_server_subnet_name"]) : false)
 
   # Feature: server - image
   server_image_use_strategy = var.server_image_use_strategy
@@ -155,30 +172,48 @@ locals {
   # rke2 has a max range of /108, so all cidrs must be /108 or greater
   # since the VPC automatically gets a /56, we need to add 52 bits to get to /108
   # terraform's cidrsubnets has a max newbits of 32, so we need a midway point to get to /108
-  cluster_cidr_ipv6_starting_cidr  = split("/", module.project[0].vpc.ipv6_cidr)[1]
-  cluster_cidr_ipv4_starting_cidr  = split("/", module.project[0].vpc.ipv4_cidr)[1]
+  cluster_cidr_ipv6_starting_cidr  = (length(module.project) > 0 ? split("/", module.project[0].vpc.ipv6_cidr)[1] : "")
+  cluster_cidr_ipv4_starting_cidr  = (length(module.project) > 0 ? split("/", module.project[0].vpc.ipv4_cidr)[1] : "")
   cluster_cidr_ipv6_midway_newbits = 32
   cluster_cidr_ipv6_midway = (
     can(cidrsubnet(module.project[0].vpc.ipv6_cidr, local.cluster_cidr_ipv6_midway_newbits, 0)) ?
     cidrsubnet(module.project[0].vpc.ipv6_cidr, local.cluster_cidr_ipv6_midway_newbits, 0) :
     ""
   )
-  cluster_cidr_ipv6_newbits = (108 - (local.cluster_cidr_ipv6_starting_cidr + local.cluster_cidr_ipv6_midway_newbits))
-  cluster_cidr_ipv4_newbits = 2
+  cluster_cidr_ipv6_newbits = (
+    length(module.project) > 0 ?
+    (108 - (local.cluster_cidr_ipv6_starting_cidr + local.cluster_cidr_ipv6_midway_newbits)) :
+    0
+  )
+  cluster_cidr_ipv4_newbits = (length(module.project) > 0 ? length(local.project_subnets) : 0)
   cluster_cidr = (
-    local.project_vpc_type == "ipv6" ?
-    [cidrsubnets(local.cluster_cidr_ipv6_midway, local.cluster_cidr_ipv6_newbits, local.cluster_cidr_ipv6_newbits)[0]] :
-    [cidrsubnets(module.project[0].vpc.ipv4_cidr, local.cluster_cidr_ipv4_newbits, local.cluster_cidr_ipv4_newbits)[0]]
+    # specified
+    length(var.config_cluster_cidr) > 0 ? var.config_cluster_cidr :
+    # ipv6 unspecified
+    length(module.project) > 0 && local.project_vpc_type == "ipv6" ? [cidrsubnets(local.cluster_cidr_ipv6_midway, local.cluster_cidr_ipv6_newbits, local.cluster_cidr_ipv6_newbits)[0]] :
+    # ipv4 unspecified
+    length(module.project) > 0 ? [cidrsubnets(module.project[0].vpc.ipv4_cidr, local.cluster_cidr_ipv4_newbits, local.cluster_cidr_ipv4_newbits)[0]] :
+    # default
+    []
   )
   service_cidr = (
-    local.project_vpc_type == "ipv6" ?
-    [cidrsubnets(local.cluster_cidr_ipv6_midway, local.cluster_cidr_ipv6_newbits, local.cluster_cidr_ipv6_newbits)[1]] :
-    [cidrsubnets(module.project[0].vpc.ipv4_cidr, local.cluster_cidr_ipv4_newbits, local.cluster_cidr_ipv4_newbits)[1]]
+    # specified
+    length(var.config_service_cidr) > 0 ? var.config_service_cidr :
+    # ipv6 unspecified
+    length(module.project) > 0 && local.project_vpc_type == "ipv6" ? [cidrsubnets(local.cluster_cidr_ipv6_midway, local.cluster_cidr_ipv6_newbits, local.cluster_cidr_ipv6_newbits)[1]] :
+    # ipv4 unspecified
+    length(module.project) > 0 ? [cidrsubnets(module.project[0].vpc.ipv4_cidr, local.cluster_cidr_ipv4_newbits, local.cluster_cidr_ipv4_newbits)[1]] :
+    # default
+    []
   )
   cluster_cidr_mask_size = (
-    local.project_vpc_type == "ipv6" ?
-    (local.cluster_cidr_ipv6_starting_cidr + local.cluster_cidr_ipv6_midway_newbits + local.cluster_cidr_ipv6_newbits) :
-    (local.cluster_cidr_ipv4_starting_cidr + local.cluster_cidr_ipv4_newbits)
+    length(module.project) > 0 ?
+    (
+      local.project_vpc_type == "ipv6" ?
+      (local.cluster_cidr_ipv6_starting_cidr + local.cluster_cidr_ipv6_midway_newbits + local.cluster_cidr_ipv6_newbits) :
+      (local.cluster_cidr_ipv4_starting_cidr + local.cluster_cidr_ipv4_newbits)
+    ) :
+    0
   )
 }
 
@@ -229,7 +264,7 @@ resource "random_pet" "server" {
 module "project" {
   count                       = local.project_mod
   source                      = "rancher/access/aws"
-  version                     = "v3.1.2"
+  version                     = "v3.1.4"
   vpc_use_strategy            = local.project_vpc_use_strategy
   vpc_name                    = local.project_vpc_name
   vpc_type                    = local.project_vpc_type
@@ -258,6 +293,9 @@ data "aws_security_group" "general_info" {
   filter {
     name   = "tag:Name"
     values = [local.server_security_group_name]
+  }
+  timeouts {
+    read = "40m"
   }
 }
 
@@ -315,11 +353,11 @@ module "default_config_initial_server" {
   node-external-ip            = [module.server[0].server.public_ip]
   node-ip                     = [module.server[0].server.private_ip]
   node-name                   = local.server_name
-  local_file_path             = local.local_file_path
-  local_file_name             = local.config_default_name
   cluster-cidr                = local.cluster_cidr
   service-cidr                = local.service_cidr
   kube-controller-manager-arg = ["--node-cidr-mask-size=${local.cluster_cidr_mask_size}"]
+  local_file_path             = local.local_file_path
+  local_file_name             = local.config_default_name
 }
 
 module "default_config_additional_server" {
@@ -329,16 +367,25 @@ module "default_config_additional_server" {
     module.project,
     module.server,
   ]
-  source            = "rancher/rke2-config/local"
-  version           = "v0.1.3"
-  advertise-address = module.server[0].server.private_ip
-  token             = local.join_token
-  server            = local.config_join_url
-  node-external-ip  = [module.server[0].server.public_ip]
-  node-ip           = [module.server[0].server.private_ip]
-  node-name         = local.server_name
-  local_file_path   = local.local_file_path
-  local_file_name   = local.config_default_name
+  source  = "rancher/rke2-config/local"
+  version = "v0.1.3"
+  tls-san = distinct(compact([
+    local.server_domain_name,
+    local.project_domain,
+    module.server[0].server.private_ip,
+    module.server[0].server.public_ip,
+  ]))
+  advertise-address           = module.server[0].server.private_ip
+  token                       = local.join_token
+  server                      = local.config_join_url
+  node-external-ip            = [module.server[0].server.public_ip]
+  node-ip                     = [module.server[0].server.private_ip]
+  node-name                   = local.server_name
+  cluster-cidr                = local.cluster_cidr
+  service-cidr                = local.service_cidr
+  kube-controller-manager-arg = ["--node-cidr-mask-size=${local.cluster_cidr_mask_size}"]
+  local_file_path             = local.local_file_path
+  local_file_name             = local.config_default_name
 }
 
 module "default_config_agent" {
@@ -371,7 +418,7 @@ module "install" {
     module.download,
   ]
   source                     = "rancher/rke2-install/null"
-  version                    = "v1.2.2"
+  version                    = "v1.2.3"
   release                    = local.install_rke2_version
   rpm_channel                = local.install_rpm_channel
   local_file_path            = local.local_file_path
