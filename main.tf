@@ -215,7 +215,7 @@ module "default_config_initial_server" {
     module.server,
   ]
   source            = "rancher/rke2-config/local"
-  version           = "v0.1.3"
+  version           = "0.1.4"
   advertise-address = module.server[0].server.private_ip
   tls-san = compact([
     local.server_domain_name,
@@ -238,7 +238,7 @@ module "default_config_additional_server" {
     module.server,
   ]
   source            = "rancher/rke2-config/local"
-  version           = "v0.1.3"
+  version           = "0.1.4"
   advertise-address = module.server[0].server.private_ip
   token             = local.join_token
   server            = local.config_join_url
@@ -255,7 +255,7 @@ module "default_config_agent" {
     module.server,
   ]
   source           = "rancher/rke2-config/local"
-  version          = "v0.1.3"
+  version          = "0.1.4"
   token            = local.join_token
   server           = local.config_join_url
   node-external-ip = local.node_external_ip
