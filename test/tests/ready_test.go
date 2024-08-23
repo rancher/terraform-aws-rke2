@@ -33,15 +33,15 @@ func TestMatrix(t *testing.T) {
 	// only use a few combos for now, we can expand later
 	selection := []string{
 		// os tests
-		// "ubuntu-22-canal-stable-one-tar-ipv4-nginx",
+		// "sle-micro-55-canal-stable-one-rpm-ipv4-nginx",
+		// // "sle-micro-60-canal-stable-one-rpm-ipv4-nginx",
 		// "sles-15-canal-stable-one-rpm-ipv4-nginx",
 		// "rhel-9-canal-stable-one-rpm-ipv4-nginx",
-		// "rhel-8-canal-stable-one-rpm-ipv4-nginx",
-		// "sle-micro-55-canal-stable-one-rpm-ipv4-nginx",
+		// // "rocky-9-canal-stable-one-tar-ipv4-nginx",
 		// "rhel-8-cis-canal-stable-one-rpm-ipv4-nginx",
-		// "ubuntu-20-canal-stable-one-tar-ipv4-nginx", // not working
-		// "rocky-8-canal-stable-one-rpm-ipv4-nginx", // not working
-		// "liberty-7-canal-stable-one-rpm-ipv4-nginx", // not working
+		// // "liberty-8-canal-stable-one-rpm-ipv4-nginx",
+		// // "ubuntu-24-canal-stable-one-tar-ipv4-nginx",
+		// "ubuntu-22-canal-stable-one-tar-ipv4-nginx",
 
 		// cni tests
 		// "sle-micro-55-cilium-stable-one-rpm-ipv4-nginx",
@@ -50,31 +50,44 @@ func TestMatrix(t *testing.T) {
 		// version tests
 		// "sle-micro-55-canal-latest-one-rpm-ipv4-nginx",
 		// "sle-micro-55-canal-old-one-rpm-ipv4-nginx",
+
 		// multinode fixtures
-		"sle-micro-55-canal-stable-ha-rpm-ipv4-nginx", // (ha not ready)
-		// "sles-15-canal-stable-ha-rpm-ipv4-nginx", (ha not ready)
-		// "ubuntu-22-canal-stable-ha-tar-ipv4-nginx", (ha not ready)
-		// "sle-micro-55-canal-stable-splitrole-rpm-ipv4-nginx", (splitrole not ready)
-		// "sles-15-canal-stable-splitrole-rpm-ipv4-nginx", (splitrole not ready)
-		// "ubuntu-22-canal-stable-splitrole-tar-ipv4-nginx", (splitrole not ready)
-		// "sle-micro-55-canal-stable-db-rpm-ipv4-nginx", (db test not yet implemented)
-		// "sles-15-canal-stable-db-rpm-ipv4-nginx", (db test not yet implemented)
-		// "ubuntu-22-canal-stable-db-tar-ipv4-nginx", (db test not yet implemented)
-		// install method tests
-		// "sle-micro-55-canal-stable-one-tar-ipv4-nginx",
-		// "sles-15-canal-stable-one-tar-ipv4-nginx",
+		//// basic HA
+		"sle-micro-55-canal-stable-ha-rpm-ipv4-nginx",
+		// "sles-15-canal-stable-ha-rpm-ipv4-nginx",
+		// "ubuntu-22-canal-stable-ha-tar-ipv4-nginx",
+		// "sle-micro-55-canal-stable-ha-rpm-ipv6-nginx",
+
+		//// dedicated control plane
+		// "sle-micro-55-canal-stable-splitrole-rpm-ipv4-nginx",
+		// "sles-canal-stable-splitrole-rpm-ipv4-nginx", (splitrole not ready)
+		// "ubuntu-canal-stable-splitrole-tar-ipv4-nginx", (splitrole not ready)
+
+		//// dedicated database (etcd)
+		// "sle-micro-canal-stable-db-rpm-ipv4-nginx", (db test not yet implemented)
+		// "sles-canal-stable-db-rpm-ipv4-nginx", (db test not yet implemented)
+		// "ubuntu-canal-stable-db-tar-ipv4-nginx", (db test not yet implemented)
+
+		// airgapped install tests
+		// "sle-micro-canal-stable-one-tar-ipv4-nginx",
+		// "sles-canal-stable-one-tar-ipv4-nginx",
+		// "ubuntu-canal-stable-one-tar-ipv4-nginx",
+
 		// ipv6 tests
-		// "ubuntu-22-canal-stable-one-tar-ipv6-nginx",
-		// "sles-15-canal-stable-one-rpm-ipv6-nginx",
-		// "sle-micro-55-canal-stable-one-rpm-ipv6-nginx",
+		// "ubuntu-canal-stable-one-tar-ipv6-nginx",
+		// "sles-canal-stable-one-rpm-ipv6-nginx",
+		// "sle-micro-canal-stable-one-rpm-ipv6-nginx",
+
 		// ingress tests (not yet implemented)
-		// "ubuntu-22-canal-stable-one-tar-ipv4-traefik",
-		// "sles-15-canal-stable-one-rpm-ipv4-traefik",
-		// "sle-micro-55-canal-stable-one-rpm-ipv4-traefik",
+		// "ubuntu-canal-stable-one-tar-ipv4-traefik",
+		// "sles-canal-stable-one-rpm-ipv4-traefik",
+		// "sle-micro-canal-stable-one-rpm-ipv4-traefik",
 	}
-	// this combo not currently possible due to kernel parameters set on the image along with AWS networking expectations
-	// "rhel-8-cis-cilium-latest-one-rpm-ipv6-nginx",
-	// rpm install method is not supported for ubuntu
+	//Unsupported Combos:
+	// "rhel-8-cis-...-ipv6-...",
+	//// kernel parameters set on the STIG image disables dhcpv6 which AWS requires for dedicated ipv6 access
+	// "ubuntu-...-rpm-...",
+	//// rpm install method is not supported for ubuntu
 
 	combinations := make(map[string]map[string]string)
 	for i := range selection {
@@ -90,6 +103,7 @@ func TestMatrix(t *testing.T) {
 			kubeconfigPath, d, err := fit.CreateFixture(t, v)
 			if err != nil {
 				t.Logf("Error creating cluster: %s", err)
+				t.Fail()
 				fit.Teardown(t, &d)
 			}
 			t.Logf("Fixture %s created, checking...", k)

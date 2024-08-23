@@ -37,7 +37,7 @@ locals {
   data_remote_path   = "${local.home_remote_path}/fixture"
   fit_remote_path    = "${local.data_remote_path}/${local.fixture}"
   fit_config_path    = "${local.fit_remote_path}/rke2"
-  vars_remote_path   = "${local.data_remote_path}/vars"
+  vars_remote_path   = "${local.fit_remote_path}/inputs.tfvars"
   data_local_path    = abspath("${path.root}/data/${local.identifier}")
   file_path          = local.fit_config_path
   runner_ip          = (local.ip_family == "ipv6" ? module.runner.server.ipv6_addresses[0] : module.runner.server.public_ip)
@@ -95,7 +95,7 @@ module "runner" {
   version                    = "v1.1.2"
   image_type                 = local.image
   server_name                = local.project_name
-  server_type                = "small"
+  server_type                = "xxl"
   subnet_name                = keys(module.access.subnets)[0]
   security_group_name        = module.access.security_group.tags_all.Name
   direct_access_use_strategy = "ssh"
@@ -253,30 +253,6 @@ resource "terraform_data" "copy_fixture" {
     destination = "${local.fit_remote_path}/${each.key}"
   }
 }
-resource "terraform_data" "copy_vars" {
-  depends_on = [
-    module.access,
-    module.runner,
-    local_file.terraform_vars,
-    terraform_data.install_nix,
-    terraform_data.create_age,
-    terraform_data.copy_fixture,
-  ]
-  triggers_replace = {
-    input_data = local_file.terraform_vars.content
-  }
-  connection {
-    type        = "ssh"
-    user        = local.username
-    script_path = "/home/${local.username}/copy_vars"
-    agent       = true
-    host        = module.runner.server.public_ip
-  }
-  provisioner "file" { # copy over the variables
-    source      = "${local.data_local_path}/vars"
-    destination = local.vars_remote_path
-  }
-}
 resource "terraform_data" "copy_module" {
   for_each = local.module_files
   depends_on = [
@@ -305,7 +281,32 @@ resource "terraform_data" "copy_module" {
   }
 }
 
-resource "terraform_data" "init" {
+resource "terraform_data" "copy_vars" {
+  depends_on = [
+    module.access,
+    module.runner,
+    local_file.terraform_vars,
+    terraform_data.install_nix,
+    terraform_data.create_age,
+    terraform_data.copy_fixture,
+  ]
+  triggers_replace = {
+    input_data = local_file.terraform_vars.content
+  }
+  connection {
+    type        = "ssh"
+    user        = local.username
+    script_path = "/home/${local.username}/copy_vars"
+    agent       = true
+    host        = module.runner.server.public_ip
+  }
+  provisioner "file" { # copy over the variables
+    source      = "${local.data_local_path}/vars"
+    destination = local.vars_remote_path
+  }
+}
+
+resource "terraform_data" "copy_command" {
   depends_on = [
     module.access,
     module.runner,
@@ -322,14 +323,17 @@ resource "terraform_data" "init" {
   connection {
     type        = "ssh"
     user        = local.username
-    script_path = "${local.home_remote_path}/init"
+    script_path = "${local.home_remote_path}/copy_command"
     agent       = true
     host        = module.runner.server.public_ip
   }
   provisioner "file" {
     content     = <<-EOT
       set -e
-      export ARGS="$@"
+      TF_DIRECTORY="$1"
+      export TF_DIRECTORY
+      ARGS="$(awk '{for (i=2; i<NF; i++) printf $i " "; print $NF}' <<< "$@")"
+      export ARGS
       source /etc/profile || true
       rm -f ${local.home_remote_path}/secrets.rc
       nix-shell -p age --run 'printf "%s" "$(cat ${local.home_remote_path}/age_key)" | age -d -i - -o ${local.home_remote_path}/secrets.rc ${local.home_remote_path}/secrets.rc.age'
@@ -342,8 +346,8 @@ resource "terraform_data" "init" {
         install -d $homebin; \
         tfswitch -b $homebin/terraform 1.5.7 &>/dev/null; \
         export PATH="$homebin:$PATH"; \
-        cd ${local.fit_remote_path}; \
         export TF_IN_AUTOMATION=1; \
+        cd $TF_DIRECTORY; \
         terraform $ARGS; \
       '
     EOT
@@ -352,12 +356,6 @@ resource "terraform_data" "init" {
   provisioner "remote-exec" {
     inline = [<<-EOT
       sudo chmod +x ${local.fit_remote_path}/terraform_command.sh
-    EOT
-    ]
-  }
-  provisioner "remote-exec" {
-    inline = [<<-EOT
-      ${local.fit_remote_path}/terraform_command.sh init -upgrade=true
     EOT
     ]
   }
@@ -371,13 +369,13 @@ resource "terraform_data" "destroy" {
     terraform_data.copy_fixture,
     terraform_data.copy_vars,
     terraform_data.copy_module,
-    terraform_data.init,
+    terraform_data.copy_command,
   ]
   triggers_replace = {
-    ip              = module.runner.server.public_ip,
-    username        = local.username,
-    var_remote_path = local.vars_remote_path
-    fit_remote_path = local.fit_remote_path
+    ip               = module.runner.server.public_ip,
+    username         = local.username,
+    vars_remote_path = local.vars_remote_path
+    fit_remote_path  = local.fit_remote_path
   }
   connection {
     type        = "ssh"
@@ -389,7 +387,7 @@ resource "terraform_data" "destroy" {
   provisioner "remote-exec" {
     when = destroy
     inline = [<<-EOT
-      sudo ${self.triggers_replace.fit_remote_path}/terraform_command.sh destroy -var-file="${self.triggers_replace.var_remote_path}" -auto-approve
+      sudo ${self.triggers_replace.fit_remote_path}/terraform_command.sh "${self.triggers_replace.fit_remote_path}" destroy -var-file="${self.triggers_replace.vars_remote_path}" -auto-approve
     EOT
     ]
   }
@@ -403,14 +401,14 @@ resource "terraform_data" "apply" {
     terraform_data.copy_fixture,
     terraform_data.copy_vars,
     terraform_data.copy_module,
-    terraform_data.init,
+    terraform_data.copy_command,
     terraform_data.destroy,
   ]
   triggers_replace = {
     fixtures = md5(jsonencode(terraform_data.copy_fixture[*]))
     vars     = terraform_data.copy_vars.id
     module   = md5(jsonencode(terraform_data.copy_module[*]))
-    init     = terraform_data.init.id
+    cmd      = terraform_data.copy_command.id
     destroy  = terraform_data.destroy.id
   }
   connection {
@@ -422,7 +420,8 @@ resource "terraform_data" "apply" {
   }
   provisioner "remote-exec" {
     inline = [<<-EOT
-      ${local.fit_remote_path}/terraform_command.sh apply -var-file="${local.vars_remote_path}" -auto-approve
+      ${local.fit_remote_path}/terraform_command.sh "${local.fit_remote_path}" init -upgrade=true
+      ${local.fit_remote_path}/terraform_command.sh "${local.fit_remote_path}" apply -var-file="${local.vars_remote_path}" -auto-approve
     EOT
     ]
   }
@@ -436,7 +435,7 @@ resource "terraform_data" "output" {
     terraform_data.copy_fixture,
     terraform_data.copy_vars,
     terraform_data.copy_module,
-    terraform_data.init,
+    terraform_data.copy_command,
     terraform_data.destroy,
     terraform_data.apply,
   ]
@@ -444,7 +443,7 @@ resource "terraform_data" "output" {
     fixtures = md5(jsonencode(terraform_data.copy_fixture[*]))
     vars     = terraform_data.copy_vars.id
     module   = md5(jsonencode(terraform_data.copy_module[*]))
-    init     = terraform_data.init.id
+    cmd      = terraform_data.copy_command.id
     destroy  = terraform_data.destroy.id
     apply    = terraform_data.apply.id
   }
@@ -457,7 +456,7 @@ resource "terraform_data" "output" {
   }
   provisioner "remote-exec" {
     inline = [<<-EOT
-      ${local.fit_remote_path}/terraform_command.sh output -json > ${local.fit_remote_path}/output.json
+      ${local.fit_remote_path}/terraform_command.sh "${local.fit_remote_path}" output -json > ${local.fit_remote_path}/output.json
     EOT
     ]
   }
@@ -478,7 +477,7 @@ data "external" "output" {
     terraform_data.copy_fixture,
     terraform_data.copy_vars,
     terraform_data.copy_module,
-    terraform_data.init,
+    terraform_data.copy_command,
     terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
@@ -498,7 +497,7 @@ resource "local_file" "kubeconfig" {
     terraform_data.copy_fixture,
     terraform_data.copy_vars,
     terraform_data.copy_module,
-    terraform_data.init,
+    terraform_data.copy_command,
     terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
@@ -515,7 +514,7 @@ resource "local_file" "k8s_key" {
     terraform_data.copy_fixture,
     terraform_data.copy_vars,
     terraform_data.copy_module,
-    terraform_data.init,
+    terraform_data.copy_command,
     terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
@@ -532,7 +531,7 @@ resource "local_file" "k8s_cert" {
     terraform_data.copy_fixture,
     terraform_data.copy_vars,
     terraform_data.copy_module,
-    terraform_data.init,
+    terraform_data.copy_command,
     terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
@@ -549,7 +548,7 @@ resource "local_file" "k8s_ca" {
     terraform_data.copy_fixture,
     terraform_data.copy_vars,
     terraform_data.copy_module,
-    terraform_data.init,
+    terraform_data.copy_command,
     terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
@@ -567,7 +566,7 @@ resource "terraform_data" "copy_certs" {
     terraform_data.copy_fixture,
     terraform_data.copy_vars,
     terraform_data.copy_module,
-    terraform_data.init,
+    terraform_data.copy_command,
     terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
@@ -581,7 +580,7 @@ resource "terraform_data" "copy_certs" {
     fixtures = md5(jsonencode(terraform_data.copy_fixture[*]))
     vars     = terraform_data.copy_vars.id
     module   = md5(jsonencode(terraform_data.copy_module[*]))
-    init     = terraform_data.init.id
+    cmd      = terraform_data.copy_command.id
     destroy  = terraform_data.destroy.id
     apply    = terraform_data.apply.id
     output   = terraform_data.output.id
@@ -615,7 +614,7 @@ resource "terraform_data" "get_cluster_certs" {
     terraform_data.copy_fixture,
     terraform_data.copy_vars,
     terraform_data.copy_module,
-    terraform_data.init,
+    terraform_data.copy_command,
     terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
@@ -665,7 +664,7 @@ resource "terraform_data" "stop_proxy" {
     terraform_data.copy_fixture,
     terraform_data.copy_vars,
     terraform_data.copy_module,
-    terraform_data.init,
+    terraform_data.copy_command,
     terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
@@ -709,7 +708,7 @@ resource "terraform_data" "proxy" {
     terraform_data.copy_fixture,
     terraform_data.copy_vars,
     terraform_data.copy_module,
-    terraform_data.init,
+    terraform_data.copy_command,
     terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
@@ -724,7 +723,7 @@ resource "terraform_data" "proxy" {
     fixtures = md5(jsonencode(terraform_data.copy_fixture[*]))
     vars     = terraform_data.copy_vars.id
     module   = md5(jsonencode(terraform_data.copy_module[*]))
-    init     = terraform_data.init.id
+    cmd      = terraform_data.copy_command.id
     destroy  = terraform_data.destroy.id
     apply    = terraform_data.apply.id
     output   = terraform_data.output.id

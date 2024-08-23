@@ -346,6 +346,15 @@ variable "server_type" {
   EOT
   default     = "small"
 }
+variable "server_ip_family" {
+  type        = string
+  description = <<-EOT
+    The ip family for the server, this defaults to the project type,
+     but when skipping the project this is helpful for setting the server's ip family.
+    If project type isn't set this defaults to ipv4.
+  EOT
+  default     = ""
+}
 variable "server_private_ip" {
   type        = string
   description = <<-EOT

@@ -1,27 +1,27 @@
 #!/bin/bash
 
 run_tests() {
-  echo "" > /tmp/test.log
-  if [ -d "./tests" ]; then
-    cd tests || exit 1
-  fi
+  echo "" > /tmp/$IDENTIFIER_test.log
   if [ -d "./test" ]; then
     cd test || exit 1
   fi
-  cat <<'EOF'> /tmp/test-processor
+  if [ -d "./tests" ]; then
+    cd tests || exit 1
+  fi
+  cat <<'EOF'> /tmp/$IDENTIFIER_test-processor
 echo "Passed: "
-jq -r '. | select(.Action == "pass") | select(.Test != null).Test' /tmp/test.log
+jq -r '. | select(.Action == "pass") | select(.Test != null).Test' /tmp/$IDENTIFIER_test.log
 echo " "
 echo "Failed: "
-jq -r '. | select(.Action == "fail") | select(.Test != null).Test' /tmp/test.log
+jq -r '. | select(.Action == "fail") | select(.Test != null).Test' /tmp/$IDENTIFIER_test.log
 echo " "
 EOF
-  chmod +x /tmp/test-processor
+  chmod +x /tmp/$IDENTIFIER_test-processor
 
   gotestsum \
     --format=standard-verbose \
-    --jsonfile /tmp/test.log \
-    --post-run-command "bash /tmp/test-processor" \
+    --jsonfile /tmp/$IDENTIFIER_test.log \
+    --post-run-command "bash /tmp/$IDENTIFIER_test-processor" \
     -- \
     -parallel=5 \
     -timeout=300m \

@@ -59,6 +59,11 @@ locals {
   server_type                = var.server_type
   server_security_group_name = (var.server_security_group_name != "" ? var.server_security_group_name : local.project_security_group_name)
   server_private_ip          = var.server_private_ip
+  server_ip_family = (
+    var.server_ip_family != "" ? var.server_ip_family :
+    local.project_vpc_type != "" ? local.project_vpc_type :
+    "ipv4"
+  )
 
   project_subnets = (length(module.project) > 0 ? module.project[0].subnets : null)
   # tflint-ignore: terraform_unused_declarations
@@ -213,7 +218,9 @@ locals {
       (local.cluster_cidr_ipv6_starting_cidr + local.cluster_cidr_ipv6_midway_newbits + local.cluster_cidr_ipv6_newbits) :
       (local.cluster_cidr_ipv4_starting_cidr + local.cluster_cidr_ipv4_newbits)
     ) :
-    0
+    length(local.cluster_cidr) > 0 ? split("/", local.cluster_cidr[0])[1] :
+    local.server_ip_family == "ipv6" ? 128 :
+    16
   )
 }
 
@@ -306,7 +313,7 @@ module "server" {
     data.aws_security_group.general_info,
   ]
   source                       = "rancher/server/aws"
-  version                      = "v1.2.4"
+  version                      = "v1.3.0"
   image_use_strategy           = local.server_image_use_strategy
   image                        = local.server_image
   image_type                   = local.server_image_type
@@ -314,7 +321,7 @@ module "server" {
   server_id                    = local.server_id
   server_name                  = local.server_name
   server_type                  = local.server_type
-  server_ip_family             = (local.project_vpc_type == "ipv6" ? "ipv6" : "ipv4")
+  server_ip_family             = local.server_ip_family
   cloudinit_use_strategy       = local.server_cloudinit_use_strategy
   cloudinit_content            = local.server_cloudinit_content
   subnet_name                  = local.server_subnet_name
@@ -333,77 +340,29 @@ module "server" {
 
 # the idea here is to provide the least amount of config necessary to get a cluster up and running
 # if a user wants to provide their own config, they can put it in the local_file_path or supply it as a string
-module "default_config_initial_server" {
-  count = ((local.install_role == "server" && local.config_join_strategy == "skip") ? local.config_mod : 0)
+module "default_config" {
+  count = local.config_mod
   depends_on = [
     random_uuid.join_token,
     module.project,
     module.server,
   ]
   source  = "rancher/rke2-config/local"
-  version = "v0.1.3"
+  version = "v0.1.4"
   tls-san = distinct(compact([
-    local.server_domain_name,
     local.project_domain,
-    module.server[0].server.private_ip,
-    module.server[0].server.public_ip,
   ]))
-  advertise-address           = module.server[0].server.private_ip
   token                       = local.join_token
+  server                      = (local.config_join_strategy == "join" ? local.config_join_url : null)
   node-external-ip            = [module.server[0].server.public_ip]
   node-ip                     = [module.server[0].server.private_ip]
   node-name                   = local.server_name
-  cluster-cidr                = local.cluster_cidr
-  service-cidr                = local.service_cidr
-  kube-controller-manager-arg = ["--node-cidr-mask-size=${local.cluster_cidr_mask_size}"]
-  local_file_path             = local.local_file_path
-  local_file_name             = local.config_default_name
-}
-
-module "default_config_additional_server" {
-  count = ((local.install_role == "server" && local.config_join_strategy == "join") ? local.config_mod : 0)
-  depends_on = [
-    random_uuid.join_token,
-    module.project,
-    module.server,
-  ]
-  source  = "rancher/rke2-config/local"
-  version = "v0.1.3"
-  tls-san = distinct(compact([
-    local.server_domain_name,
-    local.project_domain,
-    module.server[0].server.private_ip,
-    module.server[0].server.public_ip,
-  ]))
   advertise-address           = module.server[0].server.private_ip
-  token                       = local.join_token
-  server                      = local.config_join_url
-  node-external-ip            = [module.server[0].server.public_ip]
-  node-ip                     = [module.server[0].server.private_ip]
-  node-name                   = local.server_name
-  cluster-cidr                = local.cluster_cidr
-  service-cidr                = local.service_cidr
-  kube-controller-manager-arg = ["--node-cidr-mask-size=${local.cluster_cidr_mask_size}"]
+  cluster-cidr                = (local.install_role == "server" && local.server_ip_family == "ipv6" ? local.cluster_cidr : null)
+  service-cidr                = (local.install_role == "server" && local.server_ip_family == "ipv6" ? local.service_cidr : null)
+  kube-controller-manager-arg = (local.install_role == "server" && local.server_ip_family == "ipv6" ? ["--node-cidr-mask-size=${local.cluster_cidr_mask_size}"] : null)
   local_file_path             = local.local_file_path
   local_file_name             = local.config_default_name
-}
-
-module "default_config_agent" {
-  count = (local.install_role == "agent" ? local.config_mod : 0)
-  depends_on = [
-    random_uuid.join_token,
-    module.project,
-    module.server,
-  ]
-  source           = "rancher/rke2-config/local"
-  version          = "v0.1.3"
-  token            = local.join_token
-  server           = local.config_join_url
-  node-external-ip = [module.server[0].server.public_ip]
-  node-ip          = [module.server[0].server.private_ip]
-  node-name        = local.server_name
-  local_file_path  = local.local_file_path
-  local_file_name  = local.config_default_name
 }
 
 module "install" {
@@ -412,9 +371,7 @@ module "install" {
     random_uuid.join_token,
     module.project,
     module.server,
-    module.default_config_initial_server,
-    module.default_config_additional_server,
-    module.default_config_agent,
+    module.default_config,
     module.download,
   ]
   source                     = "rancher/rke2-install/null"

@@ -39,7 +39,11 @@ output "server_rke2_config" {
   EOT
 }
 output "join_url" {
-  value       = (local.config_join_url != "" ? local.config_join_url : "https://${module.server[0].server.private_ip}:9345")
+  value = (
+    local.config_join_url != "" ? local.config_join_url :
+    local.server_ip_family == "ipv6" ? "https://[${module.server[0].server.private_ip}]:9345" :
+    "https://${module.server[0].server.private_ip}:9345"
+  )
   description = <<-EOT
     The URL to join this cluster.
   EOT
