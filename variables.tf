@@ -445,35 +445,44 @@ variable "server_image_type" {
     The designation of server "image" from the ./image/types.tf file, this relates the AWS AMI information.
     Please be aware that some images require a subscription and will have additional cost over usage of the server.
     Current images are:
-        "sles-15",
-        "sle-micro-55",
-        "rhel-8-cis",
-        "ubuntu-22",
-        "rhel-8",
-        "rhel-9"
+      "sle-micro-55",
+      "sle-micro-60",
+      "sles-15",
+      "cis-rhel-8",
+      "ubuntu-22",
+      "ubuntu-24",
+      "rocky-9",
+      "rhel-9",
+      "liberty-8",
   EOT
   validation {
     condition = (
       var.server_image_type == "" ? true : contains([
-        "sles-15",
         "sle-micro-55",
-        "rhel-8-cis",
+        "sle-micro-60",
+        "sles-15",
+        "cis-rhel-8",
         "ubuntu-22",
-        "rhel-8",
+        "ubuntu-24",
+        "rocky-9",
         "rhel-9",
+        "liberty-8",
       ], var.server_image_type)
     )
     error_message = <<-EOT
       If specified, this must be one of
-        "sles-15",
-        "sle-micro-55",
-        "rhel-8-cis",
-        "ubuntu-22",
-        "rhel-8",
-        "rhel-9"
+      "sle-micro-55",
+      "sle-micro-60",
+      "sles-15",
+      "cis-rhel-8",
+      "ubuntu-22",
+      "ubuntu-24",
+      "rocky-9",
+      "rhel-9",
+      "liberty-8",
     EOT
   }
-  default = "sle-micro-55"
+  default = "sle-micro-60"
 }
 
 variable "server_cloudinit_use_strategy" {

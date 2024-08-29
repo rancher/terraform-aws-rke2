@@ -1,11 +1,18 @@
 # control plane terraform templatefile
-
+provider "aws" {
+  default_tags {
+    tags = {
+      Id    = local.identifier
+      Owner = local.email
+    }
+  }
+}
 locals {
   # tflint-ignore: terraform_unused_declarations
   ingress_controller = var.ingress_controller # not currently in use, TODO: add traefik functionality
   identifier         = var.identifier         # this is a random unique string that can be used to identify resources in the cloud provider
   email              = "terraform-ci@suse.com"
-  example            = "ha"
+  example            = "splitrole"
   project_name       = "${project_name}"
   username           = lower(local.project_name)
   ip_family          = var.ip_family
@@ -41,8 +48,7 @@ locals {
   )
   workfolder       = (strcontains(local.image, "cis") ? "/var/tmp" : "/home/$${local.username}")
   k8s_target_group = substr(lower("$${local.project_name}-kubectl"), 0, 32)
-  cloudinit_strategy = ((local.image == "cis-rhel-8" || local.image == "sle-micro-55") ? "skip" : "default")
-
+  cloudinit_strategy = ((local.image == "sle-micro-55" || local.image == "cis-rhel-8") ? "skip" : "default")
 
   # CIS images are not supported on IPv6 only deployments due to kernel modifications with how AWS IPv6 works (dhcpv6)
 
@@ -53,8 +59,8 @@ locals {
   # tflint-ignore: terraform_unused_declarations
   fail_ubuntu_rpm = ((strcontains(local.image, "ubuntu") && local.install_method == "rpm") ? one([local.install_method, "ubuntu_rpm_incompatible"]) : false)
 
-  server_info = jsondecode(<<-EOT
-    ${server_info}
+  agent_info = jsondecode(<<-EOT
+    ${agent_info}
   EOT
   )
   cluster_cidr = jsondecode(<<-EOT
@@ -71,16 +77,16 @@ data "http" "myip" {
   url = "https://ipinfo.io/ip"
 }
 
-module "control_plane" {
+module "worker" {
   source                              = "../../../../" # this source is dev use only, see https://registry.terraform.io/modules/rancher/rke2/aws/latest
   project_use_strategy                = "skip"
   project_domain                      = "${project_domain}"
   server_use_strategy                 = "create"
-  server_name                         = local.server_info["name"]
+  server_name                         = local.agent_info["name"]
   server_type                         = "small"                          # smallest viable control plane node (actually t3.medium)
   server_security_group_name          = "${project_security_group_name}" # should always match project security group
-  server_availability_zone            = local.server_info["az"]
-  server_subnet_name                  = local.server_info["subnet"]
+  server_availability_zone            = local.agent_info["az"]
+  server_subnet_name                  = local.agent_info["subnet"]
   server_image_use_strategy           = "find"
   server_image_type                   = local.image
   server_ip_family                    = local.ip_family
@@ -111,16 +117,16 @@ module "control_plane" {
     timeout                  = 10
   }
   server_add_domain        = false
-  server_domain_name       = local.server_info["domain"]
+  server_domain_name       = local.agent_info["domain"]
   server_domain_zone       = local.zone
   server_add_eip           = false
   install_use_strategy     = local.install_method
   local_file_use_strategy  = local.download
-  local_file_path          = local.server_info["file_path"]
+  local_file_path          = local.agent_info["file_path"]
   install_rke2_version     = local.rke2_version
   install_rpm_channel      = "stable"
   install_remote_file_path = "$${local.workfolder}/rke2"
-  install_role             = "server"
+  install_role             = "agent"
   install_start            = true
   install_prep_script      = local.install_prep_script
   install_start_timeout    = 10

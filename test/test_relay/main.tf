@@ -41,7 +41,6 @@ locals {
   data_local_path    = abspath("${path.root}/data/${local.identifier}")
   file_path          = local.fit_config_path
   runner_ip          = (local.ip_family == "ipv6" ? module.runner.server.ipv6_addresses[0] : module.runner.server.public_ip)
-  cluster_ip         = (local.ip_family == "ipv6" ? "[${data.external.output.result.server_ip}]" : data.external.output.result.server_ip)
   cluster_url        = data.external.output.result.api
 }
 
@@ -51,10 +50,6 @@ data "http" "myip" {
     attempts     = 2
     min_delay_ms = 1000
   }
-}
-
-data "aws_availability_zones" "available" {
-  state = "available"
 }
 
 resource "local_file" "terraform_vars" {
@@ -77,7 +72,7 @@ resource "local_file" "terraform_vars" {
 
 module "access" {
   source                     = "rancher/access/aws"
-  version                    = "v3.0.2"
+  version                    = "v3.1.5"
   vpc_name                   = "${local.project_name}-vpc"
   vpc_type                   = "dualstack"
   vpc_public                 = true
@@ -92,29 +87,32 @@ module "runner" {
     module.access,
   ]
   source                     = "rancher/server/aws"
-  version                    = "v1.1.2"
+  version                    = "v1.3.0"
   image_type                 = local.image
   server_name                = local.project_name
-  server_type                = "xxl"
+  server_type                = "large"
   subnet_name                = keys(module.access.subnets)[0]
   security_group_name        = module.access.security_group.tags_all.Name
   direct_access_use_strategy = "ssh"
-  cloudinit_use_strategy     = "skip"
+  cloudinit_use_strategy     = "default"
   server_access_addresses = {
     "runnerSsh" = {
-      port     = 22
-      protocol = "tcp"
-      cidrs    = ["${local.ip}/32"]
+      port      = 22
+      protocol  = "tcp"
+      cidrs     = ["${local.ip}/32"]
+      ip_family = "ipv4"
     }
     "runnerProxy" = {
-      port     = 443
-      protocol = "tcp"
-      cidrs    = ["${local.ip}/32"]
+      port      = 443
+      protocol  = "tcp"
+      cidrs     = ["${local.ip}/32"]
+      ip_family = "ipv4"
     }
     "runnerKubectl" = {
-      port     = 6443
-      protocol = "tcp"
-      cidrs    = ["${local.ip}/32"]
+      port      = 6443
+      protocol  = "tcp"
+      cidrs     = ["${local.ip}/32"]
+      ip_family = "ipv4"
     }
   }
   server_user = {
@@ -142,6 +140,15 @@ resource "terraform_data" "install_nix" {
     script_path = "${local.home_remote_path}/install_nix"
     agent       = true
     host        = module.runner.server.public_ip
+  }
+  provisioner "remote-exec" {
+    inline = [<<-EOT
+      sudo wget https://download.opensuse.org/distribution/leap/15.6/repo/oss/repodata/repomd.xml.key
+      sudo rpm --import repomd.xml.key
+      sudo zypper ar -f https://download.opensuse.org/distribution/leap/15.6/repo/oss/ leap-oss
+      sudo zypper install -y curl
+    EOT
+    ]
   }
   provisioner "remote-exec" { # install nix
     inline = [<<-EOT

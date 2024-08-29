@@ -271,7 +271,7 @@ resource "random_pet" "server" {
 module "project" {
   count                       = local.project_mod
   source                      = "rancher/access/aws"
-  version                     = "v3.1.4"
+  version                     = "v3.1.5"
   vpc_use_strategy            = local.project_vpc_use_strategy
   vpc_name                    = local.project_vpc_name
   vpc_type                    = local.project_vpc_type
@@ -313,7 +313,7 @@ module "server" {
     data.aws_security_group.general_info,
   ]
   source                       = "rancher/server/aws"
-  version                      = "v1.3.0"
+  version                      = "v1.3.1"
   image_use_strategy           = local.server_image_use_strategy
   image                        = local.server_image
   image_type                   = local.server_image_type
@@ -375,7 +375,7 @@ module "install" {
     module.download,
   ]
   source                     = "rancher/rke2-install/null"
-  version                    = "v1.2.3"
+  version                    = "v1.3.0"
   release                    = local.install_rke2_version
   rpm_channel                = local.install_rpm_channel
   local_file_path            = local.local_file_path

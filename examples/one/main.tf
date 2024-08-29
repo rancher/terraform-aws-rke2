@@ -42,17 +42,19 @@ locals {
   cni_file     = (local.cni == "cilium" ? "${path.root}/cilium.yaml" : (local.cni == "calico" ? "${path.root}/calico.yaml" : ""))
   cni_config   = (local.cni_file != "" ? file(local.cni_file) : "")
   # WARNING! Local file path needs to be isolated, don't use the same path as your terraform files
-  local_file_path  = (var.file_path != "" ? (var.file_path == path.root ? "${abspath(path.root)}/rke2" : var.file_path) : "${abspath(path.root)}/rke2")
-  workfolder       = (strcontains(local.image, "cis") ? "/var/tmp" : "/home/${local.username}")
-  k8s_target_group = substr(lower("${local.project_name}-kubectl"), 0, 32)
+  local_file_path    = (var.file_path != "" ? (var.file_path == path.root ? "${abspath(path.root)}/rke2" : var.file_path) : "${abspath(path.root)}/rke2")
+  workfolder         = (strcontains(local.image, "cis") ? "/var/tmp" : "/home/${local.username}")
+  k8s_target_group   = substr(lower("${local.project_name}-kubectl"), 0, 32)
+  cloudinit_strategy = ((local.image == "sle-micro-55" || local.image == "cis-rhel-8") ? "skip" : "default")
 
-  # CIS images are not supported on IPv6 only deployments due to kernel modifications with how AWS IPv6 works (dhcpv6)
-  # tfignore: terraform_unused_declarations
+  # tflint-ignore: terraform_unused_declarations
   fail_cis_ipv6 = ((local.image == "rhel-8-cis" && local.ip_family == "ipv6") ? one([local.ip_family, "cis_ipv6_incompatible"]) : false)
+  # CIS images are not supported on IPv6 only deployments due to kernel modifications with how AWS IPv6 works (dhcpv6)
 
-  # Ubuntu images do not support rpm unstall method
-  # tfignore: terraform_unused_declarations
+
+  # tflint-ignore: terraform_unused_declarations
   fail_ubuntu_rpm = ((strcontains(local.image, "ubuntu") && local.install_method == "rpm") ? one([local.install_method, "ubuntu_rpm_incompatible"]) : false)
+  # Ubuntu images do not support rpm unstall method
 }
 
 data "http" "myip" {
@@ -104,7 +106,7 @@ module "this" {
   server_image_use_strategy           = "find"
   server_image_type                   = local.image
   server_ip_family                    = local.ip_family
-  server_cloudinit_use_strategy       = "skip" # cloud-init not available for sle-micro
+  server_cloudinit_use_strategy       = local.cloudinit_strategy
   server_indirect_access_use_strategy = "enable"
   server_load_balancer_target_groups  = [local.k8s_target_group] # this matches the target_name from project_load_balancer_access_cidrs
   server_direct_access_use_strategy   = "ssh"                    # configure the servers for direct ssh access

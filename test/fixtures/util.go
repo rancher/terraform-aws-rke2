@@ -33,6 +33,10 @@ func GenerateOptions(t *testing.T, d *FixtureData) *terraform.Options {
 		".*connection reset by peer.*":                                             "Failed due to transient network error.",
 		".*TLS handshake timeout.*":                                                "Failed due to transient network error.",
 		".*ssh: handshake failed:.*":                                               "Failed due to transient network error.",
+		".*Repository 'leap-oss' is invalid.*":                                     "Failed due to transient network error.",
+		".*curl.*exit status 55.*":                                                 "Failed due to transient network error.",
+		".*curl.*exit status 56.*":                                                 "Failed due to transient network error.",
+		".*curl.*exit status 7.*":                                                  "Failed due to transient network error.",
 		".*destroy\\.go.*Error: disassociating EC2 EIP.*does not exist.*":          "Failed to delete EIP because interface is already gone",
 		".*destroy\\.go.*Error: modifying EC2 Network Interface.*does not exist.*": "Failed to delete non existent interface",
 	}
@@ -52,14 +56,7 @@ func Teardown(t *testing.T, f *FixtureData) {
 	}
 	f.SshAgent.Stop()
 	aws.DeleteEC2KeyPair(t, f.SshKeyPair)
-	rma(t, fmt.Sprintf("%s/.terraform", f.ExampleDirectory))
-	rma(t, fmt.Sprintf("%s/rke2", f.ExampleDirectory))
-	rma(t, fmt.Sprintf("%s/tmp", f.ExampleDirectory))
-	rma(t, fmt.Sprintf("%s/terraform.tfstate", f.ExampleDirectory))
-	rma(t, fmt.Sprintf("%s/terraform.tfstate.backup", f.ExampleDirectory))
-	rma(t, fmt.Sprintf("%s/.terraform.lock.hcl", f.ExampleDirectory))
 	rma(t, fmt.Sprintf("%s/data/%s", f.ExampleDirectory, f.Id))
-	rm(t, fmt.Sprintf("%s/kubeconfig-*.yaml", f.ExampleDirectory))
 	rm(t, fmt.Sprintf("%s/tf-*", f.ExampleDirectory))
 	rm(t, fmt.Sprintf("%s/50-*.yaml", f.ExampleDirectory))
 

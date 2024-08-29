@@ -13,8 +13,8 @@ locals {
   identifier         = var.identifier         # this is a random unique string that can be used to identify resources in the cloud provider
   email              = "terraform-ci@suse.com"
   example            = "splitrole"
-  project_name       = substr("tf-${substr(md5(join("-", [local.example, local.identifier])), 0, 5)}-${local.identifier}", 0, 20)
-  username           = lower(local.project_name)
+  project_name       = substr("tf-${local.identifier}-${substr(md5(join("-", [local.example, local.identifier])), 0, 5)}", 0, 20)
+  username           = substr(lower(local.project_name), 0, 25)
   ip_family          = var.ip_family
   runner_ip          = (var.runner_ip == "" ? chomp(data.http.myip.response_body) : var.runner_ip) # "runner" is the server running Terraform
   ssh_key            = var.key
@@ -46,8 +46,9 @@ locals {
     var.file_path != "" ? (var.file_path == path.root ? "${abspath(path.root)}/rke2" : var.file_path) :
     "${abspath(path.root)}/rke2"
   )
-  workfolder       = (strcontains(local.image, "cis") ? "/var/tmp" : "/home/${local.username}")
-  k8s_target_group = substr(lower("${local.project_name}-kubectl"), 0, 32)
+  workfolder         = (strcontains(local.image, "cis") ? "/var/tmp" : "/home/${local.username}")
+  k8s_target_group   = substr(lower("${local.project_name}-kubectl"), 0, 32)
+  cloudinit_strategy = ((local.image == "sle-micro-55" || local.image == "cis-rhel-8") ? "skip" : "default")
 
   # CIS images are not supported on IPv6 only deployments due to kernel modifications with how AWS IPv6 works (dhcpv6)
 
@@ -59,8 +60,8 @@ locals {
   fail_ubuntu_rpm = ((strcontains(local.image, "ubuntu") && local.install_method == "rpm") ? one([local.install_method, "ubuntu_rpm_incompatible"]) : false)
 
   # cluster scale options
-  cluster_size = var.cluster_size
-  server_ids   = [for i in range(local.cluster_size) : "${local.project_name}-${substr(md5(uuidv5("dns", tostring(i))), 0, 4)}"]
+  cp_count   = var.control_plane_count
+  server_ids = [for i in range(local.cp_count) : substr("${local.project_name}-${substr(md5(uuidv5("dns", join("-", [tostring(i), "cp"]))), 0, 4)}", 0, 25)]
   initial_server_info = {
     "name"      = local.server_ids[0]
     "domain"    = "${local.server_ids[0]}.${local.zone}"
@@ -76,7 +77,22 @@ locals {
       "domain"    = "${local.server_ids[i]}.${local.zone}"
       "subnet"    = local.additional_subnets[(i % length(local.additional_subnets))].tags.Name
       "az"        = local.additional_subnets[(i % length(local.additional_subnets))].availability_zone
-      "file_path" = "${local.local_file_path}/${local.server_ids[i]}"
+      "file_path" = "${local.local_file_path}/${local.server_ids[i]}/data"
+      "path"      = "${local.local_file_path}/${local.server_ids[i]}"
+    }
+  }
+
+  agent_count = var.worker_count
+  agent_ids   = [for i in range(local.agent_count) : substr("${local.project_name}-${substr(md5(uuidv5("dns", join("-", [tostring(i), "agent"]))), 0, 4)}", 0, 25)]
+  agent_info = {
+    for i in range(length(local.agent_ids)) :
+    local.agent_ids[i] => {
+      "name"      = local.agent_ids[i]
+      "domain"    = "${local.agent_ids[i]}.${local.zone}"
+      "subnet"    = module.initial.project_subnets[keys(module.initial.project_subnets)[(i % length(module.initial.project_subnets))]].tags.Name
+      "az"        = module.initial.project_subnets[keys(module.initial.project_subnets)[(i % length(module.initial.project_subnets))]].availability_zone
+      "file_path" = "${local.local_file_path}/${local.agent_ids[i]}/data"
+      "path"      = "${local.local_file_path}/${local.agent_ids[i]}"
     }
   }
 }
@@ -131,7 +147,7 @@ module "initial" {
   server_image_use_strategy           = "find"
   server_image_type                   = local.image
   server_ip_family                    = local.ip_family
-  server_cloudinit_use_strategy       = "skip" # cloud-init not available for sle-micro
+  server_cloudinit_use_strategy       = local.cloudinit_strategy
   server_indirect_access_use_strategy = "enable"
   server_load_balancer_target_groups  = [local.k8s_target_group] # this matches the target_name from project_load_balancer_access_cidrs
   server_direct_access_use_strategy   = "ssh"                    # configure the servers for direct ssh access
@@ -179,133 +195,186 @@ module "initial" {
   retrieve_kubeconfig      = true
 }
 
-module "additional" {
-  depends_on                          = [module.initial]
-  for_each                            = { for i in range(2) : keys(local.additional_server_info)[i] => local.additional_server_info[keys(local.additional_server_info)[i]] }
-  source                              = "../../" # this source is dev use only, see https://registry.terraform.io/modules/rancher/rke2/aws/latest
-  project_use_strategy                = "skip"
-  project_domain                      = module.initial.project_domain
-  server_use_strategy                 = "create"
-  server_name                         = each.value["name"]
-  server_type                         = "small"                                    # smallest viable control plane node (actually t3.medium)
-  server_security_group_name          = module.initial.project_security_group.name # should always match project security group
-  server_availability_zone            = each.value["az"]
-  server_subnet_name                  = each.value["subnet"]
-  server_image_use_strategy           = "find"
-  server_image_type                   = local.image
-  server_ip_family                    = local.ip_family
-  server_cloudinit_use_strategy       = "skip" # cloud-init not available for sle-micro
-  server_indirect_access_use_strategy = "enable"
-  server_load_balancer_target_groups  = [local.k8s_target_group] # this matches the target_name from project_load_balancer_access_cidrs
-  server_direct_access_use_strategy   = "ssh"                    # configure the servers for direct ssh access
-  server_access_addresses = {                                    # you must include ssh access here to enable setup
-    runnerSsh = {
-      port      = 22 # allow access on ssh port
-      protocol  = "tcp"
-      ip_family = (local.ip_family == "ipv6" ? "ipv6" : "ipv4")
-      cidrs     = (local.ip_family == "ipv6" ? ["${local.runner_ip}/128"] : ["${local.runner_ip}/32"])
-    }
-    runnerApi = {
-      port      = 6443 # allow access to api
-      protocol  = "tcp"
-      ip_family = (local.ip_family == "ipv6" ? "ipv6" : "ipv4")
-      cidrs     = (local.ip_family == "ipv6" ? ["${local.runner_ip}/128"] : ["${local.runner_ip}/32"])
-    }
-  }
-  server_user = {
-    user                     = local.username
-    aws_keypair_use_strategy = "select"
-    ssh_key_name             = local.ssh_key_name
-    public_ssh_key           = local.ssh_key
-    user_workfolder          = local.workfolder
-    timeout                  = 10
-  }
-  server_add_domain        = false
-  server_domain_name       = each.value["domain"]
-  server_domain_zone       = local.zone
-  server_add_eip           = false
-  install_use_strategy     = local.install_method
-  local_file_use_strategy  = local.download
-  local_file_path          = each.value["file_path"]
-  install_rke2_version     = local.rke2_version
-  install_rpm_channel      = "stable"
-  install_remote_file_path = "${local.workfolder}/rke2"
-  install_role             = "server"
-  install_start            = true
-  install_prep_script      = local.install_prep_script
-  install_start_timeout    = 10
-  config_use_strategy      = "merge"
-  config_join_strategy     = "join"
-  config_join_url          = module.initial.join_url
-  config_join_token        = module.initial.join_token
-  config_cluster_cidr      = module.initial.cluster_cidr
-  config_service_cidr      = module.initial.service_cidr
-  config_supplied_content  = local.cni_config
-  config_supplied_name     = "51-cni-config.yaml"
-  retrieve_kubeconfig      = false # use initial
-}
+# There are many ways to orchestrate Terraform configurations with the goal of breaking it down
+# In this example I am using Terraform resources to orchestrate Terraform
+#   I felt this was the best way to accomplish the goal without incurring additional dependencies
+# The configuration we are orchestrating isn't hard coded, we will be generating the config from a templatefile
+#  see "local_file.cp_main"
 
-module "agents" {
+resource "terraform_data" "cp_path" {
   depends_on = [
     module.initial,
-    module.additional,
   ]
-  for_each                            = { for i in range(2, 5) : keys(local.additional_server_info)[i] => local.additional_server_info[keys(local.additional_server_info)[i]] }
-  source                              = "../../" # this source is dev use only, see https://registry.terraform.io/modules/rancher/rke2/aws/latest
-  project_use_strategy                = "skip"
-  project_domain                      = module.initial.project_domain
-  server_use_strategy                 = "create"
-  server_name                         = each.value["name"]
-  server_type                         = "small"                                    # smallest viable control plane node (actually t3.medium)
-  server_security_group_name          = module.initial.project_security_group.name # should always match project security group
-  server_availability_zone            = each.value["az"]
-  server_subnet_name                  = each.value["subnet"]
-  server_image_use_strategy           = "find"
-  server_image_type                   = local.image
-  server_ip_family                    = local.ip_family
-  server_cloudinit_use_strategy       = "skip" # cloud-init not available for sle-micro
-  server_indirect_access_use_strategy = "enable"
-  server_load_balancer_target_groups  = [local.k8s_target_group] # this matches the target_name from project_load_balancer_access_cidrs
-  server_direct_access_use_strategy   = "ssh"                    # configure the servers for direct ssh access
-  server_access_addresses = {                                    # you must include ssh access here to enable setup
-    runnerSsh = {
-      port      = 22 # allow access on ssh port
-      protocol  = "tcp"
-      ip_family = (local.ip_family == "ipv6" ? "ipv6" : "ipv4")
-      cidrs     = (local.ip_family == "ipv6" ? ["${local.runner_ip}/128"] : ["${local.runner_ip}/32"])
-    }
-    runnerApi = {
-      port      = 6443 # allow access to api
-      protocol  = "tcp"
-      ip_family = (local.ip_family == "ipv6" ? "ipv6" : "ipv4")
-      cidrs     = (local.ip_family == "ipv6" ? ["${local.runner_ip}/128"] : ["${local.runner_ip}/32"])
-    }
+  for_each = local.additional_server_info
+  triggers_replace = {
+    initial_token = module.initial.join_token
+    initial_url   = module.initial.join_url
   }
-  server_user = {
-    user                     = local.username
-    aws_keypair_use_strategy = "select"
-    ssh_key_name             = local.ssh_key_name
-    public_ssh_key           = local.ssh_key
-    user_workfolder          = local.workfolder
-    timeout                  = 10
+  provisioner "local-exec" {
+    command = <<-EOT
+      install -d ${each.value.path}
+      cp *_prep.sh ${each.value.path}
+      cp *.yaml ${each.value.path}
+      cp variables.tf ${each.value.path}
+    EOT
   }
-  server_add_domain        = false
-  server_domain_name       = each.value["domain"]
-  server_domain_zone       = local.zone
-  server_add_eip           = false
-  install_use_strategy     = local.install_method
-  local_file_use_strategy  = local.download
-  local_file_path          = each.value["file_path"]
-  install_rke2_version     = local.rke2_version
-  install_rpm_channel      = "stable"
-  install_remote_file_path = "${local.workfolder}/rke2"
-  install_role             = "agent"
-  install_start            = true
-  install_prep_script      = local.install_prep_script
-  install_start_timeout    = 10
-  config_use_strategy      = "merge"
-  config_join_strategy     = "join"
-  config_join_url          = module.initial.join_url
-  config_join_token        = module.initial.join_token
-  retrieve_kubeconfig      = false # use initial
+}
+resource "local_file" "cp_main" {
+  depends_on = [
+    module.initial,
+    terraform_data.cp_path,
+  ]
+  for_each = local.additional_server_info
+  content = templatefile(
+    "${path.module}/cp_main.tf.tftpl",
+    {
+      project_domain              = module.initial.project_domain
+      project_security_group_name = module.initial.project_security_group.name
+      project_subnets             = jsonencode(module.initial.project_subnets)
+      project_name                = local.project_name
+      join_url                    = module.initial.join_url
+      join_token                  = module.initial.join_token
+      cluster_cidr                = jsonencode(module.initial.cluster_cidr)
+      service_cidr                = jsonencode(module.initial.service_cidr)
+      server_info                 = jsonencode(each.value)
+    }
+  )
+  filename = "${each.value.path}/main.tf"
+}
+resource "local_file" "cp_inputs" {
+  for_each = local.additional_server_info
+  content  = <<-EOT
+    identifier         = "${local.identifier}"
+    key_name           = "${local.ssh_key_name}"
+    key                = "${local.ssh_key}"
+    zone               = "${local.zone}"
+    rke2_version       = "${local.rke2_version}"
+    os                 = "${local.image}"
+    file_path          = "${local.local_file_path}"
+    install_method     = "${local.install_method}"
+    cni                = "${local.cni}"
+    ip_family          = "${local.ip_family}"
+    ingress_controller = "${local.ingress_controller}"
+    runner_ip          = "${local.runner_ip}"
+  EOT
+  filename = "${each.value.path}/inputs.tfvars"
+}
+
+
+resource "terraform_data" "cp_create" {
+  depends_on = [
+    module.initial,
+    local_file.cp_inputs,
+    local_file.cp_main,
+    terraform_data.cp_path,
+  ]
+  for_each = local.additional_server_info
+  triggers_replace = {
+    initial = module.initial.join_url
+    ids     = md5(join(",", local.server_ids))
+    path    = each.value.path
+  }
+  provisioner "local-exec" {
+    command = <<-EOT
+      cd ${self.triggers_replace.path}
+      terraform init -upgrade=true
+      terraform apply -var-file="inputs.tfvars" -auto-approve
+    EOT
+  }
+  provisioner "local-exec" {
+    # warning! this is only triggered on destroy, not refresh/taint
+    when    = destroy
+    command = <<-EOT
+      cd ${self.triggers_replace.path}
+      terraform destroy -var-file="inputs.tfvars" -auto-approve
+    EOT
+  }
+}
+
+
+resource "terraform_data" "agent_path" {
+  depends_on = [
+    module.initial,
+  ]
+  for_each = local.agent_info
+  triggers_replace = {
+    initial_token = module.initial.join_token
+    initial_url   = module.initial.join_url
+  }
+  provisioner "local-exec" {
+    command = <<-EOT
+      install -d ${each.value.path}
+      cp *_prep.sh ${each.value.path}
+      cp *.yaml ${each.value.path}
+      cp variables.tf ${each.value.path}
+    EOT
+  }
+}
+resource "local_file" "agent_main" {
+  depends_on = [
+    module.initial,
+    terraform_data.agent_path,
+  ]
+  for_each = local.agent_info
+  content = templatefile(
+    "${path.module}/agent_main.tf.tftpl",
+    {
+      project_domain              = module.initial.project_domain
+      project_security_group_name = module.initial.project_security_group.name
+      project_subnets             = jsonencode(module.initial.project_subnets)
+      project_name                = local.project_name
+      join_url                    = module.initial.join_url
+      join_token                  = module.initial.join_token
+      cluster_cidr                = jsonencode(module.initial.cluster_cidr)
+      service_cidr                = jsonencode(module.initial.service_cidr)
+      agent_info                  = jsonencode(each.value)
+    }
+  )
+  filename = "${each.value.path}/main.tf"
+}
+resource "local_file" "agent_inputs" {
+  for_each = local.agent_info
+  content  = <<-EOT
+    identifier         = "${local.identifier}"
+    key_name           = "${local.ssh_key_name}"
+    key                = "${local.ssh_key}"
+    zone               = "${local.zone}"
+    rke2_version       = "${local.rke2_version}"
+    os                 = "${local.image}"
+    file_path          = "${local.local_file_path}"
+    install_method     = "${local.install_method}"
+    ip_family          = "${local.ip_family}"
+    runner_ip          = "${local.runner_ip}"
+  EOT
+  filename = "${each.value.path}/inputs.tfvars"
+}
+
+resource "terraform_data" "agent_create" {
+  depends_on = [
+    module.initial,
+    local_file.agent_inputs,
+    local_file.agent_main,
+    terraform_data.agent_path,
+  ]
+  for_each = local.agent_info
+  triggers_replace = {
+    initial = module.initial.join_url
+    ids     = md5(join(",", local.agent_ids))
+    path    = each.value.path
+  }
+  provisioner "local-exec" {
+    command = <<-EOT
+      cd ${self.triggers_replace.path}
+      terraform init -upgrade=true
+      terraform apply -var-file="inputs.tfvars" -auto-approve
+    EOT
+  }
+  provisioner "local-exec" {
+    # warning! this is only triggered on destroy, not refresh/taint
+    when    = destroy
+    command = <<-EOT
+      cd ${self.triggers_replace.path}
+      terraform destroy -var-file="inputs.tfvars" -auto-approve
+    EOT
+  }
 }

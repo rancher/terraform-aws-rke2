@@ -87,19 +87,19 @@ func getCombos(data map[string][]string, indexes []map[string]int, keys []string
 }
 
 func getData(t *testing.T) (map[string][]string, []string, error) {
-	fixtures := []string{"one", "ha", "splitrole"} // these must match the example directory names
+	fixtures := []string{"one", "ha", "splitrole", "prod"} // these must match the example directory names
 	installTypes := []string{"rpm", "tar"}
 	cni := []string{"canal", "calico", "cilium"}
 	operatingSystems := []string{
 		"sles-15",
 		"sle-micro-55",
-		"rhel-8-cis",
-		"ubuntu-20",
+		"sle-micro-60",
+		"cis-rhel-8",
 		"ubuntu-22",
-		"rocky-8",
-		"liberty-7",
+		"ubuntu-24",
+		"rocky-9",
 		"rhel-9",
-		"rhel-8",
+		"liberty-8",
 	}
 	ipFamilies := []string{"ipv4", "ipv6", "dualstack"}
 	ingressControllers := []string{"nginx", "traefik"}

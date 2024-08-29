@@ -1,6 +1,12 @@
 #!/bin/bash
 
 run_tests() {
+  # make sure the test_relay is ready
+  REPO_ROOT="$(git rev-parse --show-toplevel)"
+  cd $REPO_ROOT/test/test_relay
+  terraform init -upgrade
+  cd $REPO_ROOT
+
   echo "" > /tmp/$IDENTIFIER_test.log
   if [ -d "./test" ]; then
     cd test || exit 1
@@ -23,7 +29,8 @@ EOF
     --jsonfile /tmp/$IDENTIFIER_test.log \
     --post-run-command "bash /tmp/$IDENTIFIER_test-processor" \
     -- \
-    -parallel=5 \
+    -parallel=3 \
+    -failfast=1 \
     -timeout=300m \
     "$@"
 }
@@ -33,13 +40,21 @@ if [ "" =  "$IDENTIFIER" ]; then
 fi
 echo "id is: $IDENTIFIER..."
 run_tests "$@"
-echo "Clearing leftovers with Id $IDENTIFIER in $AWS_REGION..."
-if [ "" != "$IDENTIFIER" ]; then
-  while [ "" != "$(leftovers -d --iaas=aws --aws-region="$AWS_REGION" --filter="Id:$IDENTIFIER")" ]; do
-    leftovers --iaas=aws --aws-region="$AWS_REGION" --filter="Id:$IDENTIFIER" --no-confirm
-  done
-  while [ "" != "$(leftovers -d --iaas=aws --aws-region="$AWS_REGION" --type="ec2-key-pair" --filter="tf-$IDENTIFIER")" ]; do
-    leftovers --iaas=aws --aws-region="$AWS_REGION" --type="ec2-key-pair" --filter="tf-$IDENTIFIER" --no-confirm
-  done
+
+if [ -z "$CI" ]; then
+  echo "Clearing leftovers with Id $IDENTIFIER in $AWS_REGION..."
+  sleep 60
+
+  if [ "" != "$IDENTIFIER" ]; then
+    while [ "" != "$(leftovers -d --iaas=aws --aws-region="$AWS_REGION" --filter="Id:$IDENTIFIER")" ]; do
+      leftovers --iaas=aws --aws-region="$AWS_REGION" --filter="Id:$IDENTIFIER" --no-confirm;
+      sleep 10;
+    done
+    while [ "" != "$(leftovers -d --iaas=aws --aws-region="$AWS_REGION" --type="ec2-key-pair" --filter="tf-$IDENTIFIER")" ]; do
+      leftovers --iaas=aws --aws-region="$AWS_REGION" --type="ec2-key-pair" --filter="tf-$IDENTIFIER" --no-confirm;
+      sleep 10;
+    done
+  fi
+
+  echo "done"
 fi
-echo "done"

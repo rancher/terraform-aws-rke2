@@ -1,5 +1,12 @@
 # control plane terraform templatefile
-
+provider "aws" {
+  default_tags {
+    tags = {
+      Id    = local.identifier
+      Owner = local.email
+    }
+  }
+}
 locals {
   # tflint-ignore: terraform_unused_declarations
   ingress_controller = var.ingress_controller # not currently in use, TODO: add traefik functionality
@@ -31,9 +38,17 @@ locals {
   )
   download     = (local.install_method == "tar" ? "download" : "skip")
   cni          = var.cni
-  config_strat = (local.cni == "canal" ? "default" : "merge")
+  config_strat = "merge"
   cni_file     = (local.cni == "cilium" ? "$${path.root}/cilium.yaml" : (local.cni == "calico" ? "$${path.root}/calico.yaml" : ""))
   cni_config   = (local.cni_file != "" ? file(local.cni_file) : "")
+  cp_config = <<-EOT
+    node-taint:
+      - "CriticalAddonsOnly=true:NoExecute"
+  EOT
+  config = <<-EOT
+  $${local.cni_config}
+  $${local.cp_config}
+  EOT
   # WARNING! Local file path needs to be isolated, don't use the same path as your terraform files
   local_file_path = (
     var.file_path != "" ? (var.file_path == path.root ? "$${abspath(path.root)}/rke2" : var.file_path) :
@@ -41,8 +56,7 @@ locals {
   )
   workfolder       = (strcontains(local.image, "cis") ? "/var/tmp" : "/home/$${local.username}")
   k8s_target_group = substr(lower("$${local.project_name}-kubectl"), 0, 32)
-  cloudinit_strategy = ((local.image == "cis-rhel-8" || local.image == "sle-micro-55") ? "skip" : "default")
-
+  cloudinit_strategy = ((local.image == "sle-micro-55" || local.image == "cis-rhel-8") ? "skip" : "default")
 
   # CIS images are not supported on IPv6 only deployments due to kernel modifications with how AWS IPv6 works (dhcpv6)
 
@@ -130,7 +144,7 @@ module "control_plane" {
   config_join_token        = "${join_token}"
   config_cluster_cidr      = local.cluster_cidr
   config_service_cidr      = local.service_cidr
-  config_supplied_content  = local.cni_config
-  config_supplied_name     = "51-cni-config.yaml"
+  config_supplied_content  = local.config
+  config_supplied_name     = "51-config.yaml"
   retrieve_kubeconfig      = false # use initial
 }
