@@ -1,6 +1,6 @@
 variable "key_name" {
   type        = string
-  description = "The name of an ssh key in AWS to use."
+  description = "The name of an ssh key that already exists in AWS of that you want to create."
 }
 variable "key" {
   type        = string
@@ -18,15 +18,10 @@ variable "rke2_version" {
   type        = string
   description = "The rke2 version to install."
 }
-variable "rpm_channel" {
-  type        = string
-  description = "The rpm channel to use when installing rke2, must be 'latest' or 'stable'."
-  default     = "stable"
-}
 variable "os" {
   type        = string
   description = "The operating system to deploy."
-  default     = "sle-micro-55" # BYOS = Bring Your Own Subscription, only use this if you have a subscription with SUSE or plan to get one directly rather than going through AWS
+  default     = "sle-micro-55-byos" # BYOS = Bring Your Own Subscription, only use this if you have a subscription with SUSE or plan to get one directly rather than going through AWS
 }
 variable "file_path" {
   type        = string
@@ -50,16 +45,22 @@ variable "ip_family" {
 }
 variable "ingress_controller" {
   type        = string
-  description = "The ingress controller to use. Must be 'nginx' or 'traefik'."
+  description = "The ingress controller to use. Must be 'nginx' or 'traefik'. Currently only supports 'nginx'."
   default     = "nginx"
 }
-variable "server_count" {
+variable "control_plane_count" {
   type        = number
   description = "The number of control plane nodes to create."
   default     = 3
 }
-variable "agent_count" {
+variable "worker_count" {
   type        = number
   description = "The number of worker nodes to create."
   default     = 3
+}
+variable "runner_ip" {
+  type        = string
+  description = "The runner may have multiple IP addresses, use this to specify which one to use."
+  # by default we will find the ip address using "https://ipinfo.io/ip"
+  default = ""
 }

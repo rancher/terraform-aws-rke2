@@ -1,4 +1,4 @@
-module github.com/rancher/terraform-aws-rke2/tests
+module github.com/rancher/terraform-aws-rke2/test
 
 go 1.22
 

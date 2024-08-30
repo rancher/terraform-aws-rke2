@@ -8,9 +8,11 @@ fi
 systemctl disable --now firewalld || true
 systemctl stop firewalld || true
 
-touch /etc/NetworkManager/conf.d/rke2-canal.conf
-cat <<EOF > /etc/NetworkManager/conf.d/rke2-canal.conf
+if [ -d /etc/NetworkManager ]; then
+  touch /etc/NetworkManager/conf.d/rke2-canal.conf
+  cat <<EOF > /etc/NetworkManager/conf.d/rke2-canal.conf
 [keyfile]
 unmanaged-devices=interface-name:cali*;interface-name:flannel*
 EOF
-systemctl reload NetworkManager
+  systemctl reload NetworkManager || true
+fi

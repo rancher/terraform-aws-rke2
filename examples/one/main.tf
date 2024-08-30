@@ -8,38 +8,53 @@ provider "aws" {
 }
 
 locals {
-  identifier   = var.identifier # this is a random unique string that can be used to identify resources in the cloud provider
-  email        = "terraform-ci@suse.com"
-  example      = "one"
-  project_name = "tf-${substr(md5(join("-", [local.example, local.identifier])), 0, 5)}"
-  username     = lower(substr("tf-${local.identifier}", 0, 32))
-  # tflint-ignore: terraform_unused_declarations
-  ip_family = var.ip_family # not currently in use, TODO: add dualstack functionality
   # tflint-ignore: terraform_unused_declarations
   ingress_controller = var.ingress_controller # not currently in use, TODO: add traefik functionality
-  vpc_cidr           = "10.0.0.0/16"
-  subnet_cidr        = cidrsubnet(local.vpc_cidr, 1, 0)    # get the first subnet when dividing the vpc_cidr into 2 /17 subnets
-  server_ip          = cidrhost(local.subnet_cidr, 5)      # AWS reserves the first 4 usable addresses
-  runner_ip          = chomp(data.http.myip.response_body) # "runner" is the server running Terraform
+  identifier         = var.identifier         # this is a random unique string that can be used to identify resources in the cloud provider
+  email              = "terraform-ci@suse.com"
+  example            = "one"
+  project_name       = "tf-${substr(md5(join("-", [local.example, local.identifier])), 0, 5)}"
+  username           = lower(substr("tf-${local.identifier}", 0, 32))
+  ip_family          = var.ip_family
+  runner_ip          = (var.runner_ip == "" ? chomp(data.http.myip.response_body) : var.runner_ip) # "runner" is the server running Terraform
   ssh_key            = var.key
   ssh_key_name       = var.key_name
   zone               = var.zone
   rke2_version       = var.rke2_version
   image              = var.os
   install_method     = var.install_method
-  install_prep_script = (
-    strcontains(local.image, "sles-15") ? file("${path.root}/suse_prep.sh") :
-    (strcontains(local.image, "ubuntu") ? file("${path.root}/ubuntu_prep.sh") :
-      (strcontains(local.image, "rhel") ? file("${path.root}/rhel_prep.sh") :
-  "")))
+  install_prep_script_file = (
+    strcontains(local.image, "sles") ? "${path.root}/sles_prep.sh" :
+    strcontains(local.image, "rhel") ? "${path.root}/rhel_prep.sh" :
+    strcontains(local.image, "ubuntu") ? "${path.root}/ubuntu_prep.sh" :
+    ""
+  )
+  install_prep_script = (local.install_prep_script_file == "" ? "" :
+    templatefile(local.install_prep_script_file, {
+      install_method = local.install_method,
+      ip_family      = local.ip_family,
+      image          = local.image,
+    })
+  )
   download     = (local.install_method == "tar" ? "download" : "skip")
   cni          = var.cni
   config_strat = (local.cni == "canal" ? "default" : "merge")
   cni_file     = (local.cni == "cilium" ? "${path.root}/cilium.yaml" : (local.cni == "calico" ? "${path.root}/calico.yaml" : ""))
   cni_config   = (local.cni_file != "" ? file(local.cni_file) : "")
   # WARNING! Local file path needs to be isolated, don't use the same path as your terraform files
-  local_file_path = (var.file_path != "" ? (var.file_path == path.root ? "${abspath(path.root)}/rke2" : var.file_path) : "${abspath(path.root)}/rke2")
-  workfolder      = (strcontains(local.image, "cis") ? "/var/tmp" : "/home/${local.username}")
+  local_file_path    = (var.file_path != "" ? (var.file_path == path.root ? "${abspath(path.root)}/rke2" : var.file_path) : "${abspath(path.root)}/rke2")
+  workfolder         = (strcontains(local.image, "cis") ? "/var/tmp" : "/home/${local.username}")
+  k8s_target_group   = substr(lower("${local.project_name}-kubectl"), 0, 32)
+  cloudinit_strategy = ((local.image == "sle-micro-55" || local.image == "cis-rhel-8") ? "skip" : "default")
+
+  # tflint-ignore: terraform_unused_declarations
+  fail_cis_ipv6 = ((local.image == "rhel-8-cis" && local.ip_family == "ipv6") ? one([local.ip_family, "cis_ipv6_incompatible"]) : false)
+  # CIS images are not supported on IPv6 only deployments due to kernel modifications with how AWS IPv6 works (dhcpv6)
+
+
+  # tflint-ignore: terraform_unused_declarations
+  fail_ubuntu_rpm = ((strcontains(local.image, "ubuntu") && local.install_method == "rpm") ? one([local.install_method, "ubuntu_rpm_incompatible"]) : false)
+  # Ubuntu images do not support rpm unstall method
 }
 
 data "http" "myip" {
@@ -58,58 +73,55 @@ data "aws_availability_zones" "available" {
 }
 
 module "this" {
-  source                      = "../../" # this source is dev use only, see https://registry.terraform.io/modules/rancher/rke2/aws/latest
-  project_use_strategy        = "create"
-  project_vpc_use_strategy    = "create"
-  project_vpc_name            = "${local.project_name}-vpc"
-  project_vpc_cidr            = local.vpc_cidr
-  project_subnet_use_strategy = "create"
-  project_subnets = {
-    "${local.project_name}-sn" = {
-      cidr              = local.subnet_cidr
-      availability_zone = data.aws_availability_zones.available.names[0]
-      public            = true
-    }
-  }
+  source                              = "../../" # this source is dev use only, see https://registry.terraform.io/modules/rancher/rke2/aws/latest
+  project_use_strategy                = "create"
+  project_vpc_use_strategy            = "create"
+  project_vpc_name                    = "${local.project_name}-vpc"
+  project_vpc_zones                   = [data.aws_availability_zones.available.names[0]]
+  project_vpc_type                    = local.ip_family
+  project_vpc_public                  = local.ip_family == "ipv6" ? false : true # ipv6 addresses assigned by AWS are always public
+  project_subnet_use_strategy         = "create"
+  project_subnet_names                = ["${local.project_name}-subnet"]
   project_security_group_use_strategy = "create"
   project_security_group_name         = "${local.project_name}-sg"
   project_security_group_type         = (local.install_method == "rpm" ? "egress" : "project") # rpm install requires downloading dependencies
   project_load_balancer_use_strategy  = "create"
   project_load_balancer_name          = "${local.project_name}-lb"
   project_load_balancer_access_cidrs = {
-    ping = {
-      port     = "443"
-      protocol = "tcp"
-      cidrs    = ["${local.runner_ip}/32"] # allow access to ping service from this CIDR only
+    "kubectl" = {
+      port        = "6443"
+      protocol    = "tcp"
+      ip_family   = (local.ip_family == "ipv6" ? "ipv6" : "ipv4")
+      cidrs       = (local.ip_family == "ipv6" ? ["${local.runner_ip}/128"] : ["${local.runner_ip}/32"])
+      target_name = local.k8s_target_group
     }
   }
-  project_domain_use_strategy   = "create"
-  project_domain                = "${local.project_name}.${local.zone}"
-  server_use_strategy           = "create"
-  server_name                   = "${local.project_name}-${random_pet.server.id}"
-  server_type                   = "small" # smallest viable control plane node (actually t3.medium)
-  server_subnet_name            = "${local.project_name}-sn"
-  server_security_group_name    = "${local.project_name}-sg"
-  server_private_ip             = local.server_ip
-  server_image_use_strategy     = "find"
-  server_image_type             = local.image
-  server_cloudinit_use_strategy = "skip" # cloud-init not available for sle-micro
-  #server_cloudinit_use_strategy = "default" # use our suggested cloud-init
-  #server_cloudinit_use_strategy = "supply" # supply your own cloud-init in the server_cloudinit_content
-  #server_cloudinit_content = file(coudinit.yaml) # should be raw, not base64 encoded, it will be encoded before sending it to AWS
+  project_domain_use_strategy         = "create"
+  project_domain                      = "${local.project_name}.${local.zone}"
+  project_domain_zone                 = local.zone
+  project_domain_cert_use_strategy    = "skip"
+  server_use_strategy                 = "create"
+  server_name                         = "${local.project_name}-${random_pet.server.id}"
+  server_type                         = "small" # smallest viable control plane node (actually t3.medium)
+  server_image_use_strategy           = "find"
+  server_image_type                   = local.image
+  server_ip_family                    = local.ip_family
+  server_cloudinit_use_strategy       = local.cloudinit_strategy
   server_indirect_access_use_strategy = "enable"
-  server_load_balancer_target_groups  = ["${local.project_name}-lb-ping"] # this will always be <load balancer name>-<load balancer access cidrs key>
-  server_direct_access_use_strategy   = "ssh"                             # configure the servers for direct ssh access
-  server_access_addresses = {                                             # you must include ssh access here to enable setup
+  server_load_balancer_target_groups  = [local.k8s_target_group] # this matches the target_name from project_load_balancer_access_cidrs
+  server_direct_access_use_strategy   = "ssh"                    # configure the servers for direct ssh access
+  server_access_addresses = {                                    # you must include ssh access here to enable setup
     runnerSsh = {
-      port     = 22 # allow access on ssh port only
-      protocol = "tcp"
-      cidrs    = ["${local.runner_ip}/32"] # allow access to this CIDR only
+      port      = 22 # allow access on ssh port
+      protocol  = "tcp"
+      ip_family = (local.ip_family == "ipv6" ? "ipv6" : "ipv4")
+      cidrs     = (local.ip_family == "ipv6" ? ["${local.runner_ip}/128"] : ["${local.runner_ip}/32"])
     }
-    runnerKubectl = {
-      port     = 6443 # allow access on this port only
-      protocol = "tcp"
-      cidrs    = ["${local.runner_ip}/32"] # allow access to this CIDR only
+    runnerApi = {
+      port      = 6443 # allow access to api
+      protocol  = "tcp"
+      ip_family = (local.ip_family == "ipv6" ? "ipv6" : "ipv4")
+      cidrs     = (local.ip_family == "ipv6" ? ["${local.runner_ip}/128"] : ["${local.runner_ip}/32"])
     }
   }
   server_user = {
@@ -118,9 +130,9 @@ module "this" {
     ssh_key_name             = local.ssh_key_name
     public_ssh_key           = local.ssh_key
     user_workfolder          = local.workfolder
-    timeout                  = 5
+    timeout                  = 10
   }
-  server_add_domain        = true
+  server_add_domain        = false
   server_domain_name       = "${local.project_name}-${random_pet.server.id}.${local.zone}"
   server_domain_zone       = local.zone
   server_add_eip           = false
@@ -133,7 +145,7 @@ module "this" {
   install_role             = "server"
   install_start            = true
   install_prep_script      = local.install_prep_script
-  install_start_timeout    = 5
+  install_start_timeout    = 10
   config_use_strategy      = local.config_strat
   config_default_name      = "50-default-config.yaml"
   config_supplied_content  = local.cni_config

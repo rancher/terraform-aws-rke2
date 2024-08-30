@@ -23,7 +23,7 @@ type FixtureData struct {
 	IngressController string
 	Region            string
 	Owner             string
-	ExampleDirectory  string
+	ExampleDirectory  string // This is actually the test_relay directory
 	Zone              string
 	AcmeServer        string
 	SshAgent          *ssh.SshAgent
@@ -32,35 +32,33 @@ type FixtureData struct {
 	TfVars            map[string]interface{}
 }
 
-// This generates the One example fixture; a single node Rke2 cluster.
-// Outputs the kubeconfig or "" on failure.
-func create(t *testing.T, d *FixtureData) string {
+func create(t *testing.T, d *FixtureData) (string, error) {
 	var err error
 	terraformOptions := GenerateOptions(t, d)
 	t.Logf("Git Root: %s", d.ExampleDirectory)
 	d.SshKeyPair, err = GenerateKey(t, d)
 	if err != nil {
-		t.Fatalf("Error creating key pair: %s", err)
+		t.Errorf("Error creating key pair: %s", err)
 		aws.DeleteEC2KeyPair(t, d.SshKeyPair)
-		return ""
+		return "", err
 	}
 	d.SshAgent = GenerateSshAgent(t, d)
+	terraformOptions.SshAgent = d.SshAgent
 
-	installDataDir := d.DataDirectory + "/install"
 	testDataDir := d.DataDirectory + "/test"
 
 	terraformOptions.Vars = map[string]interface{}{
 		"rke2_version":       d.Release,
 		"os":                 d.OperatingSystem,
-		"file_path":          installDataDir,
 		"zone":               d.Zone,
 		"key_name":           d.SshKeyPair.Name,
-		"key":                d.SshKeyPair.PublicKey,
+		"key":                d.SshKeyPair.KeyPair.PublicKey,
 		"identifier":         d.Id,
 		"install_method":     d.InstallType,
 		"cni":                d.Cni,
 		"ip_family":          d.IpFamily,
 		"ingress_controller": d.IngressController,
+		"fixture":            d.Name,
 	}
 
 	terraformOptions.EnvVars = map[string]string{
@@ -73,16 +71,14 @@ func create(t *testing.T, d *FixtureData) string {
 		"TF_CLI_ARGS_output":  "-state=" + testDataDir + "/tfstate",
 	}
 
-	terraformOptions.SshAgent = d.SshAgent
 	terraformOptions.Upgrade = true
 
 	d.TfOptions = terraformOptions
 
 	_, err = terraform.InitAndApplyE(t, d.TfOptions)
 	if err != nil {
-		terraform.Destroy(t, d.TfOptions)
-		t.Fatalf("Error creating cluster: %s", err)
-		return ""
+		t.Errorf("Error creating cluster: %s", err)
+		return "", err
 	}
 
 	output := terraform.OutputJson(t, terraformOptions, "")
@@ -96,9 +92,9 @@ func create(t *testing.T, d *FixtureData) string {
 	var data OutputData
 	err = json.Unmarshal([]byte(output), &data)
 	if err != nil {
-		t.Fatalf("Error unmarshalling Json: %v", err)
+		t.Errorf("Error unmarshalling Json: %v", err)
 	}
 	assert.NotEmpty(t, data.Kubeconfig.Value)
 	t.Logf("kubeconfig: %s", data.Kubeconfig.Value)
-	return data.Kubeconfig.Value
+	return data.Kubeconfig.Value, nil
 }

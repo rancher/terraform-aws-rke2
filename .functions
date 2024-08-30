@@ -211,8 +211,10 @@ get_leftovers() {
     echo "leftovers in $region:"
     if [ -n "$id" ]; then
       leftovers -d --iaas=aws --aws-region="$region" --filter="$id";
+      leftovers -d --iaas=aws --aws-region="$region" --type="ec2-key-pair" --filter="$id";
     else
       leftovers -d --iaas=aws --aws-region="$region" --filter="Owner:terraform";
+      leftovers -d --iaas=aws --aws-region="$region" --type="ec2-key-pair" --filter="tf-";
     fi
   done
 }

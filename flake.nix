@@ -48,6 +48,7 @@
             name = "dev-shell-package";
             paths = with pkgs; [
               actionlint
+              age
               aspellWithDicts
               awscli2
               bashInteractive
@@ -66,6 +67,7 @@
               less
               openssh
               shellcheck
+              tailscale
               tflint
               tfsec
               tfswitch

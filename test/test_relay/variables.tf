@@ -1,15 +1,21 @@
-variable "key_name" {
-  type        = string
-  description = "The name of an ssh key that already exists in AWS of that you want to create."
+variable "identifier" {
+  type = string
 }
 variable "key" {
-  type        = string
-  description = "The content of an ssh key for server access. The key must be loaded into the running ssh agent."
+  type = string
 }
-variable "identifier" {
-  type        = string
-  description = "A random alphanumeric string that is unique and less than 10 characters."
+variable "key_name" {
+  type = string
 }
+variable "fixture" {
+  type        = string
+  description = <<-EOT
+    Directory name of the example we are testing, like 'ha', 'one', or 'splitrole'.
+    This should be a directory name in the 'examples' directory.
+  EOT
+}
+
+# from fixtures:
 variable "zone" {
   type        = string
   description = "The dns zone to add domains under, must already exist in AWS Route53."
@@ -22,11 +28,6 @@ variable "os" {
   type        = string
   description = "The operating system to deploy."
   default     = "sle-micro-55"
-}
-variable "file_path" {
-  type        = string
-  description = "The local file path to stage or retrieve files."
-  default     = ""
 }
 variable "install_method" {
   type        = string
@@ -47,10 +48,4 @@ variable "ingress_controller" {
   type        = string
   description = "The ingress controller to use. Must be 'nginx' or 'traefik'."
   default     = "nginx"
-}
-variable "runner_ip" {
-  type        = string
-  description = "The runner may have multiple IP addresses, use this to specify which one to use."
-  # by default we will find the ip address using "https://ipinfo.io/ip"
-  default = ""
 }

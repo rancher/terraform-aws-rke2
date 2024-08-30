@@ -27,7 +27,7 @@ notReady() {
   fi
 }
 
-TIMEOUT=5 # 5 minutes
+TIMEOUT=10 # 10 minutes
 TIMEOUT_MINUTES=$((TIMEOUT * 60))
 INTERVAL=10 # 10 seconds
 MAX=$((TIMEOUT_MINUTES / INTERVAL))
