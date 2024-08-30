@@ -16,10 +16,10 @@ run_tests() {
   fi
   cat <<'EOF'> "/tmp/${IDENTIFIER}_test-processor"
 echo "Passed: "
-jq -r '. | select(.Action == "pass") | select(.Test != null).Test' /tmp/$IDENTIFIER_test.log
+jq -r '. | select(.Action == "pass") | select(.Test != null).Test' "/tmp/${IDENTIFIER}_test.log"
 echo " "
 echo "Failed: "
-jq -r '. | select(.Action == "fail") | select(.Test != null).Test' /tmp/$IDENTIFIER_test.log
+jq -r '. | select(.Action == "fail") | select(.Test != null).Test' "/tmp/${IDENTIFIER}_test.log"
 echo " "
 EOF
   chmod +x "/tmp/${IDENTIFIER}_test-processor"
