@@ -428,7 +428,7 @@ resource "terraform_data" "apply" {
   provisioner "remote-exec" {
     inline = [<<-EOT
       ${local.fit_remote_path}/terraform_command.sh "${local.fit_remote_path}" init -upgrade=true
-      ${local.fit_remote_path}/terraform_command.sh "${local.fit_remote_path}" apply -var-file="${local.vars_remote_path}" -auto-approve
+      ${local.fit_remote_path}/terraform_command.sh "${local.fit_remote_path}" apply -var-file="${local.vars_remote_path}" -auto-approve -no-color
     EOT
     ]
   }

@@ -51,6 +51,10 @@ jobs:
           IDENTIFIER: ${{github.run_id}}
           ZONE: ${{secrets.ZONE}}
         run: |
+          export GITHUB_TOKEN
+          export GITHUB_OWNER
+          export IDENTIFIER
+          export ZONE
           ./run_tests.sh
       - uses: peter-evans/create-or-update-comment@v4
         name: 'Report Success'
