@@ -7,13 +7,12 @@ This document explains the paradigms, tricks, tips, standards, and patterns used
 Terraform does not have an opinion on what order attributes should be added to stanzas, but this project does.
 If they occur, the following attributes must occur in the following order:
 
-1. count
+1. count/foreach
 2. depends_on
-3. for_each
-4. source
-5. version
-6. triggers
-7. everything else
+3. source
+4. version
+5. triggers
+6. everything else
 
 The reason for this hierarchy is to prevent confusion and race conditions.
 Maintainers and developers need to understand the order of operations for resources, which can have a complicated hierarchy.

@@ -1,5 +1,80 @@
 # Changelog
 
+## [1.0.0](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.22...v1.0.0) (2024-06-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* test for release ([#162](https://github.com/rancher/terraform-aws-rke2/issues/162))
+
+### Bug Fixes
+
+* check for required variables ([#160](https://github.com/rancher/terraform-aws-rke2/issues/160)) ([d26a2b4](https://github.com/rancher/terraform-aws-rke2/commit/d26a2b4e4b5a8e386bd349a40e5a3683de09acc7))
+* ignore error if directory already exists ([#163](https://github.com/rancher/terraform-aws-rke2/issues/163)) ([410cea0](https://github.com/rancher/terraform-aws-rke2/commit/410cea0f8afc522643c17ab2ca6ee094b1ea2024))
+* increase timeouts ([#164](https://github.com/rancher/terraform-aws-rke2/issues/164)) ([d53f729](https://github.com/rancher/terraform-aws-rke2/commit/d53f729582f76e9b5080d258b0fccfbb9a239621))
+* keep owner ([#161](https://github.com/rancher/terraform-aws-rke2/issues/161)) ([3e236c5](https://github.com/rancher/terraform-aws-rke2/commit/3e236c58802336f3abf78f3db53367a5b4bb5d45))
+* make sure data exists ([#158](https://github.com/rancher/terraform-aws-rke2/issues/158)) ([7f2069a](https://github.com/rancher/terraform-aws-rke2/commit/7f2069ad85c743cb3436f879b483b99e5abb61e0))
+* rearrange tests ([#156](https://github.com/rancher/terraform-aws-rke2/issues/156)) ([ef2aded](https://github.com/rancher/terraform-aws-rke2/commit/ef2adeda66a863890c5ba2864ccc7d9dff5155e4))
+* remove super user do ([#157](https://github.com/rancher/terraform-aws-rke2/issues/157)) ([81290d4](https://github.com/rancher/terraform-aws-rke2/commit/81290d4bde20a105b5c369e37544c69eb3ba29d1))
+* simplify test script ([#165](https://github.com/rancher/terraform-aws-rke2/issues/165)) ([4c349c8](https://github.com/rancher/terraform-aws-rke2/commit/4c349c87ac2e4122a0cfd81e474884bf1df9203e))
+* try a different test ([#159](https://github.com/rancher/terraform-aws-rke2/issues/159)) ([35cff52](https://github.com/rancher/terraform-aws-rke2/commit/35cff52e1cd8de8137fdbee77a0d5ae50f852532))
+* update to the latest module versions ([#152](https://github.com/rancher/terraform-aws-rke2/issues/152)) ([1e71774](https://github.com/rancher/terraform-aws-rke2/commit/1e71774f2f50518adedb789772c58e095f294383))
+
+
+### Code Refactoring
+
+* test for release ([#162](https://github.com/rancher/terraform-aws-rke2/issues/162)) ([228775b](https://github.com/rancher/terraform-aws-rke2/commit/228775b153518739b8f8dcaf3f8473df524807e4))
+
+## [0.1.22](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.21...v0.1.22) (2024-03-14)
+
+
+### Bug Fixes
+
+* upgrade to the latest server mod ([#146](https://github.com/rancher/terraform-aws-rke2/issues/146)) ([d162bed](https://github.com/rancher/terraform-aws-rke2/commit/d162bed9c36d29108bea86c23a0f8fa0266bd31f))
+
+## [0.1.21](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.20...v0.1.21) (2024-03-14)
+
+
+### Bug Fixes
+
+* update server mod ([#144](https://github.com/rancher/terraform-aws-rke2/issues/144)) ([c982b1f](https://github.com/rancher/terraform-aws-rke2/commit/c982b1fefe5fcbd1d41f2caa5672a7ce768426f9))
+
+## [0.1.20](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.19...v0.1.20) (2024-03-09)
+
+
+### Bug Fixes
+
+* Update mods ([#141](https://github.com/rancher/terraform-aws-rke2/issues/141)) ([2e14c9e](https://github.com/rancher/terraform-aws-rke2/commit/2e14c9e02eb416c4fbe791e344a51f4483df4423))
+* use zipmap to avoid ambiguous map ([#143](https://github.com/rancher/terraform-aws-rke2/issues/143)) ([13389d9](https://github.com/rancher/terraform-aws-rke2/commit/13389d9c1a7906abef249782c090291756a60ca8))
+
+## [0.1.19](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.18...v0.1.19) (2024-02-13)
+
+
+### Bug Fixes
+
+* dont reboot during cloud-init ([#138](https://github.com/rancher/terraform-aws-rke2/issues/138)) ([2278091](https://github.com/rancher/terraform-aws-rke2/commit/2278091d6cdbc1292887e8d797aed99e77f87c9e))
+* set tf req and update mods ([#136](https://github.com/rancher/terraform-aws-rke2/issues/136)) ([e778143](https://github.com/rancher/terraform-aws-rke2/commit/e778143ce4dc4d2d66521f12a8fd93ea2b9ff439))
+
+## [0.1.18](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.17...v0.1.18) (2024-02-07)
+
+
+### Bug Fixes
+
+* update modules and add public ip flag ([#129](https://github.com/rancher/terraform-aws-rke2/issues/129)) ([59415f9](https://github.com/rancher/terraform-aws-rke2/commit/59415f9593ff4643af1c84ef2ca4d42dcd6d9722))
+
+## [0.1.17](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.16...v0.1.17) (2024-02-06)
+
+
+### Bug Fixes
+
+* add gitleaks and fix update workflow ([#122](https://github.com/rancher/terraform-aws-rke2/issues/122)) ([9ab8b27](https://github.com/rancher/terraform-aws-rke2/commit/9ab8b275a216057701b03e8b4eb4b67627070b99))
+* bump actions/cache from 3 to 4 ([#114](https://github.com/rancher/terraform-aws-rke2/issues/114)) ([7a5f17e](https://github.com/rancher/terraform-aws-rke2/commit/7a5f17ecb8a22ab93ad83453cc5d26e6d32415d2))
+* bump peter-evans/create-or-update-comment from 3 to 4 ([#116](https://github.com/rancher/terraform-aws-rke2/issues/116)) ([4d592d0](https://github.com/rancher/terraform-aws-rke2/commit/4d592d0406f836f7fb12dd403c820770c3768407))
+* pass gpg information through to updatecli ([#124](https://github.com/rancher/terraform-aws-rke2/issues/124)) ([9744a85](https://github.com/rancher/terraform-aws-rke2/commit/9744a85436fffae29598d753b6370b80ed947fb9))
+* update rancher/access/aws requirement from v1.0.0 to 1.0.1 ([#126](https://github.com/rancher/terraform-aws-rke2/issues/126)) ([5b36721](https://github.com/rancher/terraform-aws-rke2/commit/5b367212aa92efcc999c1546035f869ab0beea14))
+* upgrade mod patches ([#128](https://github.com/rancher/terraform-aws-rke2/issues/128)) ([b76ad5e](https://github.com/rancher/terraform-aws-rke2/commit/b76ad5ef59515c145bde7e59aa16b278566d212b))
+* use gpg key instead of token ([#123](https://github.com/rancher/terraform-aws-rke2/issues/123)) ([f8ebfff](https://github.com/rancher/terraform-aws-rke2/commit/f8ebfffc1e862a70776663188ed2b50007aa9b83))
+
 ## [0.1.16](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.15...v0.1.16) (2024-01-30)
 
 
