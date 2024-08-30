@@ -213,11 +213,11 @@ resource "terraform_data" "create_age" {
       for s in $(env | grep 'AWS'); do
         echo "export $s" >> ${local.data_local_path}/secrets.rc
       done
-      echo "export ZONE=$ZONE" >> ${local.data_local_path}/secrets.rc
       echo "export GITHUB_TOKEN=$GITHUB_TOKEN" >> ${local.data_local_path}/secrets.rc
       echo "export GITHUB_OWNER=$GITHUB_OWNER" >> ${local.data_local_path}/secrets.rc
       echo "export ACME_SERVER_URL=$ACME_SERVER_URL" >> ${local.data_local_path}/secrets.rc
       echo "export IDENTIFIER=$IDENTIFIER" >> ${local.data_local_path}/secrets.rc
+      echo "export ZONE=$ZONE" >> ${local.data_local_path}/secrets.rc
       age -e -R ${local.data_local_path}/age_recipients.txt -o "${local.data_local_path}/secrets.rc.age" "${local.data_local_path}/secrets.rc"
       rm -f ${local.data_local_path}/secrets.rc
     EOT
