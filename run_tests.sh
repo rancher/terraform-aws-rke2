@@ -3,18 +3,18 @@
 run_tests() {
   # make sure the test_relay is ready
   REPO_ROOT="$(git rev-parse --show-toplevel)"
-  cd $REPO_ROOT/test/test_relay
+  cd "$REPO_ROOT/test/test_relay" || exit 1
   terraform init -upgrade
-  cd $REPO_ROOT
+  cd "$REPO_ROOT" || exit 1
 
-  echo "" > /tmp/$IDENTIFIER_test.log
+  echo "" > "/tmp/${IDENTIFIER}_test.log"
   if [ -d "./test" ]; then
     cd test || exit 1
   fi
   if [ -d "./tests" ]; then
     cd tests || exit 1
   fi
-  cat <<'EOF'> /tmp/$IDENTIFIER_test-processor
+  cat <<'EOF'> "/tmp/${IDENTIFIER}_test-processor"
 echo "Passed: "
 jq -r '. | select(.Action == "pass") | select(.Test != null).Test' /tmp/$IDENTIFIER_test.log
 echo " "
@@ -22,12 +22,12 @@ echo "Failed: "
 jq -r '. | select(.Action == "fail") | select(.Test != null).Test' /tmp/$IDENTIFIER_test.log
 echo " "
 EOF
-  chmod +x /tmp/$IDENTIFIER_test-processor
+  chmod +x "/tmp/${IDENTIFIER}_test-processor"
 
   gotestsum \
     --format=standard-verbose \
-    --jsonfile /tmp/$IDENTIFIER_test.log \
-    --post-run-command "bash /tmp/$IDENTIFIER_test-processor" \
+    --jsonfile "/tmp/${IDENTIFIER}_test.log" \
+    --post-run-command "bash /tmp/${IDENTIFIER}_test-processor" \
     -- \
     -parallel=3 \
     -failfast=1 \

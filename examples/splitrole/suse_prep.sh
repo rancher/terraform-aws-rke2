@@ -7,7 +7,7 @@ if [ "$(id -u)" -ne 0 ]; then
   echo "This script must be run as root" >&2
   exit 1
 fi
-
+# shellcheck disable=SC2154
 if [ "rpm" = "${install_method}" ]; then
   wget https://download.opensuse.org/distribution/leap/15.6/repo/oss/repodata/repomd.xml.key || true
   rpm --import repomd.xml.key || true
@@ -18,7 +18,7 @@ if [ "rpm" = "${install_method}" ]; then
   zypper ar -f https://download.opensuse.org/repositories/security:/SELinux_legacy/15.5/security:SELinux_legacy.repo || true
   rpm --import https://rpm.rancher.io/public.key || true
 fi
-
+# shellcheck disable=SC2154
 if [ "ipv6" = "${ip_family}" ]; then
   IPV6="$(ip -6 a show eth0 | grep inet6 | head -n1 | awk '{ print $2 }' | awk -F/ '{ print $1 }')"
   IPV6_GW="$(echo "$IPV6" | awk -F: '{gw=$1":"$2":"$3":"$4"::1"; print gw}')"

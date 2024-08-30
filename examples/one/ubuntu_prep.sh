@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/bin/bash
+# shellcheck disable=SC2154
 echo "Prepping ${image}..."
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -22,32 +23,33 @@ if [ "$ACTIVE" = "active" ]; then
   echo "$DATA" > /etc/NetworkManager/conf.d/rke2-canal.conf
   systemctl reload NetworkManager
 fi
-
+# shellcheck disable=SC2154
 if [ "ipv6" = "${ip_family}" ]; then
   if [ "" != "$(which NetworkManager)" ]; then
     echo "Found NetworkManager, configuring interface using key file in /etc/NetworkManager/system-connections..."
     DEVICE="$(ip -6 -o a show scope global | awk '{print $2}')"
-    IPV6="$(ip -6 a show $DEVICE | grep inet6 | head -n1 | awk '{ print $2 }' | awk -F/ '{ print $1 }')"
+    IPV6="$(ip -6 a show "$DEVICE" | grep inet6 | head -n1 | awk '{ print $2 }' | awk -F/ '{ print $1 }')"
     IPV6_GW="$(echo "$IPV6" | awk -F: '{gw=$1":"$2":"$3":"$4"::1"; print gw}')"
     DATA="[connection]\ntype=ethernet\n[ipv4]\nmethod=disabled\n[ipv6]\naddresses=$IPV6/64\ngateway=$IPV6_GW\nmethod=manual\ndns=2001:4860:4860::8888\nnever-default=false"
 
-    rm -f /etc/sysconfig/network-scripts/ifcfg-$DEVICE
-    echo -e "$DATA" > /etc/NetworkManager/system-connections/$DEVICE.nmconnection
-    chmod 0600 /etc/NetworkManager/system-connections/$DEVICE.nmconnection
+    rm -f "/etc/sysconfig/network-scripts/ifcfg-$DEVICE"
+    echo -e "$DATA" > "/etc/NetworkManager/system-connections/$DEVICE.nmconnection"
+    chmod 0600 "/etc/NetworkManager/system-connections/$DEVICE.nmconnection"
 
     nmcli connection reload
-    nmcli connection up $DEVICE
+    nmcli connection up "$DEVICE"
     systemctl restart NetworkManager
     nmcli -f TYPE,FILENAME,NAME connection | grep ethernet
   elif [ "" != "$(which netconfig)" ]; then
     echo "NetworkManager not found..."
     echo "Found netconfig, configuring interface using ifcfg-rc file in /etc/sysconfig/network-scripts..."
     DEVICE="$(ip -6 -o a show scope global | awk '{print $2}')"
-    IPV6="$(ip -6 a show $DEVICE | grep inet6 | head -n1 | awk '{ print $2 }' | awk -F/ '{ print $1 }')"
+    IPV6="$(ip -6 a show "$DEVICE" | grep inet6 | head -n1 | awk '{ print $2 }' | awk -F/ '{ print $1 }')"
     IPV6_GW="$(echo "$IPV6" | awk -F: '{gw=$1":"$2":"$3":"$4"::1"; print gw}')"
 
+    # shellcheck disable=SC2027
     DATA="STARTMODE='auto'\nBOOTPROTO='static'\nIPADDR="$IPV6"\nPREFIXLEN='64'\nDHCLIENT6_MODE='info'"
-    echo -e "$DATA" > /etc/sysconfig/network/ifcfg-$DEVICE
+    echo -e "$DATA" > "/etc/sysconfig/network/ifcfg-$DEVICE"
 
     [ ! -f /etc/sysconfig/network/routes ] && touch /etc/sysconfig/network/routes
     echo "default $IPV6_GW - -" >> /etc/sysconfig/network/routes
