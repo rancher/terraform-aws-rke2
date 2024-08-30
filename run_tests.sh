@@ -39,6 +39,11 @@ if [ "" =  "$IDENTIFIER" ]; then
   export IDENTIFIER
 fi
 echo "id is: $IDENTIFIER..."
+if [ -z "$GITHUB_TOKEN" ]; then echo "GITHUB_TOKEN isn't set"; else echo "GITHUB_TOKEN is set"; fi
+if [ -z "$GITHUB_OWNER" ]; then echo "GITHUB_OWNER isn't set"; else echo "GITHUB_OWNER is set"; fi
+if [ -z "$ZONE" ]; then echo "ZONE isn't set"; else echo "ZONE is set"; fi
+if [ -z "$CI" ]; then echo "CI isn't set"; else echo "CI is set"; fi
+
 run_tests "$@"
 
 if [ -z "$CI" ]; then
