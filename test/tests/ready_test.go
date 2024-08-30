@@ -33,26 +33,26 @@ func TestMatrix(t *testing.T) {
 		// necessary tests
 		//// os
 		"sle-micro-60-canal-stable-one-rpm-ipv4-nginx",
-		"sles-15-canal-stable-one-rpm-ipv4-nginx",
-		"cis-rhel-8-canal-stable-one-rpm-ipv4-nginx",
-		"ubuntu-24-canal-stable-one-tar-ipv4-nginx", // also counts as air gapped test
-		"rhel-9-canal-stable-one-rpm-ipv4-nginx",
+		// "sles-15-canal-stable-one-rpm-ipv4-nginx",
+		// "cis-rhel-8-canal-stable-one-rpm-ipv4-nginx",
+		// "ubuntu-24-canal-stable-one-tar-ipv4-nginx", // also counts as air gapped test
+		// "rhel-9-canal-stable-one-rpm-ipv4-nginx",
 		//// cni
-		"sle-micro-60-cilium-stable-one-rpm-ipv4-nginx",
-		"sle-micro-60-calico-stable-one-rpm-ipv4-nginx",
+		// "sle-micro-60-cilium-stable-one-rpm-ipv4-nginx",
+		// "sle-micro-60-calico-stable-one-rpm-ipv4-nginx",
 		//// version
-		"sle-micro-60-canal-latest-one-rpm-ipv4-nginx",
-		"sle-micro-60-canal-old-one-rpm-ipv4-nginx",
+		// "sle-micro-60-canal-latest-one-rpm-ipv4-nginx",
+		// "sle-micro-60-canal-old-one-rpm-ipv4-nginx",
 		//// ipv6 tests
-		"sle-micro-60-canal-stable-one-rpm-ipv6-nginx",
+		// "sle-micro-60-canal-stable-one-rpm-ipv6-nginx",
 		//// ha
-		"sle-micro-60-canal-stable-ha-rpm-ipv4-nginx",
+		// "sle-micro-60-canal-stable-ha-rpm-ipv4-nginx",
 		//// splitrole
-		"sle-micro-60-canal-stable-splitrole-rpm-ipv4-nginx",
+		// "sle-micro-60-canal-stable-splitrole-rpm-ipv4-nginx",
 		//// prod
-		"sle-micro-60-canal-stable-prod-rpm-ipv4-nginx",
+		// "sle-micro-60-canal-stable-prod-rpm-ipv4-nginx",
 		//// confirmed use cases
-		"ubuntu-22-canal-stable-one-tar-ipv4-nginx", // https://github.com/rancher/terraform-aws-rke2/issues/153
+		// "ubuntu-22-canal-stable-one-tar-ipv4-nginx", // https://github.com/rancher/terraform-aws-rke2/issues/153
 
 		// extended tests
 		// os

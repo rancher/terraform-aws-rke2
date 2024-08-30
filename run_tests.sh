@@ -23,7 +23,7 @@ jq -r '. | select(.Action == "fail") | select(.Test != null).Test' /tmp/$IDENTIF
 echo " "
 EOF
   chmod +x "/tmp/${IDENTIFIER}_test-processor"
-
+  export NO_COLOR=1
   gotestsum \
     --format=standard-verbose \
     --jsonfile "/tmp/${IDENTIFIER}_test.log" \
