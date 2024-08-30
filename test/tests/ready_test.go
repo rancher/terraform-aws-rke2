@@ -32,7 +32,7 @@ func TestMatrix(t *testing.T) {
 	selection := []string{
 		// necessary tests
 		//// os
-		"sle-micro-60-canal-stable-one-rpm-ipv4-nginx",
+		// "sle-micro-60-canal-stable-one-rpm-ipv4-nginx",
 		// "sles-15-canal-stable-one-rpm-ipv4-nginx",
 		// "cis-rhel-8-canal-stable-one-rpm-ipv4-nginx",
 		// "ubuntu-24-canal-stable-one-tar-ipv4-nginx", // also counts as air gapped test
@@ -46,7 +46,7 @@ func TestMatrix(t *testing.T) {
 		//// ipv6 tests
 		// "sle-micro-60-canal-stable-one-rpm-ipv6-nginx",
 		//// ha
-		// "sle-micro-60-canal-stable-ha-rpm-ipv4-nginx",
+		"sle-micro-60-canal-stable-ha-rpm-ipv4-nginx",
 		//// splitrole
 		// "sle-micro-60-canal-stable-splitrole-rpm-ipv4-nginx",
 		//// prod
