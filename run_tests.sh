@@ -16,11 +16,14 @@ run_tests() {
   fi
   cat <<'EOF'> "/tmp/${IDENTIFIER}_test-processor"
 echo "Passed: "
-jq -r '. | select(.Action == "pass") | select(.Test != null).Test' "/tmp/${IDENTIFIER}_test.log"
+export PASS="$(jq -r '. | select(.Action == "pass") | select(.Test != null).Test' "/tmp/${IDENTIFIER}_test.log")"
+echo $PASS
 echo " "
 echo "Failed: "
-jq -r '. | select(.Action == "fail") | select(.Test != null).Test' "/tmp/${IDENTIFIER}_test.log"
+export FAIL="$(jq -r '. | select(.Action == "fail") | select(.Test != null).Test' "/tmp/${IDENTIFIER}_test.log")"
+echo $FAIL
 echo " "
+if [ ! -z "$FAIL" ]; then exit 1; fi
 EOF
   chmod +x "/tmp/${IDENTIFIER}_test-processor"
   export NO_COLOR=1
