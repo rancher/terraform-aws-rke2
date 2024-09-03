@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/rancher/terraform-aws-rke2/compare/v1.1.0...v1.1.1) (2024-09-03)
+
+
+### Bug Fixes
+
+* force failure and add key ([#189](https://github.com/rancher/terraform-aws-rke2/issues/189)) ([2f0eb9f](https://github.com/rancher/terraform-aws-rke2/commit/2f0eb9fb5d0769ffcda598ab94c86f58d17a4ab4))
+
 ## [1.1.0](https://github.com/rancher/terraform-aws-rke2/compare/v1.0.0...v1.1.0) (2024-08-30)
 
 
