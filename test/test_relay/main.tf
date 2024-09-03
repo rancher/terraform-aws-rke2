@@ -213,10 +213,11 @@ resource "terraform_data" "create_age" {
       for s in $(env | grep 'AWS'); do
         echo "export $s" >> ${local.data_local_path}/secrets.rc
       done
-      echo "export ZONE=$ZONE" >> ${local.data_local_path}/secrets.rc
       echo "export GITHUB_TOKEN=$GITHUB_TOKEN" >> ${local.data_local_path}/secrets.rc
+      echo "export GITHUB_OWNER=$GITHUB_OWNER" >> ${local.data_local_path}/secrets.rc
       echo "export ACME_SERVER_URL=$ACME_SERVER_URL" >> ${local.data_local_path}/secrets.rc
       echo "export IDENTIFIER=$IDENTIFIER" >> ${local.data_local_path}/secrets.rc
+      echo "export ZONE=$ZONE" >> ${local.data_local_path}/secrets.rc
       age -e -R ${local.data_local_path}/age_recipients.txt -o "${local.data_local_path}/secrets.rc.age" "${local.data_local_path}/secrets.rc"
       rm -f ${local.data_local_path}/secrets.rc
     EOT
@@ -394,7 +395,7 @@ resource "terraform_data" "destroy" {
   provisioner "remote-exec" {
     when = destroy
     inline = [<<-EOT
-      sudo ${self.triggers_replace.fit_remote_path}/terraform_command.sh "${self.triggers_replace.fit_remote_path}" destroy -var-file="${self.triggers_replace.vars_remote_path}" -auto-approve
+      sudo ${self.triggers_replace.fit_remote_path}/terraform_command.sh "${self.triggers_replace.fit_remote_path}" destroy -var-file="${self.triggers_replace.vars_remote_path}" -auto-approve -no-color
     EOT
     ]
   }
@@ -427,8 +428,14 @@ resource "terraform_data" "apply" {
   }
   provisioner "remote-exec" {
     inline = [<<-EOT
+      if [ -z "$GITHUB_TOKEN" ]; then echo "GITHUB_TOKEN isn't set"; else echo "GITHUB_TOKEN is set"; fi
+      if [ -z "$GITHUB_OWNER" ]; then echo "GITHUB_OWNER isn't set"; else echo "GITHUB_OWNER is set"; fi
+      if [ -z "$ZONE" ]; then echo "ZONE isn't set"; else echo "ZONE is set"; fi
+      if [ -z "$CI" ]; then echo "CI isn't set"; else echo "CI is set"; fi
+      if [ -z "$IDENTIFIER" ]; then echo "IDENTIFIER isn't set"; else echo "IDENTIFIER is set"; fi
+
       ${local.fit_remote_path}/terraform_command.sh "${local.fit_remote_path}" init -upgrade=true
-      ${local.fit_remote_path}/terraform_command.sh "${local.fit_remote_path}" apply -var-file="${local.vars_remote_path}" -auto-approve
+      ${local.fit_remote_path}/terraform_command.sh "${local.fit_remote_path}" apply -var-file="${local.vars_remote_path}" -auto-approve -no-color
     EOT
     ]
   }

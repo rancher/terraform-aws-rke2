@@ -1,4 +1,12 @@
 # control plane terraform templatefile
+provider "aws" {
+  default_tags {
+    tags = {
+      Id    = local.identifier
+      Owner = local.email
+    }
+  }
+}
 
 locals {
   # tflint-ignore: terraform_unused_declarations

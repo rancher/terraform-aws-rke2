@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.1.0](https://github.com/rancher/terraform-aws-rke2/compare/v1.0.0...v1.1.0) (2024-08-30)
+
+
+### Features
+
+* update images and add tests  ([#176](https://github.com/rancher/terraform-aws-rke2/issues/176)) ([34ea8ed](https://github.com/rancher/terraform-aws-rke2/commit/34ea8ed4dc162502d70b3215b847d838bb5d99c6))
+
+
+### Bug Fixes
+
+* add all necessary tests back in ([#188](https://github.com/rancher/terraform-aws-rke2/issues/188)) ([3a52356](https://github.com/rancher/terraform-aws-rke2/commit/3a52356c361ac8e80db2dfdef5a115cd381d2164))
+* hard code environment and fix log name ([#187](https://github.com/rancher/terraform-aws-rke2/issues/187)) ([778f948](https://github.com/rancher/terraform-aws-rke2/commit/778f948cacdf79708b02120c76251bafc0643a77))
+* pass owner through test relay ([#185](https://github.com/rancher/terraform-aws-rke2/issues/185)) ([387231d](https://github.com/rancher/terraform-aws-rke2/commit/387231de92e92975f754ac16dfbaa83d7ddf8f5a))
+* try exporting the environment variables ([#184](https://github.com/rancher/terraform-aws-rke2/issues/184)) ([0b85a98](https://github.com/rancher/terraform-aws-rke2/commit/0b85a986c754f70658d35b825a171a910e8abd7d))
+* try only high availability ([#183](https://github.com/rancher/terraform-aws-rke2/issues/183)) ([80d7f70](https://github.com/rancher/terraform-aws-rke2/commit/80d7f70181bf7cbd6bf491907590039e89f17a4b))
+* try only one test ([#182](https://github.com/rancher/terraform-aws-rke2/issues/182)) ([89f3be5](https://github.com/rancher/terraform-aws-rke2/commit/89f3be5c4b8e115cefe38c66877e8c19b7ee9ca2))
+
 ## [1.0.0](https://github.com/rancher/terraform-aws-rke2/compare/v0.1.22...v1.0.0) (2024-06-12)
 
 

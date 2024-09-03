@@ -16,14 +16,14 @@ run_tests() {
   fi
   cat <<'EOF'> "/tmp/${IDENTIFIER}_test-processor"
 echo "Passed: "
-jq -r '. | select(.Action == "pass") | select(.Test != null).Test' /tmp/$IDENTIFIER_test.log
+jq -r '. | select(.Action == "pass") | select(.Test != null).Test' "/tmp/${IDENTIFIER}_test.log"
 echo " "
 echo "Failed: "
-jq -r '. | select(.Action == "fail") | select(.Test != null).Test' /tmp/$IDENTIFIER_test.log
+jq -r '. | select(.Action == "fail") | select(.Test != null).Test' "/tmp/${IDENTIFIER}_test.log"
 echo " "
 EOF
   chmod +x "/tmp/${IDENTIFIER}_test-processor"
-
+  export NO_COLOR=1
   gotestsum \
     --format=standard-verbose \
     --jsonfile "/tmp/${IDENTIFIER}_test.log" \
@@ -39,6 +39,11 @@ if [ "" =  "$IDENTIFIER" ]; then
   export IDENTIFIER
 fi
 echo "id is: $IDENTIFIER..."
+if [ -z "$GITHUB_TOKEN" ]; then echo "GITHUB_TOKEN isn't set"; else echo "GITHUB_TOKEN is set"; fi
+if [ -z "$GITHUB_OWNER" ]; then echo "GITHUB_OWNER isn't set"; else echo "GITHUB_OWNER is set"; fi
+if [ -z "$ZONE" ]; then echo "ZONE isn't set"; else echo "ZONE is set"; fi
+if [ -z "$CI" ]; then echo "CI isn't set"; else echo "CI is set"; fi
+
 run_tests "$@"
 
 if [ -z "$CI" ]; then
