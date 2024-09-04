@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/rancher/terraform-aws-rke2/compare/v1.1.1...v1.1.2) (2024-09-04)
+
+
+### Bug Fixes
+
+* use full address for network ([#191](https://github.com/rancher/terraform-aws-rke2/issues/191)) ([ed1e3e3](https://github.com/rancher/terraform-aws-rke2/commit/ed1e3e3ca9e126675049d40c09736b3e5ab5d8f0))
+
 ## [1.1.1](https://github.com/rancher/terraform-aws-rke2/compare/v1.1.0...v1.1.1) (2024-09-03)
 
 
