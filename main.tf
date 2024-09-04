@@ -350,7 +350,7 @@ module "default_config" {
   source  = "rancher/rke2-config/local"
   version = "v0.1.4"
   tls-san = distinct(compact([
-    local.project_domain,
+    "${local.project_domain}.${local.project_domain_zone}",
   ]))
   token                       = local.join_token
   server                      = (local.config_join_strategy == "join" ? local.config_join_url : null)
