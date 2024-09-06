@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/rancher/terraform-aws-rke2/compare/v1.1.2...v1.1.3) (2024-09-06)
+
+
+### Bug Fixes
+
+* upgrade to latest project module version ([#193](https://github.com/rancher/terraform-aws-rke2/issues/193)) ([55d3f07](https://github.com/rancher/terraform-aws-rke2/commit/55d3f074e2d8acf50ada1787cfdddc0979639611))
+
 ## [1.1.2](https://github.com/rancher/terraform-aws-rke2/compare/v1.1.1...v1.1.2) (2024-09-04)
 
 
