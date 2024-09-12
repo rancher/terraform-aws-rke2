@@ -205,6 +205,11 @@ locals {
     length(module.project) > 0 && local.project_vpc_type == "ipv6" ? [cidrsubnets(local.cluster_cidr_ipv6_midway, local.cluster_cidr_ipv6_newbits, local.cluster_cidr_ipv6_newbits)[0]] :
     # ipv4 unspecified
     length(module.project) > 0 ? [cidrsubnets(module.project[0].vpc.ipv4_cidr, local.cluster_cidr_ipv4_newbits, local.cluster_cidr_ipv4_newbits)[0]] :
+    # dualstack unspecified
+    length(module.project) > 0 ? [
+      cidrsubnets(module.project[0].vpc.ipv4_cidr, local.cluster_cidr_ipv4_newbits, local.cluster_cidr_ipv4_newbits)[0],
+      cidrsubnets(local.cluster_cidr_ipv6_midway, local.cluster_cidr_ipv6_newbits, local.cluster_cidr_ipv6_newbits)[0],
+    ] :
     # default
     []
   )
@@ -215,6 +220,11 @@ locals {
     length(module.project) > 0 && local.project_vpc_type == "ipv6" ? [cidrsubnets(local.cluster_cidr_ipv6_midway, local.cluster_cidr_ipv6_newbits, local.cluster_cidr_ipv6_newbits)[1]] :
     # ipv4 unspecified
     length(module.project) > 0 ? [cidrsubnets(module.project[0].vpc.ipv4_cidr, local.cluster_cidr_ipv4_newbits, local.cluster_cidr_ipv4_newbits)[1]] :
+    # dualstack unspecified
+    length(module.project) > 0 ? [
+      cidrsubnets(module.project[0].vpc.ipv4_cidr, local.cluster_cidr_ipv4_newbits, local.cluster_cidr_ipv4_newbits)[1],
+      cidrsubnets(local.cluster_cidr_ipv6_midway, local.cluster_cidr_ipv6_newbits, local.cluster_cidr_ipv6_newbits)[1],
+    ] :
     # default
     []
   )

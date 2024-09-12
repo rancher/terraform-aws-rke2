@@ -30,13 +30,13 @@ EOF
   gotestsum \
     --format=standard-verbose \
     --jsonfile "/tmp/${IDENTIFIER}_test.log" \
-    --rerun-fails=1 \
     --post-run-command "bash /tmp/${IDENTIFIER}_test-processor" \
+    --rerun-fails \
+    --packages "./..." \
     -- \
     -parallel=3 \
     -failfast=1 \
-    -timeout=300m \
-    "$@"
+    -timeout=300m
 }
 if [ "" =  "$IDENTIFIER" ]; then
   IDENTIFIER="$(echo a-$RANDOM-d | base64 | tr -d '=')"

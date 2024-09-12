@@ -45,6 +45,8 @@ func TestMatrix(t *testing.T) {
 		"sle-micro-60-canal-old-one-rpm-ipv4-nginx",
 		//// ipv6 tests
 		"sle-micro-60-canal-stable-one-rpm-ipv6-nginx",
+		//// dualstack tests
+		"sle-micro-60-canal-stable-one-rpm-dualstack-nginx",
 		//// ha
 		"sle-micro-60-canal-stable-ha-rpm-ipv4-nginx",
 		//// splitrole
