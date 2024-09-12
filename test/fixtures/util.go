@@ -39,6 +39,7 @@ func GenerateOptions(t *testing.T, d *FixtureData) *terraform.Options {
 		".*curl.*exit status 7.*":                                                  "Failed due to transient network error.",
 		".*destroy\\.go.*Error: disassociating EC2 EIP.*does not exist.*":          "Failed to delete EIP because interface is already gone",
 		".*destroy\\.go.*Error: modifying EC2 Network Interface.*does not exist.*": "Failed to delete non existent interface",
+		".*error executing .*destroy.* wait: remote command.*":                     "Failed to wait while deleting",
 	}
 
 	var opt = terraform.Options{

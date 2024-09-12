@@ -19,6 +19,7 @@ locals {
   runner_ip          = (var.runner_ip == "" ? chomp(data.http.myip.response_body) : var.runner_ip) # "runner" is the server running Terraform
   ssh_key            = var.key
   ssh_key_name       = var.key_name
+  project_domain     = lower(local.project_name)
   zone               = var.zone # DNS zone
   rke2_version       = var.rke2_version
   image              = var.os
@@ -75,7 +76,7 @@ locals {
   initial_server_id = substr("${local.project_name}-${md5("initial")}", 0, 25)
   initial_server_info = {
     name      = local.initial_server_id
-    domain    = "${local.initial_server_id}.${local.zone}"
+    domain    = lower(local.initial_server_id)
     az        = data.aws_availability_zones.available.names[0]
     file_path = "${local.local_file_path}/${local.initial_server_id}"
     config    = local.db_config
@@ -89,7 +90,7 @@ locals {
     for i in range(local.db_count - 1) :
     local.db_ids[i] => {
       name      = local.db_ids[i]
-      domain    = "${local.db_ids[i]}.${local.zone}"
+      domain    = lower(local.db_ids[i])
       subnet    = local.subnets[(i % length(local.subnets))].tags.Name
       az        = local.subnets[(i % length(local.subnets))].availability_zone
       file_path = "${local.local_file_path}/${local.db_ids[i]}/data"
@@ -105,7 +106,7 @@ locals {
     for i in range(local.cp_count) :
     local.cp_ids[i] => {
       name      = local.cp_ids[i]
-      domain    = "${local.cp_ids[i]}.${local.zone}"
+      domain    = lower(local.cp_ids[i])
       subnet    = local.subnets[(i % length(local.subnets))].tags.Name
       az        = local.subnets[(i % length(local.subnets))].availability_zone
       file_path = "${local.local_file_path}/${local.cp_ids[i]}/data"
@@ -121,7 +122,7 @@ locals {
     for i in range(local.worker_count) :
     local.worker_ids[i] => {
       name      = local.worker_ids[i]
-      domain    = "${local.worker_ids[i]}.${local.zone}"
+      domain    = lower(local.worker_ids[i])
       subnet    = local.subnets[(i % length(local.subnets))].tags.Name
       az        = local.subnets[(i % length(local.subnets))].availability_zone
       file_path = "${local.local_file_path}/${local.worker_ids[i]}/data"
@@ -165,7 +166,7 @@ module "initial" {
     }
   }
   project_domain_use_strategy         = "create"
-  project_domain                      = "${local.project_name}.${local.zone}"
+  project_domain                      = local.project_domain
   project_domain_zone                 = local.zone
   project_domain_cert_use_strategy    = "skip"
   server_use_strategy                 = "create"
@@ -258,7 +259,7 @@ resource "local_file" "main" {
   content = templatefile(
     "${path.module}/main.tf.tftpl",
     {
-      project_domain              = module.initial.project_domain
+      project_domain              = local.project_domain
       project_security_group_name = module.initial.project_security_group.name
       project_subnets             = jsonencode(module.initial.project_subnets)
       project_name                = local.project_name

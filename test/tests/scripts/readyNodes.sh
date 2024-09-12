@@ -1,5 +1,13 @@
 #!/bin/bash
 
+echo "attempting to contact cluster..."
+if kubectl get nodes; then
+  echo "cluster responding..."
+else
+  echo "cluster not responding..."
+  exit 1
+fi
+
 JSONPATH="'{range .items[*]}
   {.metadata.name}{\"\\t\"} \
   {.status.nodeInfo.kubeletVersion}{\"\\t\"} \
@@ -10,7 +18,7 @@ JSONPATH="'{range .items[*]}
 
 notReady() {
   # Get the list of nodes and their statuses  
-  NODES="$(kubectl get nodes -o jsonpath="$JSONPATH")"
+  NODES="$(kubectl get nodes -o jsonpath="$JSONPATH" || true)"
   # Example output:
   # master-node   Ready
   # worker-node   Ready MemoryPressure

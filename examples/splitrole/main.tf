@@ -64,7 +64,7 @@ locals {
   server_ids = [for i in range(local.cp_count) : substr("${local.project_name}-${substr(md5(uuidv5("dns", join("-", [tostring(i), "cp"]))), 0, 4)}", 0, 25)]
   initial_server_info = {
     "name"      = local.server_ids[0]
-    "domain"    = "${local.server_ids[0]}.${local.zone}"
+    "domain"    = local.server_ids[0]
     "az"        = data.aws_availability_zones.available.names[0]
     "file_path" = "${local.local_file_path}/${local.server_ids[0]}"
   }
@@ -74,7 +74,7 @@ locals {
     for i in range(1, length(local.server_ids)) :
     local.server_ids[i] => {
       "name"      = local.server_ids[i]
-      "domain"    = "${local.server_ids[i]}.${local.zone}"
+      "domain"    = local.server_ids[i]
       "subnet"    = local.additional_subnets[(i % length(local.additional_subnets))].tags.Name
       "az"        = local.additional_subnets[(i % length(local.additional_subnets))].availability_zone
       "file_path" = "${local.local_file_path}/${local.server_ids[i]}/data"
@@ -88,7 +88,7 @@ locals {
     for i in range(length(local.agent_ids)) :
     local.agent_ids[i] => {
       "name"      = local.agent_ids[i]
-      "domain"    = "${local.agent_ids[i]}.${local.zone}"
+      "domain"    = local.agent_ids[i]
       "subnet"    = module.initial.project_subnets[keys(module.initial.project_subnets)[(i % length(module.initial.project_subnets))]].tags.Name
       "az"        = module.initial.project_subnets[keys(module.initial.project_subnets)[(i % length(module.initial.project_subnets))]].availability_zone
       "file_path" = "${local.local_file_path}/${local.agent_ids[i]}/data"
@@ -137,7 +137,7 @@ module "initial" {
     }
   }
   project_domain_use_strategy         = "create"
-  project_domain                      = "${local.project_name}.${local.zone}"
+  project_domain                      = local.project_name
   project_domain_zone                 = local.zone
   project_domain_cert_use_strategy    = "skip"
   server_use_strategy                 = "create"

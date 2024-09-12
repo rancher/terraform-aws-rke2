@@ -6,6 +6,12 @@ if [ "$(id -u)" -ne 0 ]; then
   echo "This script must be run as root" >&2
   exit 1
 fi
+
+# some basic information about the OS for troubleshooting failures
+uname -a
+lsblk
+free -h
+
 #https://docs.rke2.io/known_issues
 
 systemctl disable --now firewalld || true
@@ -41,7 +47,7 @@ if [ "rpm" = "${install_method}" ]; then
   PYTHON_VERSION="$(ls -l /usr/lib | grep '^d' | grep python | awk '{print $9}')"
 
   # shellcheck disable=SC2154
-  if [ "rhel-9" = "${image}" ]; then
+  if [ "rhel-9" = "${image}" ] || [ "rocky-9" = "${image}" ]; then
     # adding Rocky 9 repos because they are RHEL 9 compatible and support ipv6 native
     DATA="[RockyLinux-AppStream]\nname=Rocky Linux - AppStream\nbaseurl=https://dl.rockylinux.org/pub/rocky/9/AppStream/x86_64/os/\nenabled=1\nmetadata_expire=7d\ngpgcheck=1\ngpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rocky\nsslverify=1\nsslcacert=/etc/pki/tls/certs/ca-bundle.crt"
     echo -e "$DATA" > /etc/yum.repos.d/Rocky-AppStream.repo
@@ -58,7 +64,8 @@ if [ "rpm" = "${install_method}" ]; then
     dnf makecache
     dnf repolist
   fi
-  if [ "rhel-8" = "${image}" ]; then
+
+  if [ "rhel-8" = "${image}" ] || [ "liberty-8" = "${image}" ]; then
     # adding Rocky 8 repos because they are RHEL 8 compatible and support ipv6 native
     DATA="[RockyLinux-AppStream]\nname=Rocky Linux - AppStream\nbaseurl=https://dl.rockylinux.org/pub/rocky/8/AppStream/x86_64/os/\nenabled=1\nmetadata_expire=7d\ngpgcheck=1\ngpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rocky\nsslverify=1\nsslcacert=/etc/pki/tls/certs/ca-bundle.crt"
     echo -e "$DATA" > /etc/yum.repos.d/Rocky-AppStream.repo
@@ -75,9 +82,19 @@ if [ "rpm" = "${install_method}" ]; then
     dnf makecache 
     dnf repolist
   fi
+
   if [ "liberty-7" = "${image}" ]; then
     subscription-manager repos --enable=rhel-7-server-extras-rpms
     yum clean all
     yum repolist
+  fi
+fi
+
+if [ "rocky-9" = "${image}" ]; then
+  if grep -q overlayfs /proc/filesystems; then
+    echo "overlayfs supported..."
+  else
+    echo "overlayfs not supported, upgrading kernel..."
+    dnf update -y
   fi
 fi

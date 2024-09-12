@@ -89,6 +89,7 @@ module "control_plane" {
   source                              = "../../../../" # this source is dev use only, see https://registry.terraform.io/modules/rancher/rke2/aws/latest
   project_use_strategy                = "skip"
   project_domain                      = "${project_domain}"
+  project_domain_zone                 = local.zone
   server_use_strategy                 = "create"
   server_name                         = local.server_info["name"]
   server_type                         = "small"                          # smallest viable control plane node (actually t3.medium)

@@ -6,14 +6,14 @@ output "kubeconfig" {
       module.install[0].kubeconfig,
       # when replacing the ipv6 server ip, also replace the brackets
       (local.project_vpc_type == "ipv6" ? "[${module.server[0].server.public_ip}]" : module.server[0].server.public_ip),
-      module.project[0].domain.name
+      "${module.project[0].domain.name}.${local.project_domain_zone}"
     ) :
     # Or do nothing
     ""
   )
   description = <<-EOT
     The kubeconfig for the cluster.
-    This replaces the server's public ip with the project's domain.
+    This replaces the server's public ip with the project's fqdn.
   EOT
   sensitive   = true
 }

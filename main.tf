@@ -50,6 +50,13 @@ locals {
   project_domain_zone         = var.project_domain_zone
   project_cert_use_strategy   = var.project_domain_cert_use_strategy
 
+
+  # tflint-ignore: terraform_unused_declarations
+  fail_domain_contains_zone = (
+    (local.project_domain_use_strategy != "skip" && strcontains(local.project_domain, local.project_domain_zone)) ? one([local.project_domain, "domain_contains_zone"]) : false
+  )
+
+
   # Dev note: make sure not to depend on the project when deploying the server, we want to be able to skip the project
   # Feature: Server
   server_use_strategy        = var.server_use_strategy
@@ -104,13 +111,13 @@ locals {
   # Feature: server - indirect access
   server_indirect_access_use_strategy = var.server_indirect_access_use_strategy
   server_load_balancer_target_groups = ( # WARNING! this must not be derived from resource output
+    local.server_indirect_access_use_strategy == "skip" ? null :
+    var.server_load_balancer_target_groups == null ? null :
     # use specified target groups
-    length(var.server_load_balancer_target_groups) > 0 ?
-    var.server_load_balancer_target_groups :
+    length(var.server_load_balancer_target_groups) > 0 ? var.server_load_balancer_target_groups :
 
     # use project target groups if specified
-    length(local.project_load_balancer_access_cidrs) > 0 ?
-    [for tg in local.project_load_balancer_access_cidrs : tg.target_name] :
+    length(local.project_load_balancer_access_cidrs) > 0 ? [for tg in local.project_load_balancer_access_cidrs : tg.target_name] :
 
     # no target groups found
     null
@@ -350,7 +357,7 @@ module "default_config" {
   source  = "rancher/rke2-config/local"
   version = "v0.1.4"
   tls-san = distinct(compact([
-    "${local.project_domain}.${local.project_domain_zone}",
+    lower("${local.project_domain}.${local.project_domain_zone}"),
   ]))
   token                       = local.join_token
   server                      = (local.config_join_strategy == "join" ? local.config_join_url : null)

@@ -17,11 +17,11 @@ run_tests() {
   cat <<'EOF'> "/tmp/${IDENTIFIER}_test-processor"
 echo "Passed: "
 export PASS="$(jq -r '. | select(.Action == "pass") | select(.Test != null).Test' "/tmp/${IDENTIFIER}_test.log")"
-echo $PASS
+echo $PASS | tr ' ' '\n'
 echo " "
 echo "Failed: "
 export FAIL="$(jq -r '. | select(.Action == "fail") | select(.Test != null).Test' "/tmp/${IDENTIFIER}_test.log")"
-echo $FAIL
+echo $FAIL | tr ' ' '\n'
 echo " "
 if [ ! -z "$FAIL" ]; then exit 1; fi
 EOF
@@ -30,6 +30,7 @@ EOF
   gotestsum \
     --format=standard-verbose \
     --jsonfile "/tmp/${IDENTIFIER}_test.log" \
+    --rerun-fails=1 \
     --post-run-command "bash /tmp/${IDENTIFIER}_test-processor" \
     -- \
     -parallel=3 \

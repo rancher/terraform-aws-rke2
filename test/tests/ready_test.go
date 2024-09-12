@@ -57,7 +57,7 @@ func TestMatrix(t *testing.T) {
 		// extended tests
 		// os
 		// "sle-micro-55-canal-stable-one-rpm-ipv4-nginx",
-		// "rocky-9-canal-stable-one-tar-ipv4-nginx",
+		// "rocky-9-canal-stable-one-rpm-ipv4-nginx",
 		// "liberty-8-canal-stable-one-rpm-ipv4-nginx",
 		//// ha
 		// "sles-15-canal-stable-ha-rpm-ipv4-nginx",
@@ -87,7 +87,9 @@ func TestMatrix(t *testing.T) {
 	// "cis-...-ipv6-...",
 	//// kernel parameters set on the CIS STIG image disables dhcpv6 which AWS requires for dedicated ipv6 access
 	// "ubuntu-...-rpm-...",
-	//// rpm install method is not supported for ubuntu
+	//// rpm install method is not supported for Ubuntu
+	// "rocky-...-tar-..."
+	//// tar install method isn't supported for Rocky (doesn't come with overlayfs enabled)
 
 	combinations := make(map[string]map[string]string)
 	for i := range selection {
@@ -109,6 +111,11 @@ func TestMatrix(t *testing.T) {
 			t.Logf("Fixture %s created, checking...", k)
 			assert.NotEmpty(t, kubeconfigPath)
 			checkReady(t, kubeconfigPath)
+			if t.Failed() {
+				t.Log("Test failed...")
+			} else {
+				t.Log("Test passed...")
+			}
 			t.Log("Test complete, tearing down...")
 			fit.Teardown(t, &d)
 		})
