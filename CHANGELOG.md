@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.4](https://github.com/rancher/terraform-aws-rke2/compare/v1.1.3...v1.1.4) (2024-09-12)
+
+
+### Bug Fixes
+
+* handle null load balanced addresses ([#195](https://github.com/rancher/terraform-aws-rke2/issues/195)) ([7901f8b](https://github.com/rancher/terraform-aws-rke2/commit/7901f8b04a12772046fd191ffc87f00b651d129c))
+
 ## [1.1.3](https://github.com/rancher/terraform-aws-rke2/compare/v1.1.2...v1.1.3) (2024-09-06)
 
 
