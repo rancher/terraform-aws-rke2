@@ -267,6 +267,7 @@ variable "project_domain" {
   type        = string
   description = <<-EOT
     The domain name to retrieve or create.
+    This shouldn't include the zone, we will concatenate those when necessary.
   EOT
   default     = ""
 }

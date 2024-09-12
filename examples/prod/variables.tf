@@ -21,7 +21,7 @@ variable "rke2_version" {
 variable "os" {
   type        = string
   description = "The operating system to deploy."
-  default     = "sle-micro-55-byos" # BYOS = Bring Your Own Subscription, only use this if you have a subscription with SUSE or plan to get one directly rather than going through AWS
+  default     = "sle-micro-60"
 }
 variable "file_path" {
   type        = string

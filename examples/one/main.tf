@@ -25,7 +25,7 @@ locals {
   install_method     = var.install_method
   install_prep_script_file = (
     strcontains(local.image, "sles") ? "${path.root}/sles_prep.sh" :
-    strcontains(local.image, "rhel") ? "${path.root}/rhel_prep.sh" :
+    (strcontains(local.image, "rhel") || strcontains(local.image, "rocky") || strcontains(local.image, "liberty")) ? "${path.root}/rhel_prep.sh" :
     strcontains(local.image, "ubuntu") ? "${path.root}/ubuntu_prep.sh" :
     ""
   )
@@ -97,12 +97,12 @@ module "this" {
     }
   }
   project_domain_use_strategy         = "create"
-  project_domain                      = "${local.project_name}.${local.zone}"
+  project_domain                      = local.project_name
   project_domain_zone                 = local.zone
   project_domain_cert_use_strategy    = "skip"
   server_use_strategy                 = "create"
   server_name                         = "${local.project_name}-${random_pet.server.id}"
-  server_type                         = "small" # smallest viable control plane node (actually t3.medium)
+  server_type                         = "small" # 'small' is smallest viable control plane node (actually t3.medium)
   server_image_use_strategy           = "find"
   server_image_type                   = local.image
   server_ip_family                    = local.ip_family
@@ -133,7 +133,7 @@ module "this" {
     timeout                  = 10
   }
   server_add_domain        = false
-  server_domain_name       = "${local.project_name}-${random_pet.server.id}.${local.zone}"
+  server_domain_name       = "${local.project_name}-${random_pet.server.id}"
   server_domain_zone       = local.zone
   server_add_eip           = false
   install_use_strategy     = local.install_method
