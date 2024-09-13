@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.5](https://github.com/rancher/terraform-aws-rke2/compare/v1.1.4...v1.1.5) (2024-09-13)
+
+
+### Bug Fixes
+
+* enable a dual stack test ([#197](https://github.com/rancher/terraform-aws-rke2/issues/197)) ([a6f61a0](https://github.com/rancher/terraform-aws-rke2/commit/a6f61a0cb13194a36bc8b6bdf6ec0dd2ddcecaca))
+
 ## [1.1.4](https://github.com/rancher/terraform-aws-rke2/compare/v1.1.3...v1.1.4) (2024-09-12)
 
 
