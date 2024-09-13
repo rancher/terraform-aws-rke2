@@ -46,24 +46,21 @@ echo "id is: $IDENTIFIER..."
 if [ -z "$GITHUB_TOKEN" ]; then echo "GITHUB_TOKEN isn't set"; else echo "GITHUB_TOKEN is set"; fi
 if [ -z "$GITHUB_OWNER" ]; then echo "GITHUB_OWNER isn't set"; else echo "GITHUB_OWNER is set"; fi
 if [ -z "$ZONE" ]; then echo "ZONE isn't set"; else echo "ZONE is set"; fi
-if [ -z "$CI" ]; then echo "CI isn't set"; else echo "CI is set"; fi
 
 run_tests "$@"
 
-if [ -z "$CI" ]; then
-  echo "Clearing leftovers with Id $IDENTIFIER in $AWS_REGION..."
-  sleep 60
+echo "Clearing leftovers with Id $IDENTIFIER in $AWS_REGION..."
+sleep 60
 
-  if [ "" != "$IDENTIFIER" ]; then
-    while [ "" != "$(leftovers -d --iaas=aws --aws-region="$AWS_REGION" --filter="Id:$IDENTIFIER")" ]; do
-      leftovers --iaas=aws --aws-region="$AWS_REGION" --filter="Id:$IDENTIFIER" --no-confirm;
-      sleep 10;
-    done
-    while [ "" != "$(leftovers -d --iaas=aws --aws-region="$AWS_REGION" --type="ec2-key-pair" --filter="tf-$IDENTIFIER")" ]; do
-      leftovers --iaas=aws --aws-region="$AWS_REGION" --type="ec2-key-pair" --filter="tf-$IDENTIFIER" --no-confirm;
-      sleep 10;
-    done
-  fi
-
-  echo "done"
+if [ "" != "$IDENTIFIER" ]; then
+  while [ "" != "$(leftovers -d --iaas=aws --aws-region="$AWS_REGION" --filter="Id:$IDENTIFIER")" ]; do
+    leftovers --iaas=aws --aws-region="$AWS_REGION" --filter="Id:$IDENTIFIER" --no-confirm || true
+    sleep 10
+  done
+  while [ "" != "$(leftovers -d --iaas=aws --aws-region="$AWS_REGION" --type="ec2-key-pair" --filter="tf-$IDENTIFIER")" ]; do
+    leftovers --iaas=aws --aws-region="$AWS_REGION" --type="ec2-key-pair" --filter="tf-$IDENTIFIER" --no-confirm || true
+    sleep 10
+  done
 fi
+
+echo "done"

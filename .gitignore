@@ -2,7 +2,6 @@
 *.terraform.*
 *.terraform
 terraform*
-!.terraform.lock.hcl
 override.*
 *_override.tf
 !terraform.md
@@ -24,3 +23,5 @@ examples/**/51-*
 test/tests/data/*
 examples/*/data/*
 test/test_relay/data/*
+terraform.lock.hcl
+.terraform.lock.hcl

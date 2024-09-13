@@ -111,8 +111,8 @@ locals {
   # Feature: server - indirect access
   server_indirect_access_use_strategy = var.server_indirect_access_use_strategy
   server_load_balancer_target_groups = ( # WARNING! this must not be derived from resource output
-    local.server_indirect_access_use_strategy == "skip" ? null :
-    var.server_load_balancer_target_groups == null ? null :
+    local.server_indirect_access_use_strategy == "skip" ? [] :
+    var.server_load_balancer_target_groups == null ? [] :
     # use specified target groups
     length(var.server_load_balancer_target_groups) > 0 ? var.server_load_balancer_target_groups :
 
@@ -120,7 +120,7 @@ locals {
     length(local.project_load_balancer_access_cidrs) > 0 ? [for tg in local.project_load_balancer_access_cidrs : tg.target_name] :
 
     # no target groups found
-    null
+    []
   )
 
   # Feature: server - direct access
