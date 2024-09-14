@@ -52,13 +52,20 @@ run_tests "$@"
 echo "Clearing leftovers with Id $IDENTIFIER in $AWS_REGION..."
 sleep 60
 
+MAX=4 # try 3 times
+
+I=0
 if [ "" != "$IDENTIFIER" ]; then
-  while [ "" != "$(leftovers -d --iaas=aws --aws-region="$AWS_REGION" --filter="Id:$IDENTIFIER")" ]; do
+  while [ "" != "$(leftovers -d --iaas=aws --aws-region="$AWS_REGION" --filter="Id:$IDENTIFIER")" ] && [ $I -lt $MAX ]; do
     leftovers --iaas=aws --aws-region="$AWS_REGION" --filter="Id:$IDENTIFIER" --no-confirm || true
+    I=$((I+1))
     sleep 10
   done
-  while [ "" != "$(leftovers -d --iaas=aws --aws-region="$AWS_REGION" --type="ec2-key-pair" --filter="tf-$IDENTIFIER")" ]; do
+
+  I=0;
+  while [ "" != "$(leftovers -d --iaas=aws --aws-region="$AWS_REGION" --type="ec2-key-pair" --filter="tf-$IDENTIFIER")" ] && [ $I -lt $MAX ]; do
     leftovers --iaas=aws --aws-region="$AWS_REGION" --type="ec2-key-pair" --filter="tf-$IDENTIFIER" --no-confirm || true
+    I=$((I+1))
     sleep 10
   done
 fi

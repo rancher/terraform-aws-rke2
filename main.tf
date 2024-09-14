@@ -14,7 +14,6 @@ locals {
   project_subnet_use_strategy = var.project_subnet_use_strategy
   project_subnet_names        = var.project_subnet_names
 
-
   # Feature: project - security groups
   project_security_group_use_strategy = var.project_security_group_use_strategy
   project_security_group_name         = (var.project_security_group_name != "" ? var.project_security_group_name : (local.project_name != "" ? "${local.project_name}-sg" : ""))
@@ -50,12 +49,10 @@ locals {
   project_domain_zone         = var.project_domain_zone
   project_cert_use_strategy   = var.project_domain_cert_use_strategy
 
-
   # tflint-ignore: terraform_unused_declarations
   fail_domain_contains_zone = (
     (local.project_domain_use_strategy != "skip" && strcontains(local.project_domain, local.project_domain_zone)) ? one([local.project_domain, "domain_contains_zone"]) : false
   )
-
 
   # Dev note: make sure not to depend on the project when deploying the server, we want to be able to skip the project
   # Feature: Server
