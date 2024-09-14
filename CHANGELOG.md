@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.6](https://github.com/rancher/terraform-aws-rke2/compare/v1.1.5...v1.1.6) (2024-09-14)
+
+
+### Bug Fixes
+
+* extend the life of the test token ([#202](https://github.com/rancher/terraform-aws-rke2/issues/202)) ([567ae12](https://github.com/rancher/terraform-aws-rke2/commit/567ae12f4537c9739ee30aab699ce8380068c133))
+* increasing token timeout ([#201](https://github.com/rancher/terraform-aws-rke2/issues/201)) ([b2e7dc3](https://github.com/rancher/terraform-aws-rke2/commit/b2e7dc3c5afe4197739221105e6fd61985b93617))
+* target group list should be empty not null ([#199](https://github.com/rancher/terraform-aws-rke2/issues/199)) ([a3c2ed2](https://github.com/rancher/terraform-aws-rke2/commit/a3c2ed2d823daed2cd57ce774a8b6c2ed8e4c421))
+
 ## [1.1.5](https://github.com/rancher/terraform-aws-rke2/compare/v1.1.4...v1.1.5) (2024-09-13)
 
 
