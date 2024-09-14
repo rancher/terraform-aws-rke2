@@ -250,9 +250,12 @@ resource "terraform_data" "copy_fixture" {
   }
   provisioner "remote-exec" { # prepare directories
     inline = [<<-EOT
-      set -e
-      install -d ${local.fit_remote_path}
-      install -d ${local.fit_config_path}
+      echo "I am $(whoami)..."
+      echo "creating directory ${local.fit_remote_path}..."
+      ls -lah ${local.fit_remote_path}
+      install -m 0755 -d ${local.fit_remote_path}
+      install -m 0755 -d ${local.fit_config_path}
+      ls -lah ${local.fit_remote_path}
     EOT
     ]
   }
