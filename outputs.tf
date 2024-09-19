@@ -88,6 +88,7 @@ output "project_domain_tls_certificate" {
       name        = ""
       expiration  = ""
       upload_date = ""
+      key_id      = ""
       tags_all    = tomap({ "" = "" })
     }
   )
