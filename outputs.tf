@@ -148,3 +148,7 @@ output "project_security_group" {
     null
   )
 }
+
+output "server_image_id" {
+  value = module.server[0].image.id
+}
