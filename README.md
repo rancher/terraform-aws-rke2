@@ -60,17 +60,10 @@ It is important to us that all collaborators have the ability to develop in simi
 These tools are not necessary, but they can make it much simpler to collaborate.
 
 * I use [nix](https://nixos.org/) that I have installed using [their recommended script](https://nixos.org/download.html#nix-install-macos)
-* I use [direnv](https://direnv.net/) that I have installed using brew.
-* I simply use `direnv allow` to enter the environment
-* I navigate to the `tests` directory and run `go test -v -timeout=40m -parallel=10`
-
-  * It is important to note that the test files do not stand alone, they expect to run as a package.
-  * This means that specifying the file to test (as follows) will fail: `go test -v -timeout 40m -parallel 10 basic_test.go`
-* To run an individual test I navigate to the `tests` directory and run `go test -v -timeout 40m -parallel 10 -run <test function name>`
-
-  * eg. `go test -v -timeout 40m -parallel 10 -run TestBasic`
-* I store my credentials in a local files and generate a symlink to them
-
+* I have an RC file that generates the environment for me
+* I just source the .envrc in the main directory
+* I use the run_tests.sh script in the parent directory to run tests
+* I store my credentials in a local file which I source
   * eg. `~/.config/github/default/rc`
   * this will be automatically sourced when you enter the nix environment (and unloaded when you leave)
   * see the `.envrc` and `.rcs` file for the implementation
