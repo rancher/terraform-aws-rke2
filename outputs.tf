@@ -79,6 +79,23 @@ output "project_domain" {
   EOT
 }
 
+output "project_domain_object" {
+  value = ((local.project_mod == 1 && local.project_domain_use_strategy != "skip") ?
+    module.project[0].domain :
+    {
+      id      = ""
+      name    = ""
+      zone_id = ""
+      type    = ""
+      records = []
+    }
+  )
+  description = <<-EOT
+    The domain object for the project.
+    This enables adding records in further objects.
+  EOT
+}
+
 output "project_domain_tls_certificate" {
   value = ((local.project_mod == 1 && local.project_domain_use_strategy != "skip") ?
     module.project[0].certificate :
