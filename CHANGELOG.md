@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.10](https://github.com/rancher/terraform-aws-rke2/compare/v1.1.9...v1.1.10) (2024-10-11)
+
+
+### Bug Fixes
+
+* add domain object to outputs ([#209](https://github.com/rancher/terraform-aws-rke2/issues/209)) ([65d9b5a](https://github.com/rancher/terraform-aws-rke2/commit/65d9b5a2f4d7c2d0e677fccbdc76c675ad56a79f))
+* update environment documentation ([#211](https://github.com/rancher/terraform-aws-rke2/issues/211)) ([950ed18](https://github.com/rancher/terraform-aws-rke2/commit/950ed1821a8b8d2c1b39e07bb1c5f7d5d5216c2e))
+
 ## [1.1.9](https://github.com/rancher/terraform-aws-rke2/compare/v1.1.8...v1.1.9) (2024-10-09)
 
 
