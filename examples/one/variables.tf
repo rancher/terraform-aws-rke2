@@ -4,7 +4,7 @@ variable "key_name" {
 }
 variable "key" {
   type        = string
-  description = "The content of an ssh key for server access. The key must be loaded into the running ssh agent."
+  description = "The content of a public ssh key for server access. The key must be loaded into the running ssh agent."
 }
 variable "identifier" {
   type        = string
@@ -21,7 +21,7 @@ variable "rke2_version" {
 variable "os" {
   type        = string
   description = "The operating system to deploy."
-  default     = "sle-micro-55"
+  default     = "sle-micro-60"
 }
 variable "file_path" {
   type        = string
