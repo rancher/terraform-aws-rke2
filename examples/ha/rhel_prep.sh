@@ -42,24 +42,21 @@ EOT
   if [ -f /etc/default/grub ]; then
     cp /etc/default/grub /etc/default/grub.bak
     echo "Backed up /etc/default/grub to /etc/default/grub.bak"
-  else
-    echo "/etc/default/grub not found. Exiting."
-    exit 1
   fi
 
   # Check if cgroup v2 is already enabled
   if mount | grep -q "cgroup on /sys/fs/cgroup type cgroup"; then
-    echo "cgroup v2 already enabled. Exiting."
-    exit 0
+    echo "cgroup v2 already enabled."
+  else
+    # Add cgroup v2 kernel parameter to GRUB configuration
+    if grep -q "systemd.unified_cgroup_hierarchy=1" /etc/default/grub; then
+        echo "cgroup v2 parameter already present in GRUB. Skipping."
+    else
+        sed -i 's/GRUB_CMDLINE_LINUX="\(.*\)"/GRUB_CMDLINE_LINUX="\1 systemd.unified_cgroup_hierarchy=1"/g' /etc/default/grub
+        echo "Added systemd.unified_cgroup_hierarchy=1 to GRUB_CMDLINE_LINUX"
+    fi
   fi
 
-  # Add cgroup v2 kernel parameter to GRUB configuration
-  if grep -q "systemd.unified_cgroup_hierarchy=1" /etc/default/grub; then
-      echo "cgroup v2 parameter already present in GRUB. Skipping."
-  else
-      sed -i 's/GRUB_CMDLINE_LINUX="\(.*\)"/GRUB_CMDLINE_LINUX="\1 systemd.unified_cgroup_hierarchy=1"/g' /etc/default/grub
-      echo "Added systemd.unified_cgroup_hierarchy=1 to GRUB_CMDLINE_LINUX"
-  fi
 
   # Disable IPv6
   if grep -q "ipv6.disable=1" /etc/default/grub; then
