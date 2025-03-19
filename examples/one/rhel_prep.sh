@@ -24,7 +24,7 @@ systemctl disable nm-cloud-setup.service || true
 systemctl stop nm-cloud-setup.timer || true
 systemctl disable nm-cloud-setup.timer || true
 
-
+# shellcheck disable=SC2154
 if [ "cis-rhel-8" = "${image}" ]; then
 
   systemctl stop nftables
@@ -102,6 +102,7 @@ if [ "ipv6" = "${ip_family}" ]; then
     nmcli -f TYPE,FILENAME,NAME connection | grep ethernet
   fi
 fi
+
 # shellcheck disable=SC2154
 if [ "rpm" = "${install_method}" ]; then
   # shellcheck disable=SC2010
@@ -126,6 +127,7 @@ if [ "rpm" = "${install_method}" ]; then
     dnf repolist
   fi
 
+  # shellcheck disable=SC2154
   if [ "rhel-8" = "${image}" ] || [ "liberty-8" = "${image}" ]; then
     # adding Rocky 8 repos because they are RHEL 8 compatible and support ipv6 native
     DATA="[RockyLinux-AppStream]\nname=Rocky Linux - AppStream\nbaseurl=https://dl.rockylinux.org/pub/rocky/8/AppStream/x86_64/os/\nenabled=1\nmetadata_expire=7d\ngpgcheck=1\ngpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rocky\nsslverify=1\nsslcacert=/etc/pki/tls/certs/ca-bundle.crt"
@@ -140,10 +142,11 @@ if [ "rpm" = "${install_method}" ]; then
     rm -rf /etc/yum.repos.d/redhat-* # redhat repos only support ipv4
     rm -rf /etc/dnf/plugins/amazon-id.conf
     dnf clean all
-    dnf makecache 
+    dnf makecache
     dnf repolist
   fi
 
+  # shellcheck disable=SC2154
   if [ "liberty-7" = "${image}" ]; then
     subscription-manager repos --enable=rhel-7-server-extras-rpms
     yum clean all
@@ -151,6 +154,7 @@ if [ "rpm" = "${install_method}" ]; then
   fi
 fi
 
+# shellcheck disable=SC2154
 if [ "rocky-9" = "${image}" ]; then
   if grep -q overlayfs /proc/filesystems; then
     echo "overlayfs supported..."
