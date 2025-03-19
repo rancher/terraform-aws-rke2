@@ -2,7 +2,7 @@ name: validate
 
 on:
   pull_request:
-    branches: main
+    branches: [main]
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

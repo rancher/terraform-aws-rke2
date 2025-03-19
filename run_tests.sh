@@ -2,14 +2,25 @@
 
 rerun_failed=false
 specific_test=""
+specific_fixture=""
+wait=""
 
-while getopts ":rf:" opt; do
+while getopts ":r:f:t:w:" opt; do
   case $opt in
     r) rerun_failed=true ;;
-    f) specific_test="$OPTARG" ;;
+    f) specific_fixture="$OPTARG" ;;
+    # currently there is only one test "TestMatrix"
+    t) specific_test="$OPTARG" ;;
+    w) wait="$OPTARG" ;;
     \?) echo "Invalid option -$OPTARG" >&2 && exit 1 ;;
   esac
 done
+
+export COMBO="$specific_fixture"
+if [ -n "$COMBO" ]; then echo "specific combination set to $COMBO"; fi
+
+export WAIT="$wait"
+if [ -n "$WAIT" ]; then echo "you will have $WAIT seconds to investigate errors"; fi
 
 run_tests() {
   local rerun=$1
@@ -50,14 +61,20 @@ EOF
 
   local rerun_flag=""
   if [ "$rerun" = true ] && [ -f "/tmp/${IDENTIFIER}_failed_tests.txt" ]; then
+    # this will only run the tests that failed in the previous loop
     # shellcheck disable=SC2002
     rerun_flag="-run=$(cat "/tmp/${IDENTIFIER}_failed_tests.txt" | tr '\n' '|')"
   fi
 
   local specific_test_flag=""
-  if [ -n "$specific_test" ]; then
+  if [ -n "$specific_test" ] && [ ! -f "/tmp/${IDENTIFIER}_failed_tests.txt" ]; then
+    # this won't be hit after the first loop
+    # in the case of re-running failed tests this is not necessary since the only test that can fail is the one we run
     specific_test_flag="-run=$specific_test"
   fi
+
+  export COMBO="$specific_fixture"
+  if [ -n "$COMBO" ]; then echo "specific combination set to $COMBO"; fi
 
   # shellcheck disable=SC2086
   gotestsum \
@@ -81,9 +98,13 @@ if [ -z "$IDENTIFIER" ]; then
   export IDENTIFIER
 fi
 echo "id is: $IDENTIFIER..."
+
 if [ -z "$GITHUB_TOKEN" ]; then echo "GITHUB_TOKEN isn't set"; else echo "GITHUB_TOKEN is set"; fi
 if [ -z "$GITHUB_OWNER" ]; then echo "GITHUB_OWNER isn't set"; else echo "GITHUB_OWNER is set"; fi
 if [ -z "$ZONE" ]; then echo "ZONE isn't set"; else echo "ZONE is set"; fi
+
+# clear failed tests before initial run
+rm -rf "/tmp/${IDENTIFIER}_failed_tests.txt"
 
 # Run tests initially
 run_tests false
