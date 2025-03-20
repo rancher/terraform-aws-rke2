@@ -23,6 +23,12 @@ locals {
   rke2_version       = var.rke2_version
   image              = var.os
   install_method     = var.install_method
+  line_ending        = <<-EOT
+
+  EOT
+  cis_rhel_8_extra_config = yamlencode({
+    kube-proxy-arg = ["--nodeport-addresses=primary"]
+  })
   install_prep_script_file = (
     strcontains(local.image, "sles") ? "${path.root}/sles_prep.sh" :
     (strcontains(local.image, "rhel") || strcontains(local.image, "rocky") || strcontains(local.image, "liberty")) ? "${path.root}/rhel_prep.sh" :
@@ -40,7 +46,19 @@ locals {
   cni          = var.cni
   config_strat = (local.cni == "canal" ? "default" : "merge")
   cni_file     = (local.cni == "cilium" ? "${path.root}/cilium.yaml" : (local.cni == "calico" ? "${path.root}/calico.yaml" : ""))
-  cni_config   = (local.cni_file != "" ? file(local.cni_file) : "")
+  cni_config = (
+    local.cni_file != "" ?
+    (
+      local.image != "cis-rhel-8" ?
+      file(local.cni_file) :
+      join(local.line_ending, [file(local.cni_file), local.cis_rhel_8_extra_config])
+    ) :
+    (
+      local.image != "cis-rhel-8" ?
+      "" :
+      local.cis_rhel_8_extra_config
+    )
+  )
   # WARNING! Local file path needs to be isolated, don't use the same path as your terraform files
   local_file_path    = (var.file_path != "" ? (var.file_path == path.root ? "${abspath(path.root)}/rke2" : var.file_path) : "${abspath(path.root)}/rke2")
   workfolder         = (strcontains(local.image, "cis") ? "/var/tmp" : "/home/${local.username}")
@@ -48,7 +66,7 @@ locals {
   cloudinit_strategy = ((local.image == "sle-micro-55" || local.image == "cis-rhel-8") ? "skip" : "default")
 
   # tflint-ignore: terraform_unused_declarations
-  fail_cis_ipv6 = ((local.image == "rhel-8-cis" && local.ip_family == "ipv6") ? one([local.ip_family, "cis_ipv6_incompatible"]) : false)
+  fail_cis_ipv6 = ((local.image == "cis-rhel-8" && local.ip_family == "ipv6") ? one([local.ip_family, "cis_ipv6_incompatible"]) : false)
   # CIS images are not supported on IPv6 only deployments due to kernel modifications with how AWS IPv6 works (dhcpv6)
 
 
@@ -102,7 +120,7 @@ module "this" {
   project_domain_cert_use_strategy    = "skip"
   server_use_strategy                 = "create"
   server_name                         = "${local.project_name}-${random_pet.server.id}"
-  server_type                         = "small" # 'small' is smallest viable control plane node (actually t3.medium)
+  server_type                         = "medium" # 'small' is smallest viable control plane node (actually t3.medium)
   server_image_use_strategy           = "find"
   server_image_type                   = local.image
   server_ip_family                    = local.ip_family

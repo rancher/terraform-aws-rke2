@@ -1,10 +1,23 @@
 #!/bin/bash
 
+
+
+if [ -n "$WAIT" ]; then echo "you will have $WAIT seconds to investigate errors before destruction"; fi
+
 echo "attempting to contact cluster..."
+
+echo "first let's check the endpoint $API..."
+curl -vvvL "$API"
+
+echo "now lets check using kubectl..."
 if kubectl get nodes; then
   echo "cluster responding..."
 else
   echo "cluster not responding..."
+  if [ -n "$WAIT" ]; then
+    echo "you have $WAIT seconds to investigate errors before destruction...";
+    sleep "$WAIT"
+  fi
   exit 1
 fi
 
@@ -50,6 +63,9 @@ while notReady; do
     echo "Timeout reached. Nodes are not ready..."
     kubectl get nodes || true
     kubectl get all -A
+
+    if [ -n "$WAIT" ]; then echo "you have $WAIT seconds to investigate errors before destruction..."; fi
+    sleep "$WAIT"
     exit 1
   fi
 done

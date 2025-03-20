@@ -92,6 +92,11 @@ func TestMatrix(t *testing.T) {
 	//// rpm install method is not supported for Ubuntu
 	// "rocky-...-tar-..."
 	//// tar install method isn't supported for Rocky (doesn't come with overlayfs enabled)
+  combo := os.Getenv("COMBO")
+  if combo != "" {
+    t.Logf("Running single combo: %s", combo)
+    selection = []string{combo}
+  }
 
 	combinations := make(map[string]map[string]string)
 	for i := range selection {
@@ -104,7 +109,7 @@ func TestMatrix(t *testing.T) {
 		t.Run(k, func(t *testing.T) {
 			t.Parallel()
 			t.Logf("Running test for %s", k)
-			kubeconfigPath, d, err := fit.CreateFixture(t, v)
+			kubeconfigPath, api, d, err := fit.CreateFixture(t, v)
 			if err != nil {
 				t.Logf("Error creating cluster: %s", err)
 				t.Fail()
@@ -112,7 +117,10 @@ func TestMatrix(t *testing.T) {
 			}
 			t.Logf("Fixture %s created, checking...", k)
 			assert.NotEmpty(t, kubeconfigPath)
-			checkReady(t, kubeconfigPath)
+      assert.NotEmpty(t, api)
+      t.Logf("API: %s", api)
+      t.Logf("Kubeconfig: %s", kubeconfigPath)
+			checkReady(t, kubeconfigPath, api, d)
 			if t.Failed() {
 				t.Log("Test failed...")
 			} else {
@@ -124,7 +132,7 @@ func TestMatrix(t *testing.T) {
 	}
 }
 
-func checkReady(t *testing.T, kubeconfigPath string) {
+func checkReady(t *testing.T, kubeconfigPath string, api string, d fit.FixtureData) {
 	script, err2 := os.ReadFile("./scripts/readyNodes.sh")
 	if err2 != nil {
 		require.NoError(t, err2)
@@ -134,8 +142,14 @@ func checkReady(t *testing.T, kubeconfigPath string) {
 		Args:    []string{"-c", string(script)},
 		Env: map[string]string{
 			"KUBECONFIG": kubeconfigPath,
+      "API": api,
+      "WAIT": os.Getenv("WAIT"),
 		},
 	}
-	out := shell.RunCommandAndGetOutput(t, readyScript) // if the script fails, it will fail the test
+	out, err := shell.RunCommandAndGetOutputE(t, readyScript)
+  if err != nil {
+    t.Logf("Error running script: %s", err)
+    t.Fail()
+  }
 	t.Logf("Ready script output: %s", out)
 }

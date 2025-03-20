@@ -248,10 +248,10 @@ func filterDuplicateMinors(vers []string) []string {
 	return fv
 }
 
-func CreateFixture(t *testing.T, combo map[string]string) (string, FixtureData, error) {
+func CreateFixture(t *testing.T, combo map[string]string) (string, string, FixtureData, error) {
 	repoRoot, err := filepath.Abs(g.GetRepoRoot(t))
 	if err != nil {
-		return "", FixtureData{}, err
+		return "", "", FixtureData{}, err
 	}
 
 	var fixtureData FixtureData
@@ -272,19 +272,24 @@ func CreateFixture(t *testing.T, combo map[string]string) (string, FixtureData, 
 
 	err = createTestDirectories(t, fixtureData.Id)
 	if err != nil {
-		return "", fixtureData, err
+		return "", "", fixtureData, err
 	}
 
-	kubeconfig, err := create(t, &fixtureData)
+	kubeconfig, api, err := create(t, &fixtureData)
 	if err != nil {
 		t.Errorf("Error creating fixture: %v", err)
 	}
 	if kubeconfig == "{}" {
 		t.Log("Kubeconfig not found")
-		return "", fixtureData, errors.New("kubeconfig not found")
+		return "", "", fixtureData, errors.New("kubeconfig not found")
 	}
+  if api == "" {
+    t.Log("API not found")
+    return "", "", fixtureData, errors.New("api not found")
+  }
 	os.WriteFile(fixtureData.DataDirectory+"/kubeconfig", []byte(kubeconfig), 0644)
-	return fixtureData.DataDirectory + "/kubeconfig", fixtureData, nil
+  t.Logf("API is %s", api)
+	return fixtureData.DataDirectory + "/kubeconfig", api, fixtureData, nil
 }
 
 func getAcmeServer() string {

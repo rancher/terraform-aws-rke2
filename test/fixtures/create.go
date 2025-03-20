@@ -32,7 +32,7 @@ type FixtureData struct {
 	TfVars            map[string]interface{}
 }
 
-func create(t *testing.T, d *FixtureData) (string, error) {
+func create(t *testing.T, d *FixtureData) (string, string, error) {
 	var err error
 	terraformOptions := GenerateOptions(t, d)
 	t.Logf("Git Root: %s", d.ExampleDirectory)
@@ -40,7 +40,7 @@ func create(t *testing.T, d *FixtureData) (string, error) {
 	if err != nil {
 		t.Errorf("Error creating key pair: %s", err)
 		aws.DeleteEC2KeyPair(t, d.SshKeyPair)
-		return "", err
+		return "", "", err
 	}
 	d.SshAgent = GenerateSshAgent(t, d)
 	terraformOptions.SshAgent = d.SshAgent
@@ -78,7 +78,7 @@ func create(t *testing.T, d *FixtureData) (string, error) {
 	_, err = terraform.InitAndApplyE(t, d.TfOptions)
 	if err != nil {
 		t.Errorf("Error creating cluster: %s", err)
-		return "", err
+		return "", "", err
 	}
 
 	output := terraform.OutputJson(t, terraformOptions, "")
@@ -88,7 +88,12 @@ func create(t *testing.T, d *FixtureData) (string, error) {
 			Type      string `json:"type"`
 			Value     string `json:"value"`
 		} `json:"kubeconfig"`
-	}
+    Api struct {
+			Sensitive bool   `json:"sensitive"`
+			Type      string `json:"type"`
+			Value     string `json:"value"`
+		} `json:"api"`
+  }
 	var data OutputData
 	err = json.Unmarshal([]byte(output), &data)
 	if err != nil {
@@ -96,5 +101,7 @@ func create(t *testing.T, d *FixtureData) (string, error) {
 	}
 	assert.NotEmpty(t, data.Kubeconfig.Value)
 	t.Logf("kubeconfig: %s", data.Kubeconfig.Value)
-	return data.Kubeconfig.Value, nil
+  assert.NotEmpty(t, data.Api.Value)
+  t.Logf("api: %s", data.Api.Value)
+	return data.Kubeconfig.Value, data.Api.Value, nil
 }

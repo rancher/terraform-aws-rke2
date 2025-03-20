@@ -7,6 +7,8 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
+REBOOT="false"
+
 # some basic information about the OS for troubleshooting failures
 uname -a
 lsblk
@@ -21,6 +23,62 @@ systemctl stop nm-cloud-setup.service || true
 systemctl disable nm-cloud-setup.service || true
 systemctl stop nm-cloud-setup.timer || true
 systemctl disable nm-cloud-setup.timer || true
+
+# shellcheck disable=SC2154
+if [ "cis-rhel-8" = "${image}" ]; then
+
+  systemctl stop nftables
+  systemctl disable nftables
+
+  install -d /etc/NetworkManager/conf.d
+  cat > /etc/NetworkManager/conf.d/rke2-canal.conf << EOT
+[keyfile]
+unmanaged-devices=interface-name:flannel*;interface-name:cali*;interface-name:tunl*;interface-name:vxlan.calico;interface-name:vxlan-v6.calico;interface-name:wireguard.cali;interface-name:wg-v6.cali
+EOT
+
+  groupadd --system etcd && sudo useradd -s /sbin/nologin --system -g etcd etcd
+
+  # Backup GRUB configuration
+  if [ -f /etc/default/grub ]; then
+    cp /etc/default/grub /etc/default/grub.bak
+    echo "Backed up /etc/default/grub to /etc/default/grub.bak"
+  fi
+
+  # Check if cgroup v2 is already enabled
+  if mount | grep -q "cgroup on /sys/fs/cgroup type cgroup"; then
+    echo "cgroup v2 already enabled."
+  else
+    # Add cgroup v2 kernel parameter to GRUB configuration
+    if grep -q "systemd.unified_cgroup_hierarchy=1" /etc/default/grub; then
+        echo "cgroup v2 parameter already present in GRUB. Skipping."
+    else
+        sed -i 's/GRUB_CMDLINE_LINUX="\(.*\)"/GRUB_CMDLINE_LINUX="\1 systemd.unified_cgroup_hierarchy=1"/g' /etc/default/grub
+        echo "Added systemd.unified_cgroup_hierarchy=1 to GRUB_CMDLINE_LINUX"
+    fi
+  fi
+
+
+  # Disable IPv6
+  if grep -q "ipv6.disable=1" /etc/default/grub; then
+      echo "IPv6 disable parameter already present. Skipping."
+  else
+      sed -i 's/GRUB_CMDLINE_LINUX="\(.*\)"/GRUB_CMDLINE_LINUX="\1 ipv6.disable=1"/g' /etc/default/grub
+      echo "Added ipv6.disable=1 to GRUB_CMDLINE_LINUX"
+  fi
+
+  # Update GRUB configuration
+  if [ -f /boot/efi/EFI/redhat/grub.cfg ]; then
+    grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg
+    echo "Updated /boot/efi/EFI/redhat/grub.cfg"
+  elif [ -f /boot/grub2/grub.cfg ]; then
+    grub2-mkconfig -o /boot/grub2/grub.cfg
+    echo "Updated /boot/grub2/grub.cfg"
+  else
+    echo "GRUB configuration file not found. Please check /boot directory."
+    exit 1
+  fi
+  REBOOT="true"
+fi
 
 # shellcheck disable=SC2154
 if [ "ipv6" = "${ip_family}" ]; then
@@ -41,6 +99,7 @@ if [ "ipv6" = "${ip_family}" ]; then
     nmcli -f TYPE,FILENAME,NAME connection | grep ethernet
   fi
 fi
+
 # shellcheck disable=SC2154
 if [ "rpm" = "${install_method}" ]; then
   # shellcheck disable=SC2010
@@ -65,6 +124,7 @@ if [ "rpm" = "${install_method}" ]; then
     dnf repolist
   fi
 
+  # shellcheck disable=SC2154
   if [ "rhel-8" = "${image}" ] || [ "liberty-8" = "${image}" ]; then
     # adding Rocky 8 repos because they are RHEL 8 compatible and support ipv6 native
     DATA="[RockyLinux-AppStream]\nname=Rocky Linux - AppStream\nbaseurl=https://dl.rockylinux.org/pub/rocky/8/AppStream/x86_64/os/\nenabled=1\nmetadata_expire=7d\ngpgcheck=1\ngpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rocky\nsslverify=1\nsslcacert=/etc/pki/tls/certs/ca-bundle.crt"
@@ -79,10 +139,11 @@ if [ "rpm" = "${install_method}" ]; then
     rm -rf /etc/yum.repos.d/redhat-* # redhat repos only support ipv4
     rm -rf /etc/dnf/plugins/amazon-id.conf
     dnf clean all
-    dnf makecache 
+    dnf makecache
     dnf repolist
   fi
 
+  # shellcheck disable=SC2154
   if [ "liberty-7" = "${image}" ]; then
     subscription-manager repos --enable=rhel-7-server-extras-rpms
     yum clean all
@@ -90,6 +151,7 @@ if [ "rpm" = "${install_method}" ]; then
   fi
 fi
 
+# shellcheck disable=SC2154
 if [ "rocky-9" = "${image}" ]; then
   if grep -q overlayfs /proc/filesystems; then
     echo "overlayfs supported..."
@@ -97,4 +159,13 @@ if [ "rocky-9" = "${image}" ]; then
     echo "overlayfs not supported, upgrading kernel..."
     dnf update -y
   fi
+fi
+
+if [ "$REBOOT" = "true" ]; then
+  echo "Rebooting in 2 seconds..."
+  # reboot in 2 seconds and exit this script
+  # this allows us to reboot without Terraform receiving errors
+  # WARNING: there is a race condition here, the reboot must happen before Terraform reconnects for the next script
+  ( sleep 2 ; reboot ) &
+  exit 0
 fi
