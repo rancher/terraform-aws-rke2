@@ -248,14 +248,26 @@ resource "terraform_data" "copy_fixture" {
     agent       = true
     host        = module.runner.server.public_ip
   }
-  provisioner "remote-exec" { # prepare directories
+  provisioner "remote-exec" {
     inline = [<<-EOT
-      echo "I am $(whoami)..."
+      # prevent collisions with random sleep
+      sleep $((RANDOM % 7))
+      W="$(whoami)"
+      echo "I am $W..."
+
       echo "creating directory ${local.fit_remote_path}..."
-      ls -lah ${local.fit_remote_path}
-      install -m 0755 -d ${local.fit_remote_path}
-      install -m 0755 -d ${local.fit_config_path}
-      ls -lah ${local.fit_remote_path}
+      if [ ! -d "${local.fit_remote_path}" ]; then
+        sudo install -m 0755 -d "${local.fit_remote_path}"
+        sudo chown -R $W:users "${local.fit_remote_path}"
+      fi
+      ls -lah "${local.fit_remote_path}"
+
+      echo "creating directory ${local.fit_config_path}..."
+      if [ ! -d "${local.fit_config_path}" ]; then
+        sudo install -m 0755 -d "${local.fit_config_path}"
+        sudo chown -R $W:users "${local.fit_remote_path}"
+      fi
+      ls -lah "${local.fit_config_path}"
     EOT
     ]
   }
