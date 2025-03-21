@@ -448,7 +448,7 @@ resource "terraform_data" "apply" {
       if [ -z "$ZONE" ]; then echo "ZONE isn't set"; else echo "ZONE is set"; fi
       if [ -z "$CI" ]; then echo "CI isn't set"; else echo "CI is set"; fi
       if [ -z "$IDENTIFIER" ]; then echo "IDENTIFIER isn't set"; else echo "IDENTIFIER is set"; fi
-
+      rm -f "${local.fit_remote_path}/.terraform.lock.hcl"
       ${local.fit_remote_path}/terraform_command.sh "${local.fit_remote_path}" init -upgrade=true
       ${local.fit_remote_path}/terraform_command.sh "${local.fit_remote_path}" apply -var-file="${local.vars_remote_path}" -auto-approve -no-color
     EOT
