@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0](https://github.com/rancher/terraform-aws-rke2/compare/v1.1.11...v1.2.0) (2025-03-24)
+
+
+### Features
+
+* upgrade modules and update test framework ([#215](https://github.com/rancher/terraform-aws-rke2/issues/215)) ([e9c8b31](https://github.com/rancher/terraform-aws-rke2/commit/e9c8b318acf3f39079ac63af45c5992cc10cfcf7))
+
+
+### Bug Fixes
+
+* remove lock file ([#218](https://github.com/rancher/terraform-aws-rke2/issues/218)) ([82abe92](https://github.com/rancher/terraform-aws-rke2/commit/82abe92d68bb3d099cbeb8866f1734e2f2e88bd4))
+* remove version constraints ([#214](https://github.com/rancher/terraform-aws-rke2/issues/214)) ([ba7395b](https://github.com/rancher/terraform-aws-rke2/commit/ba7395b09f398f19b7b215bbf00512b9f0076684))
+* try to resolve exit 126 errors ([#217](https://github.com/rancher/terraform-aws-rke2/issues/217)) ([bbf8289](https://github.com/rancher/terraform-aws-rke2/commit/bbf8289bd7d906a8367e9234643317825d696c92))
+
 ## [1.1.11](https://github.com/rancher/terraform-aws-rke2/compare/v1.1.10...v1.1.11) (2024-10-16)
 
 
