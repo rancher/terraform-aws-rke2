@@ -448,6 +448,7 @@ variable "server_image_type" {
     Current images are:
       "sle-micro-55",
       "sle-micro-60",
+      "sle-micro-61",
       "sles-15",
       "cis-rhel-8",
       "ubuntu-22",
@@ -461,6 +462,7 @@ variable "server_image_type" {
       var.server_image_type == "" ? true : contains([
         "sle-micro-55",
         "sle-micro-60",
+        "sle-micro-61",
         "sles-15",
         "cis-rhel-8",
         "ubuntu-22",
@@ -474,6 +476,7 @@ variable "server_image_type" {
       If specified, this must be one of
       "sle-micro-55",
       "sle-micro-60",
+      "sle-micro-61",
       "sles-15",
       "cis-rhel-8",
       "ubuntu-22",
@@ -483,7 +486,7 @@ variable "server_image_type" {
       "liberty-8",
     EOT
   }
-  default = "sle-micro-60"
+  default = "sle-micro-61"
 }
 
 variable "server_cloudinit_use_strategy" {

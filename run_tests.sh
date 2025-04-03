@@ -12,7 +12,13 @@ while getopts ":r:f:t:w:" opt; do
     # currently there is only one test "TestMatrix"
     t) specific_test="$OPTARG" ;;
     w) wait="$OPTARG" ;;
-    \?) echo "Invalid option -$OPTARG" >&2 && exit 1 ;;
+    \?) cat <<EOT >&2 && exit 1 ;;
+Invalid option -$OPTARG, valid options are
+  -r to re-run failed tests (only when not specifying tests/fixture)
+  -t to specify a specific test (eg. TestMatrix)
+  -f to specify fixture (eg. "sle-micro-61-canal-stable-one-rpm-ipv4-nginx")
+  -w to tell the test to wait if it errors so that you can investigate the error before destruction
+EOT
   esac
 done
 
