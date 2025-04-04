@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/rancher/terraform-aws-rke2/compare/v1.2.0...v1.2.1) (2025-04-03)
+
+
+### Bug Fixes
+
+* update default operating system ([#219](https://github.com/rancher/terraform-aws-rke2/issues/219)) ([514883e](https://github.com/rancher/terraform-aws-rke2/commit/514883e88aa1b86473f384423dc998c9cc5197b8))
+
 ## [1.2.0](https://github.com/rancher/terraform-aws-rke2/compare/v1.1.11...v1.2.0) (2025-03-24)
 
 
