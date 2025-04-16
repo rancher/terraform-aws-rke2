@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/rancher/terraform-aws-rke2/compare/v1.2.1...v1.2.2) (2025-04-16)
+
+
+### Bug Fixes
+
+* update install mod to get debug mode ([#221](https://github.com/rancher/terraform-aws-rke2/issues/221)) ([e19f164](https://github.com/rancher/terraform-aws-rke2/commit/e19f16479fea76c7b25b1294ff72013ef77140c7))
+
 ## [1.2.1](https://github.com/rancher/terraform-aws-rke2/compare/v1.2.0...v1.2.1) (2025-04-03)
 
 
