@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/rancher/terraform-aws-rke2/compare/v1.2.2...v1.2.3) (2025-05-02)
+
+
+### Bug Fixes
+
+* expose server security group ([#223](https://github.com/rancher/terraform-aws-rke2/issues/223)) ([49dc239](https://github.com/rancher/terraform-aws-rke2/commit/49dc2392978d0ae2d2c82bca84c8cb96a9511635))
+
 ## [1.2.2](https://github.com/rancher/terraform-aws-rke2/compare/v1.2.1...v1.2.2) (2025-04-16)
 
 
