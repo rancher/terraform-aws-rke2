@@ -166,6 +166,13 @@ output "project_security_group" {
   )
 }
 
+output "server_security_group_ids" {
+  value = (
+    length(module.server) > 0 ? module.server[0].server.security_group_ids : null
+  )
+}
+
+
 output "server_image_id" {
   value = module.server[0].image.id
 }
