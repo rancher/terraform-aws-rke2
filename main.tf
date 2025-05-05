@@ -327,7 +327,7 @@ module "server" {
     data.aws_security_group.general_info,
   ]
   source                       = "rancher/server/aws"
-  version                      = "v1.4.1"
+  version                      = "v1.4.2"
   image_use_strategy           = local.server_image_use_strategy
   image                        = local.server_image
   image_type                   = local.server_image_type
