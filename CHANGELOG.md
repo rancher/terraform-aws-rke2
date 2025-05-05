@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.4](https://github.com/rancher/terraform-aws-rke2/compare/v1.2.3...v1.2.4) (2025-05-05)
+
+
+### Bug Fixes
+
+* update server module ([#225](https://github.com/rancher/terraform-aws-rke2/issues/225)) ([79deb3a](https://github.com/rancher/terraform-aws-rke2/commit/79deb3ab1011067a44fc89a5df8b49af56bae184))
+
 ## [1.2.3](https://github.com/rancher/terraform-aws-rke2/compare/v1.2.2...v1.2.3) (2025-05-02)
 
 
