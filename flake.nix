@@ -48,10 +48,10 @@
             name = "dev-shell-package";
             paths = with pkgs; [
               actionlint
-              age
               aspellWithDicts
               awscli2
               bashInteractive
+              cmctl
               curl
               dig
               gh
@@ -59,21 +59,24 @@
               gitleaks
               gnupg
               go
+              golint
               gotestfmt
               gotestsum
+              kubernetes-helm
               jq
               kubectl
               leftovers
               less
               openssh
+              openssl
               shellcheck
-              tailscale
               tflint
               tfsec
               tfswitch
               updatecli
               vim
               which
+              yq-go
             ];
           };
 
