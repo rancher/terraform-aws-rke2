@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.6](https://github.com/rancher/terraform-aws-rke2/compare/v1.2.5...v1.2.6) (2025-05-07)
+
+
+### Bug Fixes
+
+* update access mod ([#229](https://github.com/rancher/terraform-aws-rke2/issues/229)) ([842010a](https://github.com/rancher/terraform-aws-rke2/commit/842010a54a11d65b823f2c2c8418958c911fd13d))
+
 ## [1.2.5](https://github.com/rancher/terraform-aws-rke2/compare/v1.2.4...v1.2.5) (2025-05-06)
 
 
