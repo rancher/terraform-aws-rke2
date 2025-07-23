@@ -48,6 +48,7 @@
             name = "dev-shell-package";
             paths = with pkgs; [
               actionlint
+              age
               aspellWithDicts
               awscli2
               bashInteractive

@@ -97,16 +97,13 @@ output "project_domain_object" {
 }
 
 output "project_domain_tls_certificate" {
+  sensitive = true
   value = ((local.project_mod == 1 && local.project_domain_use_strategy != "skip") ?
     module.project[0].certificate :
     {
-      id          = ""
-      arn         = ""
-      name        = ""
-      expiration  = ""
-      upload_date = ""
-      key_id      = ""
-      tags_all    = tomap({ "" = "" })
+      public_key  = ""
+      private_key = ""
+      chain       = ""
     }
   )
 }

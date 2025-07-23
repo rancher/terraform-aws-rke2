@@ -191,14 +191,6 @@ set_terminal_size(){
   stty cols "$col"
 }
 
-set_repo_name() {
-  new_name="$1"
-  if [ -z "$new_name" ]; then echo "set new name as $1"; exit 1; fi
-  for file in $(git grep \"matttrach-demo\" | awk -F':' '{print $1}'| uniq | tr '\n' ' '); do
-    sed -i 's/matttrach-demo/generic-demo/g' "$file";
-  done
-}
-
 run_tests() {
   ./run_tests.sh "$@"
 }
