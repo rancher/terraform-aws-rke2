@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/rancher/terraform-aws-rke2/compare/v1.2.6...v2.0.0) (2025-07-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* update access module to version 4.0.0 ([#233](https://github.com/rancher/terraform-aws-rke2/issues/233))
+
+### Bug Fixes
+
+* update access module to version 4.0.0 ([#233](https://github.com/rancher/terraform-aws-rke2/issues/233)) ([75c340e](https://github.com/rancher/terraform-aws-rke2/commit/75c340e817d7d10eab5a7d3aca47f70c096f8a11))
+
 ## [1.2.6](https://github.com/rancher/terraform-aws-rke2/compare/v1.2.5...v1.2.6) (2025-05-07)
 
 
