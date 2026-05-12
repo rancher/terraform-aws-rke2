@@ -92,18 +92,19 @@ func getData(t *testing.T) (map[string][]string, []string, error) {
 	cni := []string{"canal", "calico", "cilium"}
 	operatingSystems := []string{
 		"sles-15",
+		"sles-16",
 		"sle-micro-55",
 		"sle-micro-60",
 		"sle-micro-61",
 		"cis-rhel-8",
+		"cis-rhel-9",
 		"ubuntu-22",
 		"ubuntu-24",
 		"rocky-9",
 		"rhel-9",
-		"liberty-8",
+		"suse-multi-linux-manager-server-5",
 	}
 	ipFamilies := []string{"ipv4", "ipv6", "dualstack"}
-	ingressControllers := []string{"nginx", "traefik"}
 	t.Log("Getting releases")
 	releases, err := GetReleases(t)
 	if err != nil {
@@ -116,13 +117,12 @@ func getData(t *testing.T) (map[string][]string, []string, error) {
 	}
 
 	data := map[string][]string{
-		"operatingSystem":   operatingSystems,
-		"cni":               cni,
-		"release":           releases,
-		"fixture":           fixtures,
-		"installType":       installTypes,
-		"ipFamily":          ipFamilies,
-		"ingressController": ingressControllers,
+		"operatingSystem": operatingSystems,
+		"cni":             cni,
+		"release":         releases,
+		"fixture":         fixtures,
+		"installType":     installTypes,
+		"ipFamily":        ipFamilies,
 	}
 	keys := []string{
 		"operatingSystem",
@@ -131,7 +131,6 @@ func getData(t *testing.T) (map[string][]string, []string, error) {
 		"fixture",
 		"installType",
 		"ipFamily",
-		"ingressController",
 	}
 	return data, keys, nil
 }
@@ -153,7 +152,7 @@ func getIndexes(maxValues map[string]int, k []string) []map[string]int {
 		current[k[i]] = 0 // fill in the initial values of current
 	}
 	lastKey := k[len(k)-1]
-	for current[lastKey] < maxValues[lastKey] { // until the last value of current matches the last max value
+	for current[lastKey] <= maxValues[lastKey] { // until the last value of current matches the last max value
 
 		// create copy of current
 		c := make(map[string]int)
@@ -169,7 +168,11 @@ func getIndexes(maxValues map[string]int, k []string) []map[string]int {
 			key := k[i]
 			if current[key] > maxValues[key] { // if the value of the current key is greater than the max value for that key
 				current[key] = 0  // reset the value of the current key to 0
-				current[k[i+1]]++ // increment the value of the next key
+				if i+1 < len(k) {
+					current[k[i+1]]++ // increment the value of the next key
+				} else {
+					current[key] = maxValues[key] + 1 // force outer loop condition to fail so it terminates
+				}
 			}
 		}
 	}

@@ -13,6 +13,12 @@ variable "fixture" {
     Directory name of the example we are testing, like 'ha', 'one', or 'splitrole'.
     This should be a directory name in the 'examples' directory.
   EOT
+  validation {
+    condition = (
+      contains(["one", "ha", "prod", "splitrole"], var.fixture)
+    )
+    error_message = "This must be one of 'one', 'ha', 'prod', or 'splitrole'."
+  }
 }
 
 # from fixtures:
@@ -43,9 +49,4 @@ variable "ip_family" {
   type        = string
   description = "The IP family to use. Must be 'ipv4', 'ipv6', or 'dualstack'."
   default     = "ipv4"
-}
-variable "ingress_controller" {
-  type        = string
-  description = "The ingress controller to use. Must be 'nginx' or 'traefik'."
-  default     = "nginx"
 }

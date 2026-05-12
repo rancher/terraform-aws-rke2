@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-set -x
+
 
 if [ "$(id -u)" -ne 0 ]; then
   echo "This script must be run as root" >&2
@@ -25,7 +25,7 @@ systemctl stop nm-cloud-setup.timer || true
 systemctl disable nm-cloud-setup.timer || true
 
 # shellcheck disable=SC2154
-if [ "cis-rhel-8" = "${image}" ]; then
+if [ "cis-rhel-8" = "${image}" ] || [ "cis-rhel-9" = "${image}" ]; then
 
   systemctl stop nftables
   systemctl disable nftables
@@ -67,13 +67,25 @@ EOT
   fi
 
   # Update GRUB configuration
+  # Both files might exist, but only one is correct.
+  FOUND=0
   if [ -f /boot/efi/EFI/redhat/grub.cfg ]; then
-    grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg
-    echo "Updated /boot/efi/EFI/redhat/grub.cfg"
-  elif [ -f /boot/grub2/grub.cfg ]; then
-    grub2-mkconfig -o /boot/grub2/grub.cfg
-    echo "Updated /boot/grub2/grub.cfg"
-  else
+    FOUND=1
+    if grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg; then
+      echo "Updated /boot/efi/EFI/redhat/grub.cfg"
+    else
+      echo "Failed to update /boot/efi/EFI/redhat/grub.cfg"
+    fi
+  fi
+  if [ -f /boot/grub2/grub.cfg ]; then
+    FOUND=1
+    if grub2-mkconfig -o /boot/grub2/grub.cfg; then
+      echo "Updated /boot/grub2/grub.cfg"
+    else
+      echo "Failed to update /boot/grub2/grub.cfg"
+    fi
+  fi
+  if [ "$FOUND" = "0" ]; then
     echo "GRUB configuration file not found. Please check /boot directory."
     exit 1
   fi
@@ -125,7 +137,7 @@ if [ "rpm" = "${install_method}" ]; then
   fi
 
   # shellcheck disable=SC2154
-  if [ "rhel-8" = "${image}" ] || [ "liberty-8" = "${image}" ]; then
+  if [ "rhel-8" = "${image}" ]; then
     # adding Rocky 8 repos because they are RHEL 8 compatible and support ipv6 native
     DATA="[RockyLinux-AppStream]\nname=Rocky Linux - AppStream\nbaseurl=https://dl.rockylinux.org/pub/rocky/8/AppStream/x86_64/os/\nenabled=1\nmetadata_expire=7d\ngpgcheck=1\ngpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rocky\nsslverify=1\nsslcacert=/etc/pki/tls/certs/ca-bundle.crt"
     echo -e "$DATA" > /etc/yum.repos.d/Rocky-AppStream.repo
@@ -143,12 +155,6 @@ if [ "rpm" = "${install_method}" ]; then
     dnf repolist
   fi
 
-  # shellcheck disable=SC2154
-  if [ "liberty-7" = "${image}" ]; then
-    subscription-manager repos --enable=rhel-7-server-extras-rpms
-    yum clean all
-    yum repolist
-  fi
 fi
 
 # shellcheck disable=SC2154

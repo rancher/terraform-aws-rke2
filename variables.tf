@@ -291,7 +291,7 @@ variable "project_domain_cert_use_strategy" {
     When 'create' is selected, a certificate will be generated using the acme provider.
     When running Terraform the ACME provider will detect certificate expiration and renew it.
     The cert will be placed in a server certificate object in AWS, it will not be attached to the loadbalancer.
-    We output the certificate so that further steps can add it to the ingress controller or other resources.
+    We output the certificate so that further steps can add it to other resources as needed.
     This cert is not expected to replace the internal certs, it should be used to enable secure external connections.
   EOT
   validation {
@@ -446,44 +446,50 @@ variable "server_image_type" {
     The designation of server "image" from the ./image/types.tf file, this relates the AWS AMI information.
     Please be aware that some images require a subscription and will have additional cost over usage of the server.
     Current images are:
+      "sles-15",
+      "sles-16",
       "sle-micro-55",
       "sle-micro-60",
       "sle-micro-61",
-      "sles-15",
       "cis-rhel-8",
+      "cis-rhel-9",
       "ubuntu-22",
       "ubuntu-24",
       "rocky-9",
       "rhel-9",
-      "liberty-8",
+      "suse-multi-linux-manager-server-5",
   EOT
   validation {
     condition = (
       var.server_image_type == "" ? true : contains([
+        "sles-15",
+        "sles-16",
         "sle-micro-55",
         "sle-micro-60",
         "sle-micro-61",
-        "sles-15",
         "cis-rhel-8",
+        "cis-rhel-9",
         "ubuntu-22",
         "ubuntu-24",
         "rocky-9",
         "rhel-9",
-        "liberty-8",
+        "suse-multi-linux-manager-server-5",
       ], var.server_image_type)
     )
     error_message = <<-EOT
       If specified, this must be one of
+      "sles-15",
+      "sles-16",
       "sle-micro-55",
       "sle-micro-60",
       "sle-micro-61",
-      "sles-15",
       "cis-rhel-8",
+      "cis-rhel-9",
       "ubuntu-22",
       "ubuntu-24",
       "rocky-9",
       "rhel-9",
-      "liberty-8",
+      "suse-multi-linux-manager-server-5",
     EOT
   }
   default = "sle-micro-61"

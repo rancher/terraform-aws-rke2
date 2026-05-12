@@ -1,0 +1,93 @@
+variable "identifier" {
+  type = string
+}
+
+variable "email" {
+  type = string
+}
+
+variable "project_domain" {
+  type = string
+}
+
+variable "zone" {
+  type = string
+}
+
+variable "node_info" {
+  type = string
+  description = "A json encoded map(string) used to communicate node information"
+}
+
+variable "project_security_group_name" {
+  type = string
+}
+
+variable "image" {
+  type = string
+}
+
+variable "ip_family" {
+  type = string
+}
+
+variable "cloudinit_strategy" {
+  type = string
+}
+
+variable "k8s_target_group" {
+  type = string
+}
+
+variable "runner_ip" {
+  type = string
+}
+
+variable "username" {
+  type = string
+}
+
+variable "ssh_key" {
+  type = string
+}
+
+variable "ssh_key_name" {
+  type = string
+}
+
+variable "workfolder" {
+  type = string
+}
+
+variable "install_method" {
+  type = string
+}
+
+variable "download" {
+  type = string
+}
+
+variable "rke2_version" {
+  type = string
+}
+
+variable "install_prep_script" {
+  type = string
+}
+
+%{ if initial != true }
+
+variable "join_token" {
+  type = string
+}
+variable "join_url" {
+  type = string
+}
+variable "cluster_cidr" {
+  type = string
+}
+variable "service_cidr" {
+  type = string
+}
+
+%{ endif }

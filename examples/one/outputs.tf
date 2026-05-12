@@ -3,6 +3,11 @@ output "kubeconfig" {
   description = "Kubernetes config file contents for the cluster."
   sensitive   = true
 }
+output "server_kubeconfig" {
+  value       = module.this.server_kubeconfig
+  description = "Server kubeconfig."
+  sensitive   = true
+}
 output "server_ip" {
   value       = trimsuffix(trimprefix(trimsuffix(trimprefix(yamldecode(module.this.server_kubeconfig).clusters[0].cluster.server, "https://"), ":6443"), "["), "]")
   description = "IP address of the cluster's initial node."

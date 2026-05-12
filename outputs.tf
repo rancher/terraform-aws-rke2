@@ -40,9 +40,13 @@ output "server_rke2_config" {
 }
 output "join_url" {
   value = (
-    local.config_join_url != "" ? local.config_join_url :
-    local.server_ip_family == "ipv6" ? "https://[${module.server[0].server.private_ip}]:9345" :
-    "https://${module.server[0].server.private_ip}:9345"
+    local.config_join_url != "" ? local.config_join_url : (
+      local.server_mod == 1 ? (
+        local.server_ip_family == "ipv6" ? "https://[${module.server[0].server.private_ip}]:9345" :
+        "https://${module.server[0].server.private_ip}:9345"
+      ) :
+      null
+    )
   )
   description = <<-EOT
     The URL to join this cluster.
@@ -169,7 +173,16 @@ output "server_security_group_ids" {
   )
 }
 
-
 output "server_image_id" {
-  value = module.server[0].image.id
+  value = (local.server_mod == 1 ?
+    module.server[0].image.id :
+    ""
+  )
+}
+
+output "server_public_ip" {
+  value = (local.server_mod == 1 ?
+    module.server[0].server.public_ip :
+    null
+  )
 }
