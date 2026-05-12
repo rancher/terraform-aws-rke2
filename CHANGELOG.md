@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.0.0](https://github.com/rancher/terraform-aws-rke2/compare/v2.0.0...v3.0.0) (2026-05-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* update modules and resolve dependency chain vulnerabilities ([#238](https://github.com/rancher/terraform-aws-rke2/issues/238))
+
+### Bug Fixes
+
+* Add FOSSA scanning workflow ([#235](https://github.com/rancher/terraform-aws-rke2/issues/235)) ([0e7b5a3](https://github.com/rancher/terraform-aws-rke2/commit/0e7b5a3b4786bb14973b3b35515297ea0e23750f))
+* Pin GH Actions to commit sha ([#236](https://github.com/rancher/terraform-aws-rke2/issues/236)) ([450d40f](https://github.com/rancher/terraform-aws-rke2/commit/450d40ff54f0cf4446889d8215509fea0b4c9fbd))
+* update modules and resolve dependency chain vulnerabilities ([#238](https://github.com/rancher/terraform-aws-rke2/issues/238)) ([d60c5a4](https://github.com/rancher/terraform-aws-rke2/commit/d60c5a40509ad0effa115513a596b38a39f519ad))
+
 ## [2.0.0](https://github.com/rancher/terraform-aws-rke2/compare/v1.2.6...v2.0.0) (2025-07-23)
 
 
