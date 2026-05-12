@@ -10,9 +10,10 @@ if [ -n "$AGE_KEY_PATH" ] && [ -n "$SECRETS_PATH" ] && [ -f "$AGE_KEY_PATH" ] &&
   DECRYPTED_SECRETS="/tmp/secrets.rc"
   echo "Decrypting secrets with age..."
 
-  age -d -i $AGE_KEY_PATH -o $DECRYPTED_SECRETS $SECRETS_PATH
+  age -d -i "$AGE_KEY_PATH" -o "$DECRYPTED_SECRETS" "$SECRETS_PATH"
   if [ -f "$DECRYPTED_SECRETS" ]; then
     chmod +x "$DECRYPTED_SECRETS"
+    # shellcheck disable=SC1090
     . "$DECRYPTED_SECRETS"
     SECRETS_DECRYPTED=1
   else

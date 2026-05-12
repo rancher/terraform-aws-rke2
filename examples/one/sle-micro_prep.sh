@@ -10,6 +10,7 @@ fi
 
 # Determine correct repository version based on OS image
 OS_VER="15.6"
+# shellcheck disable=SC2154
 if [ "${image}" = "sle-micro-55" ]; then
   OS_VER="15.5"
 fi
@@ -30,6 +31,7 @@ net.ipv4.ip_forward = 1
 EOF
 
 # Conditionally enable IPv6 and forwarding if requested
+# shellcheck disable=SC2154
 if [ "${ip_family}" = "ipv6" ] || [ "${ip_family}" = "dualstack" ]; then
   cat <<'EOF' >> /etc/sysctl.d/90-rke2-forwarding.conf
 net.ipv6.conf.all.disable_ipv6 = 0

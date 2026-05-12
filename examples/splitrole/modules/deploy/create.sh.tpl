@@ -12,9 +12,10 @@ if [ -n "$AGE_KEY_PATH" ] && [ -n "$SECRETS_PATH" ] && [ -f "$AGE_KEY_PATH" ] &&
   DECRYPTED_SECRETS="/tmp/secrets.rc"
   echo "Decrypting secrets with age..."
 
-  age -d -i $AGE_KEY_PATH -o $DECRYPTED_SECRETS $SECRETS_PATH
+  age -d -i "$AGE_KEY_PATH" -o "$DECRYPTED_SECRETS" "$SECRETS_PATH"
   if [ -f "$DECRYPTED_SECRETS" ]; then
     chmod +x "$DECRYPTED_SECRETS"
+    # shellcheck disable=SC1090
     . "$DECRYPTED_SECRETS"
     SECRETS_DECRYPTED=1
   else
@@ -107,7 +108,8 @@ if [ $ATTEMPTS -eq "$MAX" ]; then echo "max attempts reached..."; fi
 if [ $EXITCODE -ne 0 ]; then echo "failure, exit code $EXITCODE..."; fi
 if [ $EXITCODE -eq 0 ]; then
   echo "success...";
-  cd "${deploy_path}";
+  # shellcheck disable=SC2154
+  cd "${deploy_path}" || exit;
   terraform output -json -state="tfstate" > "${deploy_path}/outputs.json"
 fi
 
