@@ -11,8 +11,8 @@ env:
   AWS_REGION: us-west-2
   AWS_ROLE: arn:aws:iam::270074865685:role/terraform-module-ci-test
   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-  NIX_INSTALL_SHA: 1ef3dd0d3797b19bb2919a8d7cffe121af4cfb517008d82b67bdadc31ec87544
-  NIX_INSTALL_VERSION: 2.34.5
+  NIX_INSTALL_SHA: e9d447ce3d2ff62d7ff9cb6ef401de6fa8acb148839dd00f7271945d7b638b14
+  NIX_INSTALL_VERSION: 2.34.7
 
 permissions: {}
 
