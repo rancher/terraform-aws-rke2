@@ -43,11 +43,6 @@ variable "ip_family" {
   description = "The IP family to use. Must be 'ipv4', 'ipv6', or 'dualstack'."
   default     = "ipv4"
 }
-variable "ingress_controller" {
-  type        = string
-  description = "The ingress controller to use. Must be 'nginx' or 'traefik'."
-  default     = "nginx"
-}
 variable "runner_ip" {
   type        = string
   description = "The runner may have multiple IP addresses, use this to specify which one to use."

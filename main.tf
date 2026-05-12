@@ -49,10 +49,6 @@ locals {
   project_domain_zone         = var.project_domain_zone
   project_cert_use_strategy   = var.project_domain_cert_use_strategy
 
-  # tflint-ignore: terraform_unused_declarations
-  fail_domain_contains_zone = (
-    (local.project_domain_use_strategy != "skip" && strcontains(local.project_domain, local.project_domain_zone)) ? one([local.project_domain, "domain_contains_zone"]) : false
-  )
 
   # Dev note: make sure not to depend on the project when deploying the server, we want to be able to skip the project
   # Feature: Server
@@ -69,32 +65,15 @@ locals {
     "ipv4"
   )
 
-  project_subnets = (length(module.project) > 0 ? module.project[0].subnets : null)
-  # tflint-ignore: terraform_unused_declarations
-  fail_no_subnets = (
-    (
-      local.project_mod == 1 &&
-      local.project_subnet_use_strategy == "create" &&
-      local.project_subnets != null &&
-      (local.project_subnets == null ? false : (length(local.project_subnets) == 0 ? true : false))
-    ) ?
-    one([jsonencode(local.project_subnets), "missing_project_subnets"]) :
-    false
-  )
+  project_subnets         = (length(module.project) > 0 ? module.project[0].subnets : null)
   first_project_subnet    = (local.project_subnets != null ? local.project_subnets[keys(local.project_subnets)[0]] : null)
   first_project_subnet_az = (local.first_project_subnet != null ? local.first_project_subnet.availability_zone : null)
   server_az               = (var.server_availability_zone != "" ? var.server_availability_zone : local.first_project_subnet_az)
-
-  # tflint-ignore: terraform_unused_declarations
-  fail_no_server_az = ((local.server_mod == 1 && local.server_az == null) ? one([local.server_az, "missing_server_availability_zone"]) : false)
 
   server_subnet_name = (
     local.project_mod == 1 ? [for s in module.project[0].subnets : s.tags.Name if s.availability_zone == local.server_az][0] :
     var.server_subnet_name
   )
-
-  # tflint-ignore: terraform_unused_declarations
-  fail_no_server_subnet = ((local.server_mod == 1 && local.server_subnet_name == "") ? one([local.server_subnet_name, "missing_server_subnet_name"]) : false)
 
   # Feature: server - image
   server_image_use_strategy = var.server_image_use_strategy
@@ -125,15 +104,18 @@ locals {
   server_access_addresses           = var.server_access_addresses
 
   server_access = (
-    length(local.server_access_addresses) > 0 ? local.server_access_addresses :
-    length(local.project_admin_cidrs) > 0 ? {
-      adminSsh = {
-        port      = 22
-        protocol  = "tcp"
-        ip_family = (local.project_vpc_type == "ipv6" ? "ipv6" : "ipv4")
-        cidrs     = local.project_admin_cidrs
-      }
-    } :
+    local.server_mod == 1 ? (
+      length(local.server_access_addresses) > 0 ? local.server_access_addresses :
+      length(local.project_admin_cidrs) > 0 ? {
+        adminSsh = {
+          port      = 22
+          protocol  = "tcp"
+          ip_family = (local.project_vpc_type == "ipv6" ? "ipv6" : "ipv4")
+          cidrs     = local.project_admin_cidrs
+        }
+      } :
+      null
+    ) :
     null
   )
   server_user        = var.server_user
@@ -232,25 +214,59 @@ locals {
       (local.cluster_cidr_ipv6_starting_cidr + local.cluster_cidr_ipv6_midway_newbits + local.cluster_cidr_ipv6_newbits) :
       (local.cluster_cidr_ipv4_starting_cidr + local.cluster_cidr_ipv4_newbits)
     ) :
-    length(local.cluster_cidr) > 0 ? split("/", local.cluster_cidr[0])[1] :
-    local.server_ip_family == "ipv6" ? 128 :
-    16
+    (
+      length(local.cluster_cidr) > 0 ?
+      (split("/", local.cluster_cidr[0])[1] != "" ? split("/", local.cluster_cidr[0])[1] : (local.server_ip_family == "ipv6" ? 128 : 16)) :
+      (local.server_ip_family == "ipv6" ? 128 : 16)
+    )
   )
+}
+
+check "domain_zone_validation" {
+  assert {
+    condition     = !(local.project_domain_use_strategy != "skip" && strcontains(local.project_domain, local.project_domain_zone))
+    error_message = "Domain cannot contain the zone name"
+  }
+}
+
+check "project_subnets_validation" {
+  assert {
+    condition = !(
+      local.project_mod == 1 &&
+      local.project_subnet_use_strategy == "create" &&
+      local.project_subnets != null &&
+      (local.project_subnets == null ? false : (length(local.project_subnets) == 0 ? true : false))
+    )
+    error_message = "Project subnets are missing when required"
+  }
+}
+
+check "server_availability_zone_validation" {
+  assert {
+    condition     = !(local.server_mod == 1 && local.server_az == null)
+    error_message = "Server availability zone is required when server is enabled"
+  }
+}
+
+check "server_subnet_validation" {
+  assert {
+    condition     = !(local.server_mod == 1 && local.server_subnet_name == "")
+    error_message = "Server subnet name is required when server is enabled"
+  }
 }
 
 data "aws_availability_zones" "available" {
   state = "available"
 }
 
-resource "null_resource" "write_supplied_config" {
+resource "terraform_data" "write_supplied_config" {
   count = (local.config_supplied_content == "" ? 0 : 1)
-  triggers = {
+  triggers_replace = {
     config_content = local.config_supplied_content,
   }
   provisioner "local-exec" {
     command = <<-EOT
       set -e
-      set -x
       install -d '${local.local_file_path}'
       cat << EOF > '${local.local_file_path}/${local.config_supplied_name}'
       ${local.config_supplied_content}
@@ -269,7 +285,7 @@ resource "random_uuid" "join_token" {
 module "download" {
   count   = local.download_mod
   source  = "rancher/rke2-download/github"
-  version = "v1.0.0"
+  version = "v1.0.1"
   release = local.install_rke2_version
   path    = local.local_file_path
 }
@@ -285,7 +301,7 @@ resource "random_pet" "server" {
 module "project" {
   count                       = local.project_mod
   source                      = "rancher/access/aws"
-  version                     = "v4.0.0"
+  version                     = "v4.0.3"
   vpc_use_strategy            = local.project_vpc_use_strategy
   vpc_name                    = local.project_vpc_name
   vpc_type                    = local.project_vpc_type
@@ -307,7 +323,7 @@ module "project" {
 
 # AWS is having some timing issues with this resource, so find it before moving on
 data "aws_security_group" "general_info" {
-  count = local.server_mod
+  count = (local.server_mod == 1 && local.server_security_group_name != "" ? 1 : 0)
   depends_on = [
     module.project
   ]
@@ -327,7 +343,7 @@ module "server" {
     data.aws_security_group.general_info,
   ]
   source                       = "rancher/server/aws"
-  version                      = "v1.4.2"
+  version                      = "v2.0.2"
   image_use_strategy           = local.server_image_use_strategy
   image                        = local.server_image
   image_type                   = local.server_image_type
@@ -362,7 +378,7 @@ module "default_config" {
     module.server,
   ]
   source  = "rancher/rke2-config/local"
-  version = "v1.0.0"
+  version = "v1.0.1"
   tls-san = distinct(compact([
     lower("${local.project_domain}.${local.project_domain_zone}"),
   ]))
@@ -389,7 +405,7 @@ module "install" {
     module.download,
   ]
   source                     = "rancher/rke2-install/null"
-  version                    = "v1.3.2"
+  version                    = "v1.3.3"
   release                    = local.install_rke2_version
   rpm_channel                = local.install_rpm_channel
   local_file_path            = local.local_file_path

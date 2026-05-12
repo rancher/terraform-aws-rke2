@@ -1,0 +1,25 @@
+output "kubeconfig" {
+  value       = module.node.kubeconfig
+  description = "Kubernetes config file contents for the cluster."
+  sensitive   = true
+}
+output "server_kubeconfig" {
+  value = module.node.server_kubeconfig
+  description = "Kubernetes config file contents for the server."
+  sensitive   = true
+}
+output "server_public_ip" {
+  value = module.node.server_public_ip
+}
+
+%{ if initial == true }
+
+output "join_token" {
+  value = module.node.join_token
+  sensitive = true
+}
+output "join_url" {
+  value = module.node.join_url
+}
+
+%{ endif }

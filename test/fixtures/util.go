@@ -3,6 +3,8 @@ package fixtures
 import (
 	"cmp"
 	"context"
+
+	// "encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -10,6 +12,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/google/go-github/v53/github"
@@ -51,21 +54,29 @@ func GenerateOptions(t *testing.T, d *FixtureData) *terraform.Options {
 }
 
 func Teardown(t *testing.T, f *FixtureData) {
-	_, err := terraform.DestroyE(t, f.TfOptions)
+  t.Log("Tearing down...")
+  _, err := terraform.InitE(t, f.TfOptions)
+  if err != nil {
+    t.Logf("Failed to validate: %s", err)
+  }
+
+  _, err = terraform.DestroyE(t, f.TfOptions)
 	if err != nil {
 		t.Logf("Failed to destroy: %s", err)
 	}
-	f.SshAgent.Stop()
+  suppressPanic(f.SshAgent.Stop)
 	aws.DeleteEC2KeyPair(t, f.SshKeyPair)
 	rma(t, fmt.Sprintf("%s/data/%s", f.ExampleDirectory, f.Id))
 	rm(t, fmt.Sprintf("%s/tf-*", f.ExampleDirectory))
 	rm(t, fmt.Sprintf("%s/50-*.yaml", f.ExampleDirectory))
+  rm(t, fmt.Sprintf("%s/.terraform.lock.hcl", f.ExampleDirectory))
 
-	// if t.Failed() {
-	// 	t.Logf("Test failed, not cleaning up test directory %s", f.DataDirectory)
-	// 	return
-	// }
 	rma(t, f.DataDirectory)
+}
+
+func suppressPanic(f func()) {
+    defer func() { recover() }()
+    f()
 }
 
 func rm(t *testing.T, path string) {
@@ -137,10 +148,11 @@ func GenerateSshAgent(t *testing.T, d *FixtureData) *ssh.SshAgent {
 }
 
 func GetRke2Releases(t *testing.T) (string, string, string, error) {
-	releases, err := getRke2Releases()
+	releases, err := getRke2Releases(t)
 	if err != nil {
 		return "", "", "", err
 	}
+  t.Logf("RKE2 releases found: %v", len(releases))
 	versions := filterPrerelease(t, releases)
 	if len(versions) == 0 {
 		return "", "", "", errors.New("no eligible versions found")
@@ -160,7 +172,7 @@ func GetRke2Releases(t *testing.T) (string, string, string, error) {
 	return latest, stable, lts, nil
 }
 
-func getRke2Releases() ([]*github.RepositoryRelease, error) {
+func getRke2Releases(t *testing.T) ([]*github.RepositoryRelease, error) {
 
 	githubToken := os.Getenv("GITHUB_TOKEN")
 	if githubToken == "" {
@@ -175,24 +187,54 @@ func getRke2Releases() ([]*github.RepositoryRelease, error) {
 	// Create a new GitHub client using the authenticated HTTP client
 	client := github.NewClient(tokenClient)
 
+
+  t.Log("Getting rke2 GitHub releases")
 	var releases []*github.RepositoryRelease
-	releases, _, err := client.Repositories.ListReleases(context.Background(), "rancher", "rke2", &github.ListOptions{Page: 0, PerPage: 100})
-	if err != nil {
-		return nil, err
+	var response *github.Response
+	var err error
+
+	maxRetries := 10
+	baseDelay := time.Second
+
+	for i := range maxRetries {
+		releases, response, err = client.Repositories.ListReleases(context.Background(), "rancher", "rke2", &github.ListOptions{Page: 1, PerPage: 100})
+
+		if err == nil && len(releases) > 0 {
+			t.Logf("GitHub Response status: %s", response.Status)
+			t.Logf("GitHub Rke2 Releases found: %v", len(releases))
+			break
+		}
+
+		if err != nil {
+			t.Logf("Error fetching releases (attempt %d/%d): %v", i+1, maxRetries, err)
+		} else {
+			t.Logf("No releases found (attempt %d/%d), retrying...", i+1, maxRetries)
+		}
+
+		if i < maxRetries-1 {
+			sleepDuration := baseDelay * time.Duration(1<<i)
+			t.Logf("Sleeping for %v before next attempt...", sleepDuration)
+			time.Sleep(sleepDuration)
+		}
 	}
 
-	return releases, nil
+	if err != nil && len(releases) == 0 {
+		return nil, fmt.Errorf("failed to fetch releases after %d attempts: %w", maxRetries, err)
+	}
+
+  return releases, nil
 }
+
 func filterPrerelease(t *testing.T, r []*github.RepositoryRelease) []string {
-	t.Logf("Repositories to filter: %v", len(r))
+	t.Logf("Releases to filter: %v", len(r))
 	var versions []string
 	for _, release := range r {
 		version := release.GetTagName()
 		if !release.GetPrerelease() {
 			versions = append(versions, version)
 			// [
-			//    "v1.28.14+rke2r1",
-			//    "v1.30.1+rke2r3",
+			//   "v1.28.14+rke2r1",
+			//   "v1.30.1+rke2r3",
 			//   "v1.29.4+rke2r1",
 			//   "v1.30.1+rke2r2",
 			//   "v1.29.5+rke2r2",
@@ -262,7 +304,6 @@ func CreateFixture(t *testing.T, combo map[string]string) (string, string, Fixtu
 	fixtureData.Release = combo["release"]
 	fixtureData.Cni = combo["cni"]
 	fixtureData.IpFamily = combo["ipFamily"]
-	fixtureData.IngressController = combo["ingressController"]
 	fixtureData.Owner = "terraform-ci@suse.com"
 	fixtureData.ExampleDirectory = repoRoot + "/test/test_relay"
 	fixtureData.DataDirectory = repoRoot + "/test/tests/data/" + fixtureData.Id

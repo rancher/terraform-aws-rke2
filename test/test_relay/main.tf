@@ -11,37 +11,117 @@ provider "acme" {
   server_url = "https://acme-staging-v02.api.letsencrypt.org/directory"
 }
 
+# this is a one shot module, it doesn't need to be designed to have consecutive runs
+#   this means we don't need to specify replace triggered by
+#   with the exception of destroy time triggered resources
+# the orchestrator is better at running Terraform, but it can only run locally
+# so we copy the orchestrator over, we copy all the files over, and we execute the orchestrator
+# the orchestrator likes to own all of its files, so we stage the fixture in the ~/fixture directory
+# the fixture depends on being in a subdirectory of the rke2 module because all of the fixtures implement the rke2 module with source = "../../"
+# this means the eventual directory structure that will be run must be /home/user/rke2/fixture/name, eg. /home/${local.username}/rke2/fixture/one
+# we have to tell the orchestrator where to put its version of the fixture, and where the fixture is staged locally
+
 locals {
-  identifier         = var.identifier
-  project_name       = substr("tf-${substr(md5(join("-", [md5(local.identifier)])), 0, 5)}-${local.identifier}", 0, 20)
-  username           = lower(local.project_name)
-  image              = "sles-15"
-  ip                 = chomp(data.http.myip.response_body)
-  ssh_key            = var.key
-  ssh_key_name       = var.key_name
-  fixture            = var.fixture
-  fit_dir            = abspath("${path.root}/../../examples/${local.fixture}")
-  fit_files          = toset([for f in fileset(local.fit_dir, "*") : f if strcontains(f, ".terraform") != true])
-  fit_file_ids       = join("-", [for file in local.fit_files : filemd5("${local.fit_dir}/${file}")])
-  module_dir         = abspath("${path.root}/../../")
-  module_files       = toset([for f in fileset(local.module_dir, "*") : f if strcontains(f, ".tf")])
-  module_file_ids    = join("-", [for file in local.module_files : filemd5("${local.module_dir}/${file}")])
-  zone               = var.zone
-  rke2_version       = var.rke2_version
-  os                 = var.os
-  install_method     = var.install_method
-  cni                = var.cni
-  ip_family          = var.ip_family
-  ingress_controller = var.ingress_controller
-  home_remote_path   = "/home/${local.username}"
-  data_remote_path   = "${local.home_remote_path}/fixture"
-  fit_remote_path    = "${local.data_remote_path}/${local.fixture}"
-  fit_config_path    = "${local.fit_remote_path}/rke2"
-  vars_remote_path   = "${local.fit_remote_path}/inputs.tfvars"
+  identifier   = var.identifier
+  project_name = substr("tf-${substr(md5(join("-", [md5(local.identifier)])), 0, 5)}-${local.identifier}", 0, 20)
+  username     = lower(local.project_name)
+  image        = "sles-16"
+  ip           = chomp(data.http.myip.response_body)
+  ssh_key      = var.key
+  ssh_key_name = var.key_name
+  fixture      = var.fixture
+
+  # Local Paths
+  # path.root will be the test_relay directory
+  fixture_local_path = "${path.root}/../../examples/${local.fixture}"
+  orchestrator_path  = "${path.root}/orchestrator"
+  rke2_module_path   = "${path.root}/../../"
   data_local_path    = abspath("${path.root}/data/${local.identifier}")
-  file_path          = local.fit_config_path
-  runner_ip          = (local.ip_family == "ipv6" ? module.runner.server.ipv6_addresses[0] : module.runner.server.public_ip)
-  cluster_url        = data.external.output.result.api
+
+  ## Remote Paths
+  home_remote_path          = "/home/${local.username}"
+  rke2_module_remote_path   = "${local.home_remote_path}/rke2"                          # this is necessary because all of the examples use a path source for the rke2 module
+  fixture_instantiated_path = "${local.home_remote_path}/rke2/fixture/${local.fixture}" # the fixture's module's source is "../../"
+  fixture_remote_path       = "${local.home_remote_path}/fixture"                       # this is just a temporary staging area, this location won't be executed
+  orchestrator_remote_path  = "${local.home_remote_path}/orchestrator"                  # the orchestrator is better at orchestrating
+  vars_remote_path          = "${local.orchestrator_remote_path}/inputs.tfvars"         # this is the variables file for the orchestrator
+
+  # Files
+  ## Fixture template files (all files from the example fixture)
+  fixture_template_files    = [for f in fileset(local.fixture_local_path, "**") : f if !strcontains(f, ".terraform")]
+  fixture_template_file_ids = [for file in local.fixture_template_files : "${md5("${local.fixture_local_path}/${file}")}-${filemd5("${local.fixture_local_path}/${file}")}"]
+  fixture_template_file_map = {
+    for i in range(length(local.fixture_template_file_ids)) :
+    local.fixture_template_file_ids[i] => {
+      name = basename(local.fixture_template_files[i])
+      rel  = dirname(local.fixture_template_files[i])
+      src  = "${local.fixture_local_path}/${local.fixture_template_files[i]}"
+      dst  = "${local.fixture_remote_path}/${local.fixture_template_files[i]}"
+    }
+  }
+  # example: { abc23 = { name = "versions.tf", path = "/home/user/fixture/versions.tf", src = "./examples/one/versions.tf" }}
+
+  ## Ochestrator files (all files from the orchestrator module)
+  # ** is not a blob search, it is unique to thie Terraform function, ** should get files in subdirectories as well
+  orchestrator_files    = [for f in fileset(local.orchestrator_path, "**") : f if !strcontains(f, ".terraform")]
+  orchestrator_file_ids = [for file in local.orchestrator_files : "${md5("${local.orchestrator_path}/${file}")}-${filemd5("${local.orchestrator_path}/${file}")}"]
+  orchestrator_file_map = {
+    for i in range(length(local.orchestrator_file_ids)) :
+    local.orchestrator_file_ids[i] => {
+      name = basename(local.orchestrator_files[i])
+      rel  = dirname(local.orchestrator_files[i])
+      src  = "${local.orchestrator_path}/${local.orchestrator_files[i]}"
+      dst  = "${local.orchestrator_remote_path}/${local.orchestrator_files[i]}"
+    }
+  }
+
+  # RKE2 root module files (main terraform-aws-rke2 module)
+  # The fixture relies on being in a subdirectory of this since the fixture's module source is "../../"
+  rke2_module_files    = [for f in fileset(local.rke2_module_path, "*") : f if strcontains(f, ".tf")]
+  rke2_module_file_ids = [for file in local.rke2_module_files : "${md5("${local.rke2_module_path}/${file}")}-${filemd5("${local.rke2_module_path}/${file}")}"]
+  rke2_module_file_map = {
+    for i in range(length(local.rke2_module_file_ids)) :
+    local.rke2_module_file_ids[i] => {
+      name = basename(local.rke2_module_files[i])
+      rel  = dirname(local.rke2_module_files[i])
+      src  = "${local.rke2_module_path}/${local.rke2_module_files[i]}"
+      dst  = "${local.rke2_module_remote_path}/${local.rke2_module_files[i]}"
+    }
+  }
+
+  # Variables passed to fixture
+  zone           = var.zone
+  rke2_version   = var.rke2_version
+  os             = var.os
+  install_method = var.install_method
+  cni            = var.cni
+  ip_family      = var.ip_family
+  runner_ip      = (local.ip_family == "ipv6" ? module.runner.server.ipv6_addresses[0] : module.runner.server.public_ip)
+  cluster_url    = data.external.output.result.api
+
+  # Tool versions
+  terraform_version = "1.5.7"
+  terraform_sha     = "c0ed7bc32ee52ae255af9982c8c88a7a4c610485cf1d55feeb037eab75fa082c"
+  docker_version    = "29.4.1"
+  docker_sha        = "0fb3d2b72414ab862d68517f0b17b78c93c149d1c5c461acb969aacde1a2189d"
+  age_version       = "1.3.1"
+  age_sha           = "bdc69c09cbdd6cf8b1f333d372a1f58247b3a33146406333e30c0f26e8f51377"
+  awscli_version    = "2.34.36"
+  awscli_sha        = "53aa36a391de63bc0743fa8da7b0517725d3a6415070504063ee5af2c68b0963"
+}
+
+check "fixture_provided" {
+  assert {
+    condition     = local.fixture != ""
+    error_message = "A fixture must be provided."
+  }
+}
+
+check "fit_files_exist" {
+  assert {
+    condition     = length(local.fixture_template_file_ids) > 0
+    error_message = "Fixture template or module files not found in the specified directory."
+  }
 }
 
 data "http" "myip" {
@@ -54,25 +134,29 @@ data "http" "myip" {
 
 resource "local_file" "terraform_vars" {
   content  = <<-EOT
-    key_name           = "${chomp(local.ssh_key_name)}"
-    key                = "${chomp(local.ssh_key)}"
-    identifier         = "${chomp(local.identifier)}"
-    zone               = "${chomp(local.zone)}"
-    rke2_version       = "${chomp(local.rke2_version)}"
-    os                 = "${chomp(local.os)}"
-    file_path          = "${chomp(local.file_path)}"
-    install_method     = "${chomp(local.install_method)}"
-    cni                = "${chomp(local.cni)}"
-    ip_family          = "${chomp(local.ip_family)}"
-    ingress_controller = "${chomp(local.ingress_controller)}"
-    runner_ip          = "${chomp(local.runner_ip)}"
+    key_name       = "${chomp(local.ssh_key_name)}"
+    key            = "${chomp(local.ssh_key)}"
+    identifier     = "${chomp(local.identifier)}"
+    zone           = "${chomp(local.zone)}"
+    rke2_version   = "${chomp(local.rke2_version)}"
+    os             = "${chomp(local.os)}"
+    install_method = "${chomp(local.install_method)}"
+    cni            = "${chomp(local.cni)}"
+    ip_family      = "${chomp(local.ip_family)}"
+    runner_ip      = "${chomp(local.runner_ip)}"
+    age_key_path   = "${local.home_remote_path}/age_key"
+    secrets_path   = "${local.home_remote_path}/secrets.rc.age"
+    template_path  = "${local.fixture_remote_path}"
+    deploy_path    = "${local.fixture_instantiated_path}"
+    data_path      = "${local.fixture_instantiated_path}/data"
+    home_path      = "${local.home_remote_path}"
   EOT
   filename = "${local.data_local_path}/vars"
 }
 
 module "access" {
   source                     = "rancher/access/aws"
-  version                    = "v3.1.5"
+  version                    = "v4.0.2"
   vpc_name                   = "${local.project_name}-vpc"
   vpc_type                   = "dualstack"
   vpc_public                 = true
@@ -87,10 +171,10 @@ module "runner" {
     module.access,
   ]
   source                     = "rancher/server/aws"
-  version                    = "v1.3.0"
+  version                    = "v2.0.1"
   image_type                 = local.image
   server_name                = local.project_name
-  server_type                = "large"
+  server_type                = "xl"
   subnet_name                = keys(module.access.subnets)[0]
   security_group_name        = module.access.security_group.tags_all.Name
   direct_access_use_strategy = "ssh"
@@ -125,40 +209,253 @@ module "runner" {
   }
 }
 
-resource "terraform_data" "install_nix" {
+resource "terraform_data" "install_dependencies" {
   depends_on = [
     module.access,
     module.runner,
     local_file.terraform_vars,
   ]
-  triggers_replace = {
-    server = module.runner.server.id
-  }
   connection {
     type        = "ssh"
     user        = local.username
-    script_path = "${local.home_remote_path}/install_nix"
+    script_path = "${local.home_remote_path}/install_dependencies"
     agent       = true
     host        = module.runner.server.public_ip
   }
   provisioner "remote-exec" {
     inline = [<<-EOT
-      sudo wget https://download.opensuse.org/distribution/leap/15.6/repo/oss/repodata/repomd.xml.key
-      sudo rpm --import repomd.xml.key
-      sudo zypper ar -f https://download.opensuse.org/distribution/leap/15.6/repo/oss/ leap-oss
-      sudo zypper install -y curl
+      set -e
+
+      echo "Installing Age"
+      install -d ${local.home_remote_path}/bin
+
+      AGE_VERSION="${local.age_version}"
+      AGE_URL="https://github.com/FiloSottile/age/releases/download/v${local.age_version}/age-v${local.age_version}-linux-amd64.tar.gz"
+      AGE_SHA256="${local.age_sha}"
+
+      echo "Downloading age..."
+      curl -L -o age.tar.gz "$AGE_URL"
+
+      echo "Verifying age checksum..."
+      SUM="$(sha256sum age.tar.gz | awk '{print $1}')"
+      if [ "$SUM" = "$AGE_SHA256" ]; then 
+        echo "Valid!";
+      else 
+        echo "Invalid!";
+        echo "expected: $AGE_SHA256, got: $SUM"
+        exit 1;
+      fi
+
+      echo "Extracting age..."
+      tar xzf age.tar.gz
+      mv age/age ${local.home_remote_path}/bin/age
+      mv age/age-keygen ${local.home_remote_path}/bin/age-keygen
+      chmod +x ${local.home_remote_path}/bin/age ${local.home_remote_path}/bin/age-keygen
+      sudo cp ${local.home_remote_path}/bin/age /usr/bin
+      sudo cp ${local.home_remote_path}/bin/age-keygen /usr/bin
+      rm -rf age age.tar.gz
     EOT
     ]
   }
-  provisioner "remote-exec" { # install nix
+  provisioner "remote-exec" {
     inline = [<<-EOT
-      source /etc/profile || true
-      NIX="$(which nix)"
-      if [ "" = "$NIX" ]; then
-        bash -c "sh <(curl -L https://nixos.org/nix/install) --daemon --yes"
-      else
-        echo "nix is installed..."
+      set -e
+
+      install -d ${local.home_remote_path}/bin
+
+      # Install AWS CLI v2 from official bundle
+      AWSCLI_URL="https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${local.awscli_version}.zip"
+
+      echo "Downloading AWS CLI..."
+      curl -L -o awscliv2.zip "$AWSCLI_URL"
+
+      echo "Verifying checksum..."
+      SUM="$(sha256sum awscliv2.zip | awk '{print $1}')"
+      if [ "$SUM" = "${local.awscli_sha}" ]; then 
+        echo "Valid!";
+      else 
+        echo "Invalid!";
+        echo "expected: ${local.awscli_sha}, got: $SUM"
+        exit 1;
       fi
+
+      echo "Extracting AWS CLI..."
+      python3 -m zipfile -e awscliv2.zip .
+      chmod +x ./aws/install
+      sudo ./aws/install -i ${local.home_remote_path}/aws-cli -b ${local.home_remote_path}/bin
+      rm -rf awscliv2.zip aws
+      sudo chmod +x ${local.home_remote_path}/bin/aws
+      sudo cp ${local.home_remote_path}/bin/aws /usr/bin
+    EOT
+    ]
+  }
+  provisioner "remote-exec" {
+    inline = [<<-EOT
+      set -e
+
+      install -d ${local.home_remote_path}/bin
+      install -d ${local.home_remote_path}/terraform_unpack
+
+      cd ${local.home_remote_path}/terraform_unpack
+
+      FILENAME="terraform_${local.terraform_version}_linux_amd64.zip"
+
+      curl -L -o "$FILENAME" "https://releases.hashicorp.com/terraform/${local.terraform_version}/terraform_${local.terraform_version}_linux_amd64.zip"
+
+      echo "Verifying checksum..."
+      SUM="$(sha256sum "$FILENAME" | awk '{print $1}')"
+      if [ "$SUM" = "${local.terraform_sha}" ]; then
+        echo "Valid!";
+      else
+        echo "Invalid!";
+        echo "expected: ${local.terraform_sha}, got: $SUM"
+        exit 1;
+      fi
+
+      echo "Unpacking Terraform..."
+      python3 -m zipfile -e "$FILENAME" .
+      if [ -f terraform ]; then
+        mv terraform "${local.home_remote_path}/bin"
+        sudo chmod +x "${local.home_remote_path}/bin/terraform"
+        sudo cp "${local.home_remote_path}/bin/terraform" /usr/bin
+      else
+        echo "terraform not found in ${local.home_remote_path}/bin"
+        exit 1;
+      fi
+
+      rm "$FILENAME"
+    EOT
+    ]
+  }
+  # https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz
+  provisioner "remote-exec" {
+    inline = [<<-EOT
+      sudo zypper ar --gpgcheck-allow-unsigned https://download.opensuse.org/repositories/devel:languages:perl/16.0/devel:languages:perl.repo
+      sudo zypper ar --gpgcheck-allow-unsigned https://download.opensuse.org/repositories/security/16.0/security.repo
+      sudo zypper ar --gpgcheck-allow-unsigned https://download.opensuse.org/repositories/devel:tools:scm/16.0/devel:tools:scm.repo
+      sudo zypper --gpg-auto-import-keys refresh
+      sudo zypper install -y git
+    EOT
+    ]
+  }
+  provisioner "remote-exec" {
+    inline = [<<-EOT
+      DOCKER_VERSION="${local.docker_version}"
+      DOWNLOAD_URL="https://download.docker.com/linux/static/stable/x86_64/docker-$DOCKER_VERSION.tgz"
+      EXPECTED_CHECKSUM="${local.docker_sha}" 
+
+      echo "Downloading Docker v$DOCKER_VERSION..."
+      curl -fsSL -o docker.tgz "$DOWNLOAD_URL"
+
+      echo "Verifying checksum..."
+      # Extract the first column of the sha256sum output
+      ACTUAL_CHECKSUM=$(sha256sum docker.tgz | awk '{print $1}')
+
+      if [ "$ACTUAL_CHECKSUM" != "$EXPECTED_CHECKSUM" ]; then
+          echo "ERROR: Checksum mismatch!"
+          echo "Expected: $EXPECTED_CHECKSUM"
+          echo "Actual:   $ACTUAL_CHECKSUM"
+          echo "Aborting installation and cleaning up..."
+          rm docker.tgz
+          exit 1
+      fi
+
+      echo "Checksum verified successfully."
+
+      echo "Setting up permissions"
+      USER=$(whoami)
+      LOG_FILE="/var/log/dockerd.log"
+
+      echo "Starting setup for user: $USER"
+
+      if ! getent group docker > /dev/null 2>&1; then
+          sudo groupadd --system docker
+          echo "Group 'docker' created."
+      fi
+
+      if ! id -u docker > /dev/null 2>&1; then
+          sudo useradd --system -g docker -s /bin/false -M docker
+          echo "System user 'docker' created."
+      fi
+
+      sudo usermod -aG docker "$USER"
+      echo "User '$USER' added to 'docker' group."
+
+      if [ ! -f "$LOG_FILE" ]; then
+          sudo touch "$LOG_FILE"
+      fi
+      sudo chown docker:docker "$LOG_FILE"
+      sudo chmod 660 "$LOG_FILE"
+
+      echo "Extracting binaries..."
+      tar xzvf docker.tgz
+
+      echo "Installing binaries to "${local.home_remote_path}/bin"..."
+      sudo chown -R docker:docker docker/
+      sudo cp docker/* "${local.home_remote_path}/bin"
+
+      echo "Installing binaries to "/usr/bin"..."
+      sudo chown -R docker:docker docker/
+      sudo cp docker/* "/usr/bin"
+      sudo chmod +x -R "/usr/bin"
+
+      echo "Cleaning up extracted files..."
+      sudo rm -rf docker docker.tgz
+    EOT
+    ]
+  }
+  provisioner "remote-exec" {
+    inline = [<<-EOT
+      PATH="${local.home_remote_path}/bin:$PATH"
+
+      echo "Starting Docker daemon in the background..."
+      # Using nohup prevents the daemon from dying if your SSH session closes.
+      # Logs are routed to /var/log/dockerd.log for easy troubleshooting.
+      nohup sudo dockerd > /var/log/dockerd.log 2>&1 &
+      echo "Waiting for the daemon to initialize..."
+
+      MAX_RETRIES=6
+      RETRY_COUNT=0
+      SLEEP_TIME=1
+
+      while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+        if sudo docker info > /dev/null 2>&1; then
+          echo "Docker daemon is ready!"
+          break
+        fi
+        echo "Docker daemon not ready, waiting $SLEEP_TIME seconds..."
+        sleep $SLEEP_TIME
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        SLEEP_TIME=$((SLEEP_TIME * 2))
+      done
+
+      if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+        echo "Docker daemon failed to initialize in time."
+        cat /var/log/dockerd.log
+        exit 1
+      fi
+
+      echo "Testing Docker installation..."
+      sudo docker run hello-world
+    EOT
+    ]
+  }
+  provisioner "remote-exec" {
+    inline = [<<-EOT
+      set -e
+      # Update PATH for current session
+      export PATH="${local.home_remote_path}/bin:$PATH"
+
+      # Verify installations
+      echo "Verifying installations..."
+      echo "git: $(${local.home_remote_path}/bin/git --version)"
+      echo "terraform: $(${local.home_remote_path}/bin/terraform -version)"
+      echo "age: $(${local.home_remote_path}/bin/age --version)"
+      echo "age-keygen: $(${local.home_remote_path}/bin/age-keygen --version)"
+      echo "aws: $(${local.home_remote_path}/bin/aws --version)"
+      echo "docker: $(${local.home_remote_path}/bin/docker --version)"
+
+      echo "Dependencies installed successfully"
     EOT
     ]
   }
@@ -168,11 +465,8 @@ resource "terraform_data" "create_age" {
   depends_on = [
     module.access,
     module.runner,
-    terraform_data.install_nix,
+    terraform_data.install_dependencies,
   ]
-  triggers_replace = {
-    server = module.runner.server.id
-  }
   connection {
     type        = "ssh"
     user        = local.username
@@ -180,30 +474,37 @@ resource "terraform_data" "create_age" {
     agent       = true
     host        = module.runner.server.public_ip
   }
+  # locally create an age key pair for encrypting the secrets file
   provisioner "local-exec" {
     command = <<-EOT
       age-keygen 2>/dev/null | grep -v '^#' > ${local.data_local_path}/age_key
       age-keygen -y ${local.data_local_path}/age_key > ${local.data_local_path}/age_key.pub
       echo "" > ${local.data_local_path}/age_recipients.txt
-      cat ${local.data_local_path}/age_key.pub >> ${local.data_local_path}/age_recipients.txt
+      cat ${local.data_local_path}/age_key.pub | grep -v -e '^$' > ${local.data_local_path}/age_recipients.txt
     EOT
   }
+  # remotely create an age key pair for decrypting the secrets
   provisioner "remote-exec" {
     inline = [<<-EOT
-      source /etc/profile || true
-      nix-shell -p age --run 'age-keygen 2>/dev/null | grep -v '^#' > age_key'
-      nix-shell -p age --run 'age-keygen -y age_key > age_key.pub'
+      cd ${local.home_remote_path}
+      export PATH="${local.home_remote_path}/bin:$PATH"
+      age-keygen 2>/dev/null | grep -v '^#' > age_key
+      age-keygen -y age_key > ${local.home_remote_path}/age_key.pub
     EOT
     ]
   }
+  # download the remote's public key
   provisioner "local-exec" {
     command = <<-EOT
-      scp -o StrictHostKeyChecking=no ${local.username}@${module.runner.server.public_ip}:age_key.pub ${local.data_local_path}
+      scp -o StrictHostKeyChecking=no ${local.username}@${module.runner.server.public_ip}:${local.home_remote_path}/age_key.pub ${local.data_local_path}
     EOT
   }
+  # add remote's public key to the list of recipients
   provisioner "local-exec" {
     command = <<-EOT
       cat ${local.data_local_path}/age_key.pub >> ${local.data_local_path}/age_recipients.txt
+      grep -v -e '^$' ${local.data_local_path}/age_recipients.txt > ${local.data_local_path}/new_age_recipients.txt
+      mv ${local.data_local_path}/new_age_recipients.txt ${local.data_local_path}/age_recipients.txt
     EOT
   }
   provisioner "local-exec" { # generate encrypted rc file
@@ -228,79 +529,95 @@ resource "terraform_data" "create_age" {
   }
 }
 
-resource "terraform_data" "copy_fixture" {
-  for_each = local.fit_files
+resource "terraform_data" "copy_fixture_template" {
+  for_each = local.fixture_template_file_map
   depends_on = [
     module.access,
     module.runner,
-    local_file.terraform_vars,
-    terraform_data.install_nix,
-    terraform_data.create_age,
   ]
-  triggers_replace = {
-    server   = module.runner.server.id
-    file_ids = local.fit_file_ids
-  }
   connection {
     type        = "ssh"
     user        = local.username
-    script_path = "${local.home_remote_path}/copy_fixture"
+    script_path = "${local.home_remote_path}/copy_fixture_template_${each.key}"
     agent       = true
     host        = module.runner.server.public_ip
   }
   provisioner "remote-exec" {
     inline = [<<-EOT
+      source ~/.bashrc
       # prevent collisions with random sleep
       sleep $((RANDOM % 7))
       W="$(whoami)"
-      echo "I am $W..."
 
-      echo "creating directory ${local.fit_remote_path}..."
-      if [ ! -d "${local.fit_remote_path}" ]; then
-        sudo install -m 0755 -d "${local.fit_remote_path}"
-        sudo chown -R $W:users "${local.fit_remote_path}"
-      fi
-      ls -lah "${local.fit_remote_path}"
-
-      echo "creating directory ${local.fit_config_path}..."
-      if [ ! -d "${local.fit_config_path}" ]; then
-        sudo install -m 0755 -d "${local.fit_config_path}"
-        sudo chown -R $W:users "${local.fit_remote_path}"
-      fi
-      ls -lah "${local.fit_config_path}"
+      sudo install -o $W -g users -m 0755 -d ${local.fixture_remote_path}
+      sudo install -o $W -g users -m 0755 -d ${local.fixture_remote_path}/${each.value.rel}
     EOT
     ]
   }
-  provisioner "file" { # copy the fixture to the remote
-    source      = "${local.fit_dir}/${each.key}"
-    destination = "${local.fit_remote_path}/${each.key}"
+  provisioner "file" {
+    source      = each.value.src
+    destination = each.value.dst
   }
 }
-resource "terraform_data" "copy_module" {
-  for_each = local.module_files
+
+resource "terraform_data" "copy_orchestrator" {
+  for_each = local.orchestrator_file_map
   depends_on = [
     module.access,
     module.runner,
-    local_file.terraform_vars,
-    terraform_data.install_nix,
-    terraform_data.create_age,
-    terraform_data.copy_fixture,
-    terraform_data.copy_vars,
   ]
-  triggers_replace = {
-    server          = module.runner.server.id
-    module_file_ids = local.module_file_ids
-  }
   connection {
     type        = "ssh"
     user        = local.username
-    script_path = "${local.home_remote_path}/copy_module"
+    script_path = "${local.home_remote_path}/copy_orchestrator_${each.key}"
     agent       = true
     host        = module.runner.server.public_ip
   }
+  provisioner "remote-exec" {
+    inline = [<<-EOT
+      source ~/.bashrc
+      # prevent collisions with random sleep
+      sleep $((RANDOM % 7))
+      W="$(whoami)"
+
+      sudo install -o $W -g users -m 0755 -d "${local.orchestrator_remote_path}"
+      sudo install -o $W -g users -m 0755 -d "${local.orchestrator_remote_path}/${each.value.rel}"
+    EOT
+    ]
+  }
   provisioner "file" {
-    source      = "${local.module_dir}/${each.key}"
-    destination = "${local.home_remote_path}/${each.key}"
+    source      = each.value.src
+    destination = each.value.dst
+  }
+}
+resource "terraform_data" "copy_rke2_module" {
+  for_each = local.rke2_module_file_map
+  depends_on = [
+    module.access,
+    module.runner,
+  ]
+  connection {
+    type        = "ssh"
+    user        = local.username
+    script_path = "${local.home_remote_path}/copy_rke2_module_${each.key}"
+    agent       = true
+    host        = module.runner.server.public_ip
+  }
+  provisioner "remote-exec" {
+    inline = [<<-EOT
+      source ~/.bashrc
+      # prevent collisions with random sleep
+      sleep $((RANDOM % 7))
+      W="$(whoami)"
+
+      sudo install -o $W -g users -m 0755 -d "${local.rke2_module_remote_path}"
+      sudo install -o $W -g users -m 0755 -d "${local.rke2_module_remote_path}/${each.value.rel}"
+    EOT
+    ]
+  }
+  provisioner "file" {
+    source      = each.value.src
+    destination = each.value.dst
   }
 }
 
@@ -308,14 +625,7 @@ resource "terraform_data" "copy_vars" {
   depends_on = [
     module.access,
     module.runner,
-    local_file.terraform_vars,
-    terraform_data.install_nix,
-    terraform_data.create_age,
-    terraform_data.copy_fixture,
   ]
-  triggers_replace = {
-    input_data = local_file.terraform_vars.content
-  }
   connection {
     type        = "ssh"
     user        = local.username
@@ -323,64 +633,20 @@ resource "terraform_data" "copy_vars" {
     agent       = true
     host        = module.runner.server.public_ip
   }
+  provisioner "remote-exec" {
+    inline = [<<-EOT
+      source ~/.bashrc
+      # prevent collisions with random sleep
+      sleep $((RANDOM % 7))
+      W="$(whoami)"
+
+      sudo install -o $W -g users -m 0755 -d "${dirname(local.vars_remote_path)}"
+    EOT
+    ]
+  }
   provisioner "file" { # copy over the variables
     source      = "${local.data_local_path}/vars"
     destination = local.vars_remote_path
-  }
-}
-
-resource "terraform_data" "copy_command" {
-  depends_on = [
-    module.access,
-    module.runner,
-    local_file.terraform_vars,
-    terraform_data.copy_fixture,
-    terraform_data.copy_vars,
-    terraform_data.copy_module,
-  ]
-  triggers_replace = {
-    fixtures = md5(jsonencode(terraform_data.copy_fixture[*]))
-    vars     = terraform_data.copy_vars.id
-    module   = md5(jsonencode(terraform_data.copy_module[*]))
-  }
-  connection {
-    type        = "ssh"
-    user        = local.username
-    script_path = "${local.home_remote_path}/copy_command"
-    agent       = true
-    host        = module.runner.server.public_ip
-  }
-  provisioner "file" {
-    content     = <<-EOT
-      set -e
-      TF_DIRECTORY="$1"
-      export TF_DIRECTORY
-      ARGS="$(awk '{for (i=2; i<NF; i++) printf $i " "; print $NF}' <<< "$@")"
-      export ARGS
-      source /etc/profile || true
-      rm -f ${local.home_remote_path}/secrets.rc
-      nix-shell -p age --run 'printf "%s" "$(cat ${local.home_remote_path}/age_key)" | age -d -i - -o ${local.home_remote_path}/secrets.rc ${local.home_remote_path}/secrets.rc.age'
-      sudo chmod +x ${local.home_remote_path}/secrets.rc
-      source ${local.home_remote_path}/secrets.rc
-      rm -f ${local.home_remote_path}/secrets.rc
-      # secrets are now in the environment
-      nix-shell -p tfswitch -p git -p awscli --run ' \
-        homebin=${local.home_remote_path}/bin; \
-        install -d $homebin; \
-        tfswitch -b $homebin/terraform 1.5.7 &>/dev/null; \
-        export PATH="$homebin:$PATH"; \
-        export TF_IN_AUTOMATION=1; \
-        cd $TF_DIRECTORY; \
-        terraform $ARGS; \
-      '
-    EOT
-    destination = "${local.fit_remote_path}/terraform_command.sh"
-  }
-  provisioner "remote-exec" {
-    inline = [<<-EOT
-      sudo chmod +x ${local.fit_remote_path}/terraform_command.sh
-    EOT
-    ]
   }
 }
 
@@ -388,29 +654,40 @@ resource "terraform_data" "destroy" {
   depends_on = [
     module.access,
     module.runner,
-    local_file.terraform_vars,
-    terraform_data.copy_fixture,
+    terraform_data.install_dependencies,
+    terraform_data.create_age,
+    terraform_data.copy_fixture_template,
+    terraform_data.copy_orchestrator,
+    terraform_data.copy_rke2_module,
     terraform_data.copy_vars,
-    terraform_data.copy_module,
-    terraform_data.copy_command,
   ]
   triggers_replace = {
-    ip               = module.runner.server.public_ip,
-    username         = local.username,
-    vars_remote_path = local.vars_remote_path
-    fit_remote_path  = local.fit_remote_path
+    ip                       = module.runner.server.public_ip
+    username                 = local.username
+    home_path                = local.home_remote_path
+    orchestrator_remote_path = local.orchestrator_remote_path
+    vars_remote_path         = local.vars_remote_path
   }
   connection {
     type        = "ssh"
     user        = self.triggers_replace.username
-    script_path = "/home/${self.triggers_replace.username}/destroy"
+    script_path = "${self.triggers_replace.home_path}/destroy"
     agent       = true
     host        = self.triggers_replace.ip
   }
   provisioner "remote-exec" {
     when = destroy
     inline = [<<-EOT
-      sudo ${self.triggers_replace.fit_remote_path}/terraform_command.sh "${self.triggers_replace.fit_remote_path}" destroy -var-file="${self.triggers_replace.vars_remote_path}" -auto-approve -no-color
+      set -e
+      source ~/.bashrc
+      export PATH="${self.triggers_replace.home_path}/bin:$PATH"
+      export TF_IN_AUTOMATION=1
+      export TF_PLUGIN_CACHE_DIR=${self.triggers_replace.home_path}/.terraform.d/plugin-cache
+      export AGE_KEY_PATH=${self.triggers_replace.home_path}/age_key
+      export AGE_RECIPIENTS_PATH=${self.triggers_replace.home_path}/age_recipients.txt
+      export SECRETS_PATH=${self.triggers_replace.home_path}/secrets.rc.age
+      cd ${self.triggers_replace.orchestrator_remote_path}
+      terraform destroy -var-file="${self.triggers_replace.vars_remote_path}" -auto-approve -no-color -state="tfstate"
     EOT
     ]
   }
@@ -420,20 +697,14 @@ resource "terraform_data" "apply" {
   depends_on = [
     module.access,
     module.runner,
-    local_file.terraform_vars,
-    terraform_data.copy_fixture,
+    terraform_data.install_dependencies,
+    terraform_data.create_age,
+    terraform_data.copy_fixture_template,
+    terraform_data.copy_orchestrator,
+    terraform_data.copy_rke2_module,
     terraform_data.copy_vars,
-    terraform_data.copy_module,
-    terraform_data.copy_command,
     terraform_data.destroy,
   ]
-  triggers_replace = {
-    fixtures = md5(jsonencode(terraform_data.copy_fixture[*]))
-    vars     = terraform_data.copy_vars.id
-    module   = md5(jsonencode(terraform_data.copy_module[*]))
-    cmd      = terraform_data.copy_command.id
-    destroy  = terraform_data.destroy.id
-  }
   connection {
     type        = "ssh"
     user        = local.username
@@ -443,14 +714,67 @@ resource "terraform_data" "apply" {
   }
   provisioner "remote-exec" {
     inline = [<<-EOT
-      if [ -z "$GITHUB_TOKEN" ]; then echo "GITHUB_TOKEN isn't set"; else echo "GITHUB_TOKEN is set"; fi
-      if [ -z "$GITHUB_OWNER" ]; then echo "GITHUB_OWNER isn't set"; else echo "GITHUB_OWNER is set"; fi
-      if [ -z "$ZONE" ]; then echo "ZONE isn't set"; else echo "ZONE is set"; fi
-      if [ -z "$CI" ]; then echo "CI isn't set"; else echo "CI is set"; fi
-      if [ -z "$IDENTIFIER" ]; then echo "IDENTIFIER isn't set"; else echo "IDENTIFIER is set"; fi
-      rm -f "${local.fit_remote_path}/.terraform.lock.hcl"
-      ${local.fit_remote_path}/terraform_command.sh "${local.fit_remote_path}" init -upgrade=true
-      ${local.fit_remote_path}/terraform_command.sh "${local.fit_remote_path}" apply -var-file="${local.vars_remote_path}" -auto-approve -no-color
+      source ~/.bashrc
+      export PATH="${local.home_remote_path}/bin:$PATH"
+      export TF_IN_AUTOMATION=1
+      export TF_PLUGIN_CACHE_DIR=${local.home_remote_path}/.terraform.d/plugin-cache
+      export AGE_KEY_PATH=${local.home_remote_path}/age_key
+      export AGE_RECIPIENTS_PATH=${local.home_remote_path}/age_recipients.txt
+      export SECRETS_PATH=${local.home_remote_path}/secrets.rc.age
+
+      mkdir -p ${local.home_remote_path}/.terraform.d/plugin-cache
+      cd ${local.orchestrator_remote_path}
+      rm -f .terraform.lock.hcl
+      terraform init
+
+      TIMEOUT="120m" # timeout format time before a KILL is sent to the Terraform apply process
+      INTERVAL="30" # seconds between attempts
+      MAX=3
+      EXITCODE=1
+      ATTEMPTS=0
+      E=1
+      E1=0
+      while [ $EXITCODE -gt 0 ] && [ $ATTEMPTS -lt "$MAX" ]; do
+        A=0
+        while [ $E -gt 0 ] && [ $A -lt "$MAX" ]; do
+          timeout -k 1m "$TIMEOUT" terraform apply -var-file="inputs.tfvars" -no-color -auto-approve -state="tfstate"
+          E=$?
+          if [ $E -eq 124 ]; then echo "Apply timed out after $TIMEOUT"; fi
+          A=$((A+1))
+        done
+        # don't destroy if the last attempt fails
+        if [ $E -gt 0 ] && [ $ATTEMPTS != $((MAX-1)) ]; then
+          A1=0
+          while [ $E1 -gt 0 ] && [ $A1 -lt "$MAX" ]; do
+            timeout -k 1m "$TIMEOUT" terraform destroy -var-file="inputs.tfvars" -no-color -auto-approve -state="tfstate"
+            E1=$?
+            if [ $E1 -eq 124 ]; then echo "Apply timed out after $TIMEOUT"; fi
+            A1=$((A1+1))
+          done
+        fi
+        if [ $E -gt 0 ]; then
+          echo "apply failed..."
+        fi
+        if [ $E1 -gt 0 ]; then
+          echo "destroy failed..."
+        fi
+        if [ $E -gt 0 ] || [ $E1 -gt 0 ]; then
+          EXITCODE=1
+        else
+          EXITCODE=0
+        fi
+        ATTEMPTS=$((ATTEMPTS+1))
+        if [ $EXITCODE -gt 0 ] && [ $ATTEMPTS -lt "$MAX" ]; then
+          echo "wait $INTERVAL seconds between attempts..."
+          sleep "$INTERVAL"
+        fi
+      done
+      if [ $ATTEMPTS -eq "$MAX" ]; then echo "max attempts reached..."; fi
+      if [ $EXITCODE -ne 0 ]; then echo "failure, exit code $EXITCODE..."; fi
+      if [ $EXITCODE -eq 0 ]; then
+        echo "success...";
+      fi
+      exit $EXITCODE
     EOT
     ]
   }
@@ -460,38 +784,36 @@ resource "terraform_data" "output" {
   depends_on = [
     module.access,
     module.runner,
-    local_file.terraform_vars,
-    terraform_data.copy_fixture,
+    terraform_data.install_dependencies,
+    terraform_data.create_age,
+    terraform_data.copy_fixture_template,
+    terraform_data.copy_orchestrator,
+    terraform_data.copy_rke2_module,
     terraform_data.copy_vars,
-    terraform_data.copy_module,
-    terraform_data.copy_command,
-    terraform_data.destroy,
     terraform_data.apply,
   ]
-  triggers_replace = {
-    fixtures = md5(jsonencode(terraform_data.copy_fixture[*]))
-    vars     = terraform_data.copy_vars.id
-    module   = md5(jsonencode(terraform_data.copy_module[*]))
-    cmd      = terraform_data.copy_command.id
-    destroy  = terraform_data.destroy.id
-    apply    = terraform_data.apply.id
-  }
   connection {
     type        = "ssh"
     user        = local.username
-    script_path = "${local.home_remote_path}/copy_output_command"
+    script_path = "${local.home_remote_path}/output"
     agent       = true
     host        = module.runner.server.public_ip
   }
   provisioner "remote-exec" {
     inline = [<<-EOT
-      ${local.fit_remote_path}/terraform_command.sh "${local.fit_remote_path}" output -json > ${local.fit_remote_path}/output.json
+      set -e
+      source ~/.bashrc
+      export PATH="${local.home_remote_path}/bin:$PATH"
+      export TF_IN_AUTOMATION=1
+      export CHECKPOINT_DISABLE=1
+      cd ${local.orchestrator_remote_path}
+      sudo terraform output -json -state="tfstate" > output.json 2>/dev/null
     EOT
     ]
   }
   provisioner "local-exec" {
     command = <<-EOT
-      scp -o StrictHostKeyChecking=no ${local.username}@${module.runner.server.public_ip}:${local.fit_remote_path}/output.json ${local.data_local_path}
+      scp -o StrictHostKeyChecking=no ${local.username}@${module.runner.server.public_ip}:${local.orchestrator_remote_path}/output.json ${local.data_local_path}
     EOT
   }
 }
@@ -502,12 +824,12 @@ data "external" "output" {
   depends_on = [
     module.access,
     module.runner,
-    local_file.terraform_vars,
-    terraform_data.copy_fixture,
+    terraform_data.install_dependencies,
+    terraform_data.create_age,
+    terraform_data.copy_fixture_template,
+    terraform_data.copy_orchestrator,
+    terraform_data.copy_rke2_module,
     terraform_data.copy_vars,
-    terraform_data.copy_module,
-    terraform_data.copy_command,
-    terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
   ]
@@ -522,14 +844,15 @@ resource "local_file" "kubeconfig" {
   depends_on = [
     module.access,
     module.runner,
-    local_file.terraform_vars,
-    terraform_data.copy_fixture,
+    terraform_data.install_dependencies,
+    terraform_data.create_age,
+    terraform_data.copy_fixture_template,
+    terraform_data.copy_orchestrator,
+    terraform_data.copy_rke2_module,
     terraform_data.copy_vars,
-    terraform_data.copy_module,
-    terraform_data.copy_command,
-    terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
+    data.external.output,
   ]
   content  = replace(data.external.output.result.kubeconfig, data.external.output.result.api, "https://${module.runner.server.public_ip}:6443")
   filename = "${local.data_local_path}/kubeconfig"
@@ -539,14 +862,15 @@ resource "local_file" "k8s_key" {
   depends_on = [
     module.access,
     module.runner,
-    local_file.terraform_vars,
-    terraform_data.copy_fixture,
+    terraform_data.install_dependencies,
+    terraform_data.create_age,
+    terraform_data.copy_fixture_template,
+    terraform_data.copy_orchestrator,
+    terraform_data.copy_rke2_module,
     terraform_data.copy_vars,
-    terraform_data.copy_module,
-    terraform_data.copy_command,
-    terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
+    data.external.output,
     local_file.kubeconfig,
   ]
   content  = base64decode(yamldecode(data.external.output.result.kubeconfig).users[0].user.client-key-data)
@@ -556,14 +880,15 @@ resource "local_file" "k8s_cert" {
   depends_on = [
     module.access,
     module.runner,
-    local_file.terraform_vars,
-    terraform_data.copy_fixture,
+    terraform_data.install_dependencies,
+    terraform_data.create_age,
+    terraform_data.copy_fixture_template,
+    terraform_data.copy_orchestrator,
+    terraform_data.copy_rke2_module,
     terraform_data.copy_vars,
-    terraform_data.copy_module,
-    terraform_data.copy_command,
-    terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
+    data.external.output,
     local_file.kubeconfig,
   ]
   content  = base64decode(yamldecode(data.external.output.result.kubeconfig).users[0].user.client-certificate-data)
@@ -573,14 +898,15 @@ resource "local_file" "k8s_ca" {
   depends_on = [
     module.access,
     module.runner,
-    local_file.terraform_vars,
-    terraform_data.copy_fixture,
+    terraform_data.install_dependencies,
+    terraform_data.create_age,
+    terraform_data.copy_fixture_template,
+    terraform_data.copy_orchestrator,
+    terraform_data.copy_rke2_module,
     terraform_data.copy_vars,
-    terraform_data.copy_module,
-    terraform_data.copy_command,
-    terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
+    data.external.output,
     local_file.kubeconfig,
   ]
   content  = base64decode(yamldecode(data.external.output.result.kubeconfig).clusters[0].cluster.certificate-authority-data)
@@ -591,29 +917,20 @@ resource "terraform_data" "copy_certs" {
   depends_on = [
     module.access,
     module.runner,
-    local_file.terraform_vars,
-    terraform_data.copy_fixture,
+    terraform_data.install_dependencies,
+    terraform_data.create_age,
+    terraform_data.copy_fixture_template,
+    terraform_data.copy_orchestrator,
+    terraform_data.copy_rke2_module,
     terraform_data.copy_vars,
-    terraform_data.copy_module,
-    terraform_data.copy_command,
-    terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
-    terraform_data.stop_proxy,
+    data.external.output,
     local_file.kubeconfig,
     local_file.k8s_cert,
     local_file.k8s_key,
     local_file.k8s_ca,
   ]
-  triggers_replace = {
-    fixtures = md5(jsonencode(terraform_data.copy_fixture[*]))
-    vars     = terraform_data.copy_vars.id
-    module   = md5(jsonencode(terraform_data.copy_module[*]))
-    cmd      = terraform_data.copy_command.id
-    destroy  = terraform_data.destroy.id
-    apply    = terraform_data.apply.id
-    output   = terraform_data.output.id
-  }
   connection {
     type        = "ssh"
     user        = local.username
@@ -639,22 +956,20 @@ resource "terraform_data" "get_cluster_certs" {
   depends_on = [
     module.access,
     module.runner,
-    local_file.terraform_vars,
-    terraform_data.copy_fixture,
+    terraform_data.install_dependencies,
+    terraform_data.create_age,
+    terraform_data.copy_fixture_template,
+    terraform_data.copy_orchestrator,
+    terraform_data.copy_rke2_module,
     terraform_data.copy_vars,
-    terraform_data.copy_module,
-    terraform_data.copy_command,
-    terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
+    data.external.output,
     local_file.kubeconfig,
     local_file.k8s_cert,
     local_file.k8s_key,
     local_file.k8s_ca,
   ]
-  triggers_replace = {
-    kubeconfig = local_file.kubeconfig.content
-  }
   connection {
     type        = "ssh"
     user        = local.username
@@ -689,14 +1004,15 @@ resource "terraform_data" "stop_proxy" {
   depends_on = [
     module.access,
     module.runner,
-    local_file.terraform_vars,
-    terraform_data.copy_fixture,
+    terraform_data.install_dependencies,
+    terraform_data.create_age,
+    terraform_data.copy_fixture_template,
+    terraform_data.copy_orchestrator,
+    terraform_data.copy_rke2_module,
     terraform_data.copy_vars,
-    terraform_data.copy_module,
-    terraform_data.copy_command,
-    terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
+    data.external.output,
     local_file.kubeconfig,
     local_file.k8s_cert,
     local_file.k8s_key,
@@ -704,12 +1020,8 @@ resource "terraform_data" "stop_proxy" {
     terraform_data.get_cluster_certs,
   ]
   triggers_replace = {
-    ip               = module.runner.server.public_ip,
-    username         = local.username,
-    fixture          = local.fixture,
-    input_vars       = local_file.terraform_vars.content
-    var_remote_path  = local.vars_remote_path
-    data_remote_path = local.data_remote_path
+    username = local.username
+    ip       = module.runner.server.public_ip
   }
   connection {
     type        = "ssh"
@@ -733,30 +1045,22 @@ resource "terraform_data" "proxy" {
   depends_on = [
     module.access,
     module.runner,
-    local_file.terraform_vars,
-    terraform_data.copy_fixture,
+    terraform_data.install_dependencies,
+    terraform_data.create_age,
+    terraform_data.copy_fixture_template,
+    terraform_data.copy_orchestrator,
+    terraform_data.copy_rke2_module,
     terraform_data.copy_vars,
-    terraform_data.copy_module,
-    terraform_data.copy_command,
-    terraform_data.destroy,
     terraform_data.apply,
     terraform_data.output,
-    terraform_data.stop_proxy,
+    data.external.output,
     local_file.kubeconfig,
     local_file.k8s_cert,
     local_file.k8s_key,
     local_file.k8s_ca,
     terraform_data.get_cluster_certs,
+    terraform_data.stop_proxy,
   ]
-  triggers_replace = {
-    fixtures = md5(jsonencode(terraform_data.copy_fixture[*]))
-    vars     = terraform_data.copy_vars.id
-    module   = md5(jsonencode(terraform_data.copy_module[*]))
-    cmd      = terraform_data.copy_command.id
-    destroy  = terraform_data.destroy.id
-    apply    = terraform_data.apply.id
-    output   = terraform_data.output.id
-  }
   connection {
     type        = "ssh"
     user        = local.username
@@ -767,7 +1071,7 @@ resource "terraform_data" "proxy" {
   provisioner "file" {
     content     = <<-EOT
       set -e
-      set -x
+
       install -d ${local.home_remote_path}/nginx_logs
 
       cat <<EOF | sudo tee proxy-csr.conf
@@ -839,13 +1143,87 @@ resource "terraform_data" "proxy" {
         -v ${local.home_remote_path}/k8s.key:/kubeconfig/k8s.key \
         nginx:latest nginx-debug -g 'daemon off;'
     EOT
-    destination = "${local.fit_remote_path}/proxy.sh"
+    destination = "${local.home_remote_path}/proxy.sh"
   }
   provisioner "remote-exec" {
     inline = [<<-EOT
-      chmod +x ${local.fit_remote_path}/proxy.sh
-      ${local.fit_remote_path}/proxy.sh
+      chmod +x ${local.home_remote_path}/proxy.sh
+      ${local.home_remote_path}/proxy.sh
     EOT
     ]
   }
 }
+
+
+
+
+
+# File Provider panic that needs to be investigated:
+# 
+# Error: Request cancelled
+# The plugin6.(*GRPCProvider).ValidateResourceConfig request was cancelled.
+# 
+# Error: Request cancelled
+# The plugin6.(*GRPCProvider).ValidateResourceConfig request was cancelled.
+# 
+# Stack trace from the terraform-provider-file_v2.2.2 plugin:
+# fatal error: found pointer to free object
+# 
+# goroutine 3 gp=0xc000002e00 m=7 mp=0xc000249808 [running]:
+# runtime.throw({0xd72161?, 0xc0005ca050?})
+#     runtime/panic.go:1096 +0x48 fp=0xc000061588 sp=0xc000061558 pc=0x4747c8
+# runtime.(*mspan).reportZombies(0x7f46756388c8)
+#     runtime/mgcsweep.go:877 +0x2ea fp=0xc000061608 sp=0xc000061588 pc=0x42daca
+# runtime.(*sweepLocked).sweep(0x149c680?, 0x0)
+#     runtime/mgcsweep.go:652 +0x3e5 fp=0xc000061730 sp=0xc000061608 pc=0x42ca65
+# runtime.sweepone()
+#     runtime/mgcsweep.go:388 +0xdd fp=0xc000061780 sp=0xc000061730 pc=0x42c3bd
+# runtime.bgsweep(0xc000080000)
+#     runtime/mgcsweep.go:297 +0xff fp=0xc0000617c8 sp=0xc000061780 pc=0x42c19f
+# runtime.gcenable.gowrap1()
+#     runtime/mgc.go:204 +0x25 fp=0xc0000617e0 sp=0xc0000617c8 pc=0x420605
+# runtime.goexit({})
+#     runtime/asm_amd64.s:1700 +0x1 fp=0xc0000617e8 sp=0xc0000617e0 pc=0x47b701
+# created by runtime.gcenable in goroutine 1
+#     runtime/mgc.go:204 +0x66
+# panic during panic
+# SIGSEGV: segmentation violation
+# PC=0x442393 m=7 sigcode=1 addr=0x0
+# 
+# goroutine 0 gp=0xc0002f7500 m=7 mp=0xc000249808 [idle]:
+# runtime.atomicAllGIndex(...)
+#     runtime/proc.go:698
+# runtime.forEachGRace(0xc000197ee8)
+#     runtime/proc.go:719 +0x33 fp=0xc000197eb0 sp=0xc000197e80 pc=0x442393
+# runtime.tracebackothers(0xc000002e00?)
+#     runtime/traceback.go:1265 +0xc5 fp=0xc000197f18 sp=0xc000197eb0 pc=0x465dc5
+# runtime.dopanic_m(0xc000002e00, 0x4747c8, 0xc000061558)
+#     runtime/panic.go:1422 +0x29e fp=0xc000197f88 sp=0xc000197f18 pc=0x43e93e
+# runtime.fatalthrow.func1()
+#     runtime/panic.go:1276 +0x6b fp=0xc000197fc8 sp=0xc000197f88 pc=0x43e36b
+# runtime.systemstack(0x0)
+#     runtime/asm_amd64.s:514 +0x4a fp=0xc000197fd8 sp=0xc000197fc8 pc=0x4798ca
+# 
+# goroutine 3 gp=0xc000002e00 m=7 mp=0xc000249808 [running]:
+# runtime.systemstack_switch()
+#     runtime/asm_amd64.s:479 +0x8 fp=0xc000061518 sp=0xc000061508 pc=0x479868
+# runtime.fatalthrow(0x61560?)
+#     runtime/panic.go:1269 +0x58 fp=0xc000061558 sp=0xc000061518 pc=0x43e2d8
+# runtime.throw({0xd72161?, 0xc0005ca050?})
+#     runtime/panic.go:1096 +0x48 fp=0xc000061588 sp=0xc000061558 pc=0x4747c8
+# runtime.(*mspan).reportZombies(0x7f46756388c8)
+#     runtime/mgcsweep.go:877 +0x2ea fp=0xc000061608 sp=0xc000061588 pc=0x42daca
+# runtime.(*sweepLocked).sweep(0x149c680?, 0x0)
+#     runtime/mgcsweep.go:652 +0x3e5 fp=0xc000061730 sp=0xc000061608 pc=0x42ca65
+# runtime.sweepone()
+#     runtime/mgcsweep.go:388 +0xdd fp=0xc000061780 sp=0xc000061730 pc=0x42c3bd
+# runtime.bgsweep(0xc000080000)
+#     runtime/mgcsweep.go:297 +0xff fp=0xc0000617c8 sp=0xc000061780 pc=0x42c19f
+# runtime.gcenable.gowrap1()
+#     runtime/mgc.go:204 +0x25 fp=0xc0000617e0 sp=0xc0000617c8 pc=0x420605
+# runtime.goexit({})
+#     runtime/asm_amd64.s:1700 +0x1 fp=0xc0000617e8 sp=0xc0000617e0 pc=0x47b701
+# created by runtime.gcenable in goroutine 1
+#     runtime/mgc.go:204 +0x66
+# 
+# Error: The terraform-provider-file_v2.2.2 plugin crashed!

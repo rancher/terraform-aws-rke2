@@ -1,3 +1,7 @@
+variable "identifier" {
+  type        = string
+  description = "A random alphanumeric string that is unique and less than 10 characters."
+}
 variable "key_name" {
   type        = string
   description = "The name of an ssh key that already exists in AWS of that you want to create."
@@ -6,27 +10,18 @@ variable "key" {
   type        = string
   description = "The content of an ssh key for server access. The key must be loaded into the running ssh agent."
 }
-variable "identifier" {
-  type        = string
-  description = "A random alphanumeric string that is unique and less than 10 characters."
-}
 variable "zone" {
   type        = string
   description = "The dns zone to add domains under, must already exist in AWS Route53."
 }
-variable "rke2_version" {
-  type        = string
-  description = "The rke2 version to install."
-}
 variable "os" {
   type        = string
   description = "The operating system to deploy."
-  default     = "sle-micro-55-byos" # BYOS = Bring Your Own Subscription, only use this if you have a subscription with SUSE or plan to get one directly rather than going through AWS
+  default     = "sle-micro-61"
 }
-variable "file_path" {
+variable "rke2_version" {
   type        = string
-  description = "The local file path to stage or retrieve files."
-  default     = ""
+  description = "The rke2 version to install."
 }
 variable "install_method" {
   type        = string
@@ -43,24 +38,18 @@ variable "ip_family" {
   description = "The IP family to use. Must be 'ipv4', 'ipv6', or 'dualstack'."
   default     = "ipv4"
 }
-variable "ingress_controller" {
-  type        = string
-  description = "The ingress controller to use. Must be 'nginx' or 'traefik'. Currently only supports 'nginx'."
-  default     = "nginx"
-}
-variable "control_plane_count" {
-  type        = number
-  description = "The number of control plane nodes to create."
-  default     = 3
-}
-variable "worker_count" {
-  type        = number
-  description = "The number of worker nodes to create."
-  default     = 3
-}
 variable "runner_ip" {
   type        = string
   description = "The runner may have multiple IP addresses, use this to specify which one to use."
   # by default we will find the ip address using "https://ipinfo.io/ip"
   default = ""
+}
+variable "data_path" {
+  type        = string
+  description = <<-EOT
+    Should match your TF_DATA_DIR environment variable.
+    This directory is used to stage all of the various cached files for your implementation.
+    This should be a full path, not relative.
+  EOT
+  default     = ""
 }

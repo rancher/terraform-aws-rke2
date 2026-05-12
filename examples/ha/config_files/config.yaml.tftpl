@@ -1,0 +1,9 @@
+%{ if cni == "calico" ~}
+cni: calico
+disable:
+  - rke2-canal
+  - rke2-kube-proxy
+%{ endif ~}
+%{ if cni == "cilium" ~}
+cni: cilium
+%{ endif ~}

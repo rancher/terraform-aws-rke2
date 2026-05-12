@@ -15,13 +15,12 @@ type FixtureData struct {
 	Id                string
 	Name              string
 	DataDirectory     string
-	Release           string
-	OperatingSystem   string
-	Cni               string
-	InstallType       string
-	IpFamily          string
-	IngressController string
-	Region            string
+	Release         string
+	OperatingSystem string
+	Cni             string
+	InstallType     string
+	IpFamily        string
+	Region          string
 	Owner             string
 	ExampleDirectory  string // This is actually the test_relay directory
 	Zone              string
@@ -29,13 +28,15 @@ type FixtureData struct {
 	SshAgent          *ssh.SshAgent
 	SshKeyPair        *aws.Ec2Keypair
 	TfOptions         *terraform.Options
-	TfVars            map[string]interface{}
+	TfVars            map[string]any
 }
 
 func create(t *testing.T, d *FixtureData) (string, string, error) {
 	var err error
 	terraformOptions := GenerateOptions(t, d)
-	t.Logf("Git Root: %s", d.ExampleDirectory)
+  if d.Name == "" {
+    t.Fatalf("Fixture data missing fixture name.")
+  }
 	d.SshKeyPair, err = GenerateKey(t, d)
 	if err != nil {
 		t.Errorf("Error creating key pair: %s", err)
@@ -47,18 +48,17 @@ func create(t *testing.T, d *FixtureData) (string, string, error) {
 
 	testDataDir := d.DataDirectory + "/test"
 
-	terraformOptions.Vars = map[string]interface{}{
-		"rke2_version":       d.Release,
-		"os":                 d.OperatingSystem,
-		"zone":               d.Zone,
-		"key_name":           d.SshKeyPair.Name,
-		"key":                d.SshKeyPair.KeyPair.PublicKey,
-		"identifier":         d.Id,
-		"install_method":     d.InstallType,
-		"cni":                d.Cni,
-		"ip_family":          d.IpFamily,
-		"ingress_controller": d.IngressController,
-		"fixture":            d.Name,
+	terraformOptions.Vars = map[string]any{
+		"rke2_version":   d.Release,
+		"os":             d.OperatingSystem,
+		"zone":           d.Zone,
+		"key_name":       d.SshKeyPair.Name,
+		"key":            d.SshKeyPair.KeyPair.PublicKey,
+		"identifier":     d.Id,
+		"install_method": d.InstallType,
+		"cni":            d.Cni,
+		"ip_family":      d.IpFamily,
+		"fixture":        d.Name,
 	}
 
 	terraformOptions.EnvVars = map[string]string{
