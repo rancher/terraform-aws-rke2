@@ -110,6 +110,7 @@
           gotestfmt
           gotestsum
           jq
+          kubectl
           less
           nodejs_26
           openssh
@@ -121,7 +122,7 @@
           updatecli
           vim
           which
-          yq
+          yq-go
         ]);
 
         devShellPackage = pkgs.symlinkJoin {
