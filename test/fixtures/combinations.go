@@ -1,11 +1,14 @@
+// Package fixtures provides test fixtures for infrastructure setup.
 package fixtures
 
 import (
 	"errors"
+	"maps"
 	"strings"
 	"testing"
 )
 
+// GetCombinations returns a map of test combinations.
 func GetCombinations(t *testing.T) (map[string]map[string]string, error) {
 	t.Log("Getting data")
 	data, keys, err := getData(t)
@@ -156,9 +159,7 @@ func getIndexes(maxValues map[string]int, k []string) []map[string]int {
 
 		// create copy of current
 		c := make(map[string]int)
-		for key, value := range current {
-			c[key] = value
-		}
+		maps.Copy(c, current)
 		results = append(results, c) // store the copy to the results slice
 
 		// keep processing current
@@ -167,7 +168,7 @@ func getIndexes(maxValues map[string]int, k []string) []map[string]int {
 		for i := range k { // loop through the keys in order
 			key := k[i]
 			if current[key] > maxValues[key] { // if the value of the current key is greater than the max value for that key
-				current[key] = 0  // reset the value of the current key to 0
+				current[key] = 0 // reset the value of the current key to 0
 				if i+1 < len(k) {
 					current[k[i+1]]++ // increment the value of the next key
 				} else {
@@ -179,6 +180,7 @@ func getIndexes(maxValues map[string]int, k []string) []map[string]int {
 	return results
 }
 
+// GetReleases returns a list of RKE2 releases from GitHub.
 func GetReleases(t *testing.T) ([]string, error) {
 	t.Logf("Getting rke2 releases")
 	latest, stable, lts, err := GetRke2Releases(t)

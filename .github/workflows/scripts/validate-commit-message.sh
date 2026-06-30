@@ -39,7 +39,7 @@ empty_check() {
 length_check() {
   message="$1"
   length="$(wc -m <<<"$message")"
-  if [ $length -gt 100 ]; then
+  if [ "$length" -gt 100 ]; then
     echo "...Commit message subject line should be less than 100 characters, found $length."
     exit 1
   else
