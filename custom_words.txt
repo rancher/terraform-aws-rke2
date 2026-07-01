@@ -3,3 +3,4 @@ kubeconfig
 nutanix
 pathing
 variablize
+agentic
