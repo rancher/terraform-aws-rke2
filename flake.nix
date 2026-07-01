@@ -86,10 +86,15 @@
           '';
         };
 
+        macVscode = pkgs.writeShellScriptBin "code" ''
+          exec /usr/local/bin/code "$@"
+        '';
+
         devPackages = [
           # place our downloaded packages here
           leftovers
           terraform
+          macVscode
         ] ++ (with pkgs; [
           # here are the packages from the nix repository
           actionlint
@@ -118,6 +123,7 @@
           shellcheck
           tflint
           tfsec
+          time
           trivy
           updatecli
           vim

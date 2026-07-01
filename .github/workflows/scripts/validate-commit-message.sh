@@ -39,7 +39,7 @@ empty_check() {
 length_check() {
   message="$1"
   length="$(wc -m <<<"$message")"
-  if [ $length -gt 100 ]; then
+  if [ "$length" -gt 100 ]; then
     echo "...Commit message subject line should be less than 100 characters, found $length."
     exit 1
   else
@@ -50,7 +50,7 @@ length_check() {
 spell_check() {
   message="$1"
   if grep -e '^Merge ' <<<"$message"; then exit 0; fi
-  WORDS="$(cspell stdin <<<"$message")"
+  WORDS="$(cspell stdin --quiet --words-only <<<"$message")"
   if [ "" != "$WORDS" ]; then
     echo "...Commit message contains spelling errors on: ^$WORDS\$"
     echo "...Also try updating the PR title."

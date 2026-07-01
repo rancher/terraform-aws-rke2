@@ -1,0 +1,5 @@
+authconfig
+kubeconfig
+nutanix
+pathing
+variablize

@@ -82,7 +82,7 @@ func TestMatrix(t *testing.T) {
 		"sle-micro-61-canal-stable-prod-rpm-ipv6",
 	}
 
-	//Unsupported Combos:
+	// Unsupported Combos:
 	// "cis-...-ipv6-...",
 	//// kernel parameters set on the CIS STIG image disables dhcpv6 which AWS requires for dedicated ipv6 access
 	// "ubuntu-...-rpm-...",
@@ -110,7 +110,7 @@ func TestMatrix(t *testing.T) {
 		case "extended":
 			selection = extendedTests
 		case "all":
-			selection = append(necessaryTests, extendedTests...)
+			selection = append(selection, extendedTests...)
 		default:
 			t.Fatalf("Unknown fixture group: %s (valid groups: necessary, extended, all)", group)
 		}
@@ -167,7 +167,7 @@ func checkReady(t *testing.T, kubeconfigPath string, api string) {
 			"WAIT":       os.Getenv("WAIT"),
 		},
 	}
-	out, err := shell.RunCommandAndGetOutputE(t, readyScript)
+	out, err := shell.RunCommandContextAndGetOutputE(t, t.Context(), &readyScript)
 	if err != nil {
 		t.Logf("Error running script: %s", err)
 		t.Fail()

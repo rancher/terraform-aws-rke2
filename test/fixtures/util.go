@@ -8,16 +8,17 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/google/go-github/v53/github"
 	aws "github.com/gruntwork-io/terratest/modules/aws"
-	g "github.com/gruntwork-io/terratest/modules/git"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/ssh"
 	"github.com/gruntwork-io/terratest/modules/terraform"
@@ -25,6 +26,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// GenerateOptions is a helper function to generate terraform options.
 func GenerateOptions(t *testing.T, d *FixtureData) *terraform.Options {
 
 	retryableTerraformErrors := map[string]string{
@@ -53,30 +55,37 @@ func GenerateOptions(t *testing.T, d *FixtureData) *terraform.Options {
 	return terraform.WithDefaultRetryableErrors(t, &opt)
 }
 
+// Teardown is a helper function to destroy terraform resources.
 func Teardown(t *testing.T, f *FixtureData) {
-  t.Log("Tearing down...")
-  _, err := terraform.InitE(t, f.TfOptions)
-  if err != nil {
-    t.Logf("Failed to validate: %s", err)
-  }
+	t.Log("Tearing down...")
+	if f.TfOptions != nil {
+		_, err := terraform.InitContextE(t, t.Context(), f.TfOptions)
+		if err != nil {
+			t.Logf("Failed to validate: %s", err)
+		}
 
-  _, err = terraform.DestroyE(t, f.TfOptions)
-	if err != nil {
-		t.Logf("Failed to destroy: %s", err)
+		_, err = terraform.DestroyContextE(t, t.Context(), f.TfOptions)
+		if err != nil {
+			t.Logf("Failed to destroy: %s", err)
+		}
 	}
-  suppressPanic(f.SshAgent.Stop)
-	aws.DeleteEC2KeyPair(t, f.SshKeyPair)
-	rma(t, fmt.Sprintf("%s/data/%s", f.ExampleDirectory, f.Id))
+	if f.SSHAgent != nil {
+		suppressPanic(f.SSHAgent.Stop)
+	}
+	if f.SSHKeyPair != nil {
+		aws.DeleteEC2KeyPairContext(t, t.Context(), f.SSHKeyPair)
+	}
+	rma(t, fmt.Sprintf("%s/data/%s", f.ExampleDirectory, f.ID))
 	rm(t, fmt.Sprintf("%s/tf-*", f.ExampleDirectory))
 	rm(t, fmt.Sprintf("%s/50-*.yaml", f.ExampleDirectory))
-  rm(t, fmt.Sprintf("%s/.terraform.lock.hcl", f.ExampleDirectory))
+	rm(t, fmt.Sprintf("%s/.terraform.lock.hcl", f.ExampleDirectory))
 
 	rma(t, f.DataDirectory)
 }
 
 func suppressPanic(f func()) {
-    defer func() { recover() }()
-    f()
+	defer func() { _ = recover() }()
+	f()
 }
 
 func rm(t *testing.T, path string) {
@@ -93,66 +102,72 @@ func rma(t *testing.T, path string) {
 	require.NoError(t, err)
 }
 
+// GenerateKey generates a new ssh keypair for the test fixture.
 func GenerateKey(t *testing.T, d *FixtureData) (*aws.Ec2Keypair, error) {
 	var err error
-	keyPairName := fmt.Sprintf("tf-%s", d.Id)
-	keyPair := aws.CreateAndImportEC2KeyPair(t, d.Region, keyPairName)
-	client, err := aws.NewEc2ClientE(t, d.Region)
+	keyPairName := fmt.Sprintf("tf-%s", d.ID)
+	keyPair := aws.CreateAndImportEC2KeyPairContext(t, t.Context(), d.Region, keyPairName)
+	client, err := aws.NewEc2ClientContextE(t, t.Context(), d.Region)
 	require.NoError(t, err)
 	k := "key-name"
-	keyNameFilter := ec2.Filter{
+	keyNameFilter := types.Filter{
 		Name:   &k,
-		Values: []*string{&keyPairName},
+		Values: []string{keyPairName},
 	}
 	input := &ec2.DescribeKeyPairsInput{
-		Filters: []*ec2.Filter{&keyNameFilter},
+		Filters: []types.Filter{keyNameFilter},
 	}
-	result, err := client.DescribeKeyPairs(input)
+	result, err := client.DescribeKeyPairs(t.Context(), input)
 	require.NoError(t, err)
 	require.NotEmpty(t, result.KeyPairs)
 
-	err = aws.AddTagsToResourceE(t, d.Region, *result.KeyPairs[0].KeyPairId, map[string]string{"Name": keyPairName, "Owner": d.Owner})
+	err = aws.AddTagsToResourceContextE(t, t.Context(), d.Region, *result.KeyPairs[0].KeyPairId, map[string]string{"Name": keyPairName, "Owner": d.Owner})
 	require.NoError(t, err)
 
 	// Verify that the name and owner tags were placed properly
 	k = "tag:Name"
-	keyNameFilter = ec2.Filter{
+	keyNameFilter = types.Filter{
 		Name:   &k,
-		Values: []*string{&keyPairName},
+		Values: []string{keyPairName},
 	}
 	input = &ec2.DescribeKeyPairsInput{
-		Filters: []*ec2.Filter{&keyNameFilter},
+		Filters: []types.Filter{keyNameFilter},
 	}
-	result, err = client.DescribeKeyPairs(input)
+	result, err = client.DescribeKeyPairs(t.Context(), input)
 	require.NoError(t, err)
 	require.NotEmpty(t, result.KeyPairs)
 
 	k = "tag:Owner"
-	keyNameFilter = ec2.Filter{
+	keyNameFilter = types.Filter{
 		Name:   &k,
-		Values: []*string{&d.Owner},
+		Values: []string{d.Owner},
 	}
 	input = &ec2.DescribeKeyPairsInput{
-		Filters: []*ec2.Filter{&keyNameFilter},
+		Filters: []types.Filter{keyNameFilter},
 	}
-	result, err = client.DescribeKeyPairs(input)
+	result, err = client.DescribeKeyPairs(t.Context(), input)
 	require.NoError(t, err)
 	require.NotEmpty(t, result.KeyPairs)
 
-	os.WriteFile(d.DataDirectory+"/ssh_key", []byte(keyPair.PrivateKey), 0600)
-	return keyPair, err
+	err = os.WriteFile(d.DataDirectory+"/ssh_key", []byte(keyPair.PrivateKey), 0600)
+	if err != nil {
+		return nil, err
+	}
+	return keyPair, nil
 }
 
-func GenerateSshAgent(t *testing.T, d *FixtureData) *ssh.SshAgent {
-	return ssh.SshAgentWithKeyPair(t, d.SshKeyPair.KeyPair)
+// GenerateSSHAgent generates a new ssh agent for the test fixture.
+func GenerateSSHAgent(t *testing.T, d *FixtureData) *ssh.SSHAgent {
+	return ssh.SSHAgentWithKeyPair(t, t.Context(), d.SSHKeyPair.KeyPair)
 }
 
+// GetRke2Releases returns the latest, stable, and lts rke2 releases.
 func GetRke2Releases(t *testing.T) (string, string, string, error) {
 	releases, err := getRke2Releases(t)
 	if err != nil {
 		return "", "", "", err
 	}
-  t.Logf("RKE2 releases found: %v", len(releases))
+	t.Logf("RKE2 releases found: %v", len(releases))
 	versions := filterPrerelease(t, releases)
 	if len(versions) == 0 {
 		return "", "", "", errors.New("no eligible versions found")
@@ -182,13 +197,12 @@ func getRke2Releases(t *testing.T) ([]*github.RepositoryRelease, error) {
 
 	// Create a new OAuth2 token using the GitHub token
 	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: githubToken})
-	tokenClient := oauth2.NewClient(context.Background(), tokenSource)
+	tokenClient := oauth2.NewClient(t.Context(), tokenSource)
 
 	// Create a new GitHub client using the authenticated HTTP client
 	client := github.NewClient(tokenClient)
 
-
-  t.Log("Getting rke2 GitHub releases")
+	t.Log("Getting rke2 GitHub releases")
 	var releases []*github.RepositoryRelease
 	var response *github.Response
 	var err error
@@ -197,7 +211,7 @@ func getRke2Releases(t *testing.T) ([]*github.RepositoryRelease, error) {
 	baseDelay := time.Second
 
 	for i := range maxRetries {
-		releases, response, err = client.Repositories.ListReleases(context.Background(), "rancher", "rke2", &github.ListOptions{Page: 1, PerPage: 100})
+		releases, response, err = client.Repositories.ListReleases(t.Context(), "rancher", "rke2", &github.ListOptions{Page: 1, PerPage: 100})
 
 		if err == nil && len(releases) > 0 {
 			t.Logf("GitHub Response status: %s", response.Status)
@@ -222,7 +236,7 @@ func getRke2Releases(t *testing.T) ([]*github.RepositoryRelease, error) {
 		return nil, fmt.Errorf("failed to fetch releases after %d attempts: %w", maxRetries, err)
 	}
 
-  return releases, nil
+	return releases, nil
 }
 
 func filterPrerelease(t *testing.T, r []*github.RepositoryRelease) []string {
@@ -271,11 +285,11 @@ func filterDuplicateMinors(vers []string) []string {
 	for i := 1; i < len(vers); i++ {
 		p := vers[i-1]
 		v := vers[i]
-		vp := strings.Split(v[1:], "+") //["1.30.1","rke2r3"]
-		pp := strings.Split(p[1:], "+") //["1.30.1","rke2r2"]
+		vp := strings.Split(v[1:], "+") // ["1.30.1","rke2r3"]
+		pp := strings.Split(p[1:], "+") // ["1.30.1","rke2r2"]
 		if vp[0] != pp[0] {
-			vpp := strings.Split(vp[0], ".") //["1","30","1"]
-			ppp := strings.Split(pp[0], ".") //["1","30","1"]
+			vpp := strings.Split(vp[0], ".") // ["1","30","1"]
+			ppp := strings.Split(pp[0], ".") // ["1","30","1"]
 			if vpp[1] != ppp[1] {
 				fv = append(fv, v)
 				//[
@@ -290,28 +304,42 @@ func filterDuplicateMinors(vers []string) []string {
 	return fv
 }
 
+func getRepoRoot(ctx context.Context, _ *testing.T) (string, error) {
+	cmd := exec.CommandContext(ctx, "git", "rev-parse", "--show-toplevel")
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to locate git repo root: %w", err)
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+// CreateFixture creates a new test fixture.
 func CreateFixture(t *testing.T, combo map[string]string) (string, string, FixtureData, error) {
-	repoRoot, err := filepath.Abs(g.GetRepoRoot(t))
+	root, err := getRepoRoot(t.Context(), t)
+	if err != nil {
+		return "", "", FixtureData{}, err
+	}
+	repoRoot, err := filepath.Abs(root)
 	if err != nil {
 		return "", "", FixtureData{}, err
 	}
 
 	var fixtureData FixtureData
-	fixtureData.Id = getId()
+	fixtureData.ID = getID()
 	fixtureData.Name = combo["fixture"]
 	fixtureData.InstallType = combo["installType"]
 	fixtureData.OperatingSystem = combo["operatingSystem"]
 	fixtureData.Release = combo["release"]
 	fixtureData.Cni = combo["cni"]
-	fixtureData.IpFamily = combo["ipFamily"]
+	fixtureData.IPFamily = combo["ipFamily"]
 	fixtureData.Owner = "terraform-ci@suse.com"
 	fixtureData.ExampleDirectory = repoRoot + "/test/test_relay"
-	fixtureData.DataDirectory = repoRoot + "/test/tests/data/" + fixtureData.Id
+	fixtureData.DataDirectory = repoRoot + "/test/data/" + fixtureData.ID
 	fixtureData.Region = getRegion()
 	fixtureData.AcmeServer = getAcmeServer()
 	fixtureData.Zone = os.Getenv("ZONE")
 
-	err = createTestDirectories(t, fixtureData.Id)
+	err = createTestDirectories(t, fixtureData.ID)
 	if err != nil {
 		return "", "", fixtureData, err
 	}
@@ -324,19 +352,25 @@ func CreateFixture(t *testing.T, combo map[string]string) (string, string, Fixtu
 		t.Log("Kubeconfig not found")
 		return "", "", fixtureData, errors.New("kubeconfig not found")
 	}
-  if api == "" {
-    t.Log("API not found")
-    return "", "", fixtureData, errors.New("api not found")
-  }
-	os.WriteFile(fixtureData.DataDirectory+"/kubeconfig", []byte(kubeconfig), 0644)
-  t.Logf("API is %s", api)
+	if api == "" {
+		t.Log("API not found")
+		return "", "", fixtureData, errors.New("api not found")
+	}
+	err = os.WriteFile(fixtureData.DataDirectory+"/kubeconfig", []byte(kubeconfig), 0600)
+	if err != nil {
+		return "", "", fixtureData, err
+	}
+	t.Logf("API is %s", api)
 	return fixtureData.DataDirectory + "/kubeconfig", api, fixtureData, nil
 }
 
 func getAcmeServer() string {
 	acmeserver := os.Getenv("ACME_SERVER_URL")
 	if acmeserver == "" {
-		os.Setenv("ACME_SERVER_URL", "https://acme-staging-v02.api.letsencrypt.org/directory")
+		acmeserver = "https://acme-staging-v02.api.letsencrypt.org/directory"
+		if err := os.Setenv("ACME_SERVER_URL", acmeserver); err != nil {
+			panic(err)
+		}
 	}
 	return acmeserver
 }
@@ -352,39 +386,42 @@ func getRegion() string {
 	return region
 }
 
-func getId() string {
+func getID() string {
 	id := os.Getenv("IDENTIFIER")
 	if id == "" {
-		id = random.UniqueId()
+		id = random.UniqueID()
 	}
-	id += "-" + random.UniqueId()
+	id += "-" + random.UniqueID()
 	return id
 }
 
 func createTestDirectories(t *testing.T, id string) error {
-	gwd := g.GetRepoRoot(t)
+	gwd, err := getRepoRoot(t.Context(), t)
+	if err != nil {
+		return err
+	}
 	fwd, err := filepath.Abs(gwd)
 	if err != nil {
 		return err
 	}
-	dataDir := "/test/tests/data/"
+	dataDir := "/test/data/"
 	tdd := fwd + dataDir
-	err = os.Mkdir(tdd, 0755)
+	err = os.Mkdir(tdd, 0750)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 	tdd = fwd + dataDir + id
-	err = os.Mkdir(tdd, 0755)
+	err = os.Mkdir(tdd, 0750)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 	tdd = fwd + dataDir + id + "/test"
-	err = os.Mkdir(tdd, 0755)
+	err = os.Mkdir(tdd, 0750)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 	tdd = fwd + dataDir + id + "/install"
-	err = os.Mkdir(tdd, 0755)
+	err = os.Mkdir(tdd, 0750)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}

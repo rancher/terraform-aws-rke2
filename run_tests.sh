@@ -11,9 +11,15 @@ cleanup_id=""
 wait_time=""
 slow_mode=false
 dirty_mode=false
+speed_mode="6"
+build_only=false
+lint_only=false
 
 # Track whether cleanup has run
 cleanup_has_run=false
+
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+TEST_DIR=""
 
 # Cleanup function that will be called on exit
 run_cleanup() {
@@ -37,9 +43,6 @@ run_cleanup() {
     sleep "$WAIT"
   fi
 
-  # Locate repository root
-  REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-
   # Check if cleanup script exists
   if [ -f "$REPO_ROOT/cleanup.sh" ]; then
     echo "Running cleanup script..."
@@ -57,22 +60,29 @@ run_cleanup() {
   fi
 }
 
-# Set trap to run cleanup on exit, error, interrupt, or termination
-trap run_cleanup EXIT ERR INT TERM
-
-# Parse command line options
-while getopts ":rsdt:p:f:g:c:w:" opt; do
-  case $opt in
-    r) rerun_failed=true ;;
-    t) specific_test="$OPTARG" ;;
-    p) specific_package="$OPTARG" ;;
-    f) specific_fixture="$OPTARG" ;;
-    g) fixture_group="$OPTARG" ;;
-    c) cleanup_id="$OPTARG" ;;
-    w) wait_time="$OPTARG" ;;
-    d) dirty_mode=true ;;
-    s) slow_mode=true ;;
-    \?) cat <<EOT >&2 && exit 1
+parse_options() {
+  local OPTIND=1
+  # Parse command line options
+  while getopts ":rsdt:p:f:g:c:w:n:-:" opt; do
+    case $opt in
+      r) rerun_failed=true ;;
+      t) specific_test="$OPTARG" ;;
+      p) specific_package="$OPTARG" ;;
+      f) specific_fixture="$OPTARG" ;;
+      g) fixture_group="$OPTARG" ;;
+      c) cleanup_id="$OPTARG" ;;
+      w) wait_time="$OPTARG" ;;
+      d) dirty_mode=true ;;
+      n) speed_mode="$OPTARG" ;;
+      s) slow_mode=true ;;
+      -)
+        case "${OPTARG}" in
+          build-only) build_only=true ;;
+          lint-only) lint_only=true ;;
+          *) echo "Invalid option: --${OPTARG}" >&2; exit 1 ;;
+        esac
+        ;;
+      \?) cat <<EOT >&2 && exit 1
 Invalid option: -$OPTARG
 
 Usage: $0 [OPTIONS]
@@ -87,99 +97,130 @@ Options:
   -g GROUP        Run specific fixture group (eg. "necessary" or "extended")
   -c ID           Cleanup-only mode with the given identifier
   -w SECONDS      Wait time in seconds before cleanup on test failure (for investigation)
+  -n SPEED        Set the number of consecutive tests and test packages (speed)
+  --build-only    Build up the global plugin cache and validate examples, then exit
+  --lint-only     Run the lint action and then exit
 
 Notes:
-  - Only one of -c, -t, -p, -f, or -g can be used at a time
+  - Only one of -c, -t, -p, -f, -g, --build-only, or --lint-only can be used at a time
   - The -f option sets the COMBO environment variable for fixture selection
   - The -g option sets the GROUP environment variable for fixture group selection
   - The -w option sets the WAIT environment variable for error investigation
 EOT
-  esac
-done
+    esac
+  done
+}
 
-# Validate mutually exclusive options
-exclusive_count=0
-[ -n "$cleanup_id" ] && ((exclusive_count++))
-[ -n "$specific_test" ] && ((exclusive_count++))
-[ -n "$specific_package" ] && ((exclusive_count++))
-[ -n "$specific_fixture" ] && ((exclusive_count++))
-[ -n "$fixture_group" ] && ((exclusive_count++))
+validate_options() {
+  # Validate mutually exclusive options
+  local exclusive_count=0
+  [ -n "$cleanup_id" ] && ((exclusive_count++))
+  [ -n "$specific_test" ] && ((exclusive_count++))
+  [ -n "$specific_package" ] && ((exclusive_count++))
+  [ -n "$specific_fixture" ] && ((exclusive_count++))
+  [ -n "$fixture_group" ] && ((exclusive_count++))
+  [ "$build_only" = true ] && ((exclusive_count++))
+  [ "$lint_only" = true ] && ((exclusive_count++))
 
-if [ $exclusive_count -gt 1 ]; then
-  echo "Error: Only one of -c, -t, -p, -f, or -g can be used at a time." >&2
-  exit 1
-fi
+  if [ $exclusive_count -gt 1 ]; then
+    echo "Error: Only one of -c, -t, -p, -f, -g, --build-only, or --lint-only can be used at a time." >&2
+    exit 1
+  fi
+}
 
-# Display configuration
-echo "=== Test Configuration ==="
-if [ "$slow_mode" = true ]; then
-  echo "Mode: Slow (sequential execution to avoid AWS rate limiting)"
-else
-  echo "Mode: Normal (parallel execution)"
-fi
+display_configuration() {
+  # Display configuration
+  echo "=== Test Configuration ==="
+  if [ "$slow_mode" = true ]; then
+    echo "Mode: Slow (sequential execution to avoid AWS rate limiting)"
+  elif [ -n "$speed_mode" ]; then
+    echo "Mode: Custom speed ($speed_mode parallel execution)"
+  else
+    echo "Mode: Normal (parallel execution)"
+  fi
 
-if [ "$rerun_failed" = true ]; then
-  echo "Rerun failed tests: Enabled"
-fi
+  if [ "$rerun_failed" = true ]; then
+    echo "Rerun failed tests: Enabled"
+  fi
 
-if [ "$dirty_mode" = true ]; then
-  echo "Cleanup: Disabled (dirty mode)"
-else
-  echo "Cleanup: Enabled"
-fi
+  if [ "$dirty_mode" = true ]; then
+    echo "Cleanup: Disabled (dirty mode)"
+  else
+    echo "Cleanup: Enabled"
+  fi
 
-if [ -n "$specific_test" ]; then
-  echo "Specific test: $specific_test"
-fi
+  if [ -n "$specific_test" ]; then
+    echo "Specific test: $specific_test"
+  fi
 
-if [ -n "$specific_package" ]; then
-  echo "Specific package: $specific_package"
-fi
+  if [ -n "$specific_package" ]; then
+    echo "Specific package: $specific_package"
+  fi
 
-if [ -n "$specific_fixture" ]; then
-  echo "Specific fixture: $specific_fixture"
-fi
+  if [ -n "$specific_fixture" ]; then
+    echo "Specific fixture: $specific_fixture"
+  fi
 
-if [ -n "$fixture_group" ]; then
-  echo "Fixture group: $fixture_group"
-fi
+  if [ -n "$fixture_group" ]; then
+    echo "Fixture group: $fixture_group"
+  fi
 
-if [ -n "$cleanup_id" ]; then
-  echo "Cleanup-only mode: $cleanup_id"
-fi
+  if [ -n "$cleanup_id" ]; then
+    echo "Cleanup-only mode: $cleanup_id"
+  fi
 
-if [ -n "$wait_time" ]; then
-  echo "Wait time on failure: $wait_time seconds"
-fi
+  if [ -n "$wait_time" ]; then
+    echo "Wait time on failure: $wait_time seconds"
+  fi
 
-echo "=========================="
-echo ""
+  if [ "$build_only" = true ]; then
+    echo "Build-only mode: Enabled"
+  fi
 
-# Set cleanup ID if provided
-if [ -n "$cleanup_id" ]; then
-  export IDENTIFIER="$cleanup_id"
-fi
+  if [ "$lint_only" = true ]; then
+    echo "Lint-only mode: Enabled"
+  fi
 
-# Set COMBO environment variable for fixture selection
-export COMBO="$specific_fixture"
-if [ -n "$COMBO" ]; then
-  echo "COMBO environment variable set to: $COMBO"
-fi
+  echo "=========================="
+  echo ""
+}
 
-# Set GROUP environment variable for fixture group selection
-export GROUP="$fixture_group"
-if [ -n "$GROUP" ]; then
-  echo "GROUP environment variable set to: $GROUP"
-fi
+setup_environment() {
+  # Set cleanup ID if provided
+  if [ -n "$cleanup_id" ]; then
+    export IDENTIFIER="$cleanup_id"
+  fi
 
-# Set WAIT environment variable for error investigation
-export WAIT="$wait_time"
-if [ -n "$WAIT" ]; then
-  echo "WAIT environment variable set to: $WAIT seconds"
-fi
+  # Set COMBO environment variable for fixture selection
+  export COMBO="$specific_fixture"
+  if [ -n "$COMBO" ]; then
+    echo "COMBO environment variable set to: $COMBO"
+  fi
 
-# Locate repository root
-REPO_ROOT="$(git rev-parse --show-toplevel)"
+  # Set GROUP environment variable for fixture group selection
+  export GROUP="$fixture_group"
+  if [ -n "$GROUP" ]; then
+    echo "GROUP environment variable set to: $GROUP"
+  fi
+
+  # Set WAIT environment variable for error investigation
+  export WAIT="$wait_time"
+  if [ -n "$WAIT" ]; then
+    echo "WAIT environment variable set to: $WAIT seconds"
+  fi
+
+  # Locate repository root
+  REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+  # Generate and export identifier
+  if [ -z "$IDENTIFIER" ]; then
+    IDENTIFIER="$(echo "a-$RANDOM-d" | base64 | tr -d '=')"
+    export IDENTIFIER
+  fi
+
+  echo "Test identifier: $IDENTIFIER"
+  echo ""
+}
 
 # Find the tests directory
 find_test_dir() {
@@ -197,18 +238,7 @@ find_test_dir() {
   echo "$test_dir"
 }
 
-TEST_DIR="$(find_test_dir)"
-echo "Using test directory: $TEST_DIR"
-echo ""
-
-# Run tests function
-run_tests() {
-  local rerun=$1
-  local slow_mode=$2
-
-  cd "$REPO_ROOT" || exit 1
-
-  # Setup test log and processor
+setup_test_processor() {
   echo "" > "/tmp/${IDENTIFIER}_test.log"
 
   cat <<'EOF' > "/tmp/${IDENTIFIER}_test-processor"
@@ -227,45 +257,14 @@ fi
 exit 0
 EOF
   chmod +x "/tmp/${IDENTIFIER}_test-processor"
+}
 
-  export NO_COLOR=1
-  echo "Starting tests..."
-  cd "$TEST_DIR" || exit 1
-
-  # Build rerun flag
-  local rerun_flag=""
-  if [ "$rerun" = true ] && [ -f "/tmp/${IDENTIFIER}_failed_tests.txt" ]; then
-    # shellcheck disable=SC2002
-    rerun_flag="-run=$(cat "/tmp/${IDENTIFIER}_failed_tests.txt" | tr '\n' '|' | sed 's/|$//')"
-    echo "Rerunning failed tests: $rerun_flag"
-  fi
-
-  # Build specific test flag
-  local specific_test_flag=""
-  if [ -n "$specific_test" ] && [ "$rerun" != true ]; then
-    specific_test_flag="-run=$specific_test"
-    echo "Running specific test: $specific_test"
-  fi
-
-  # Build package pattern
-  local package_pattern=""
-  if [ -n "$specific_package" ]; then
-    package_pattern="$specific_package"
-    echo "Running specific package: $specific_package"
-  else
-    package_pattern="..."
-  fi
-
-  # Build parallel flags for slow mode
-  local parallel_packages=""
-  local parallel_tests=""
-  if [ "$slow_mode" = true ]; then
-    echo "Slow mode: Running tests sequentially"
-    parallel_packages="-p=1"
-    parallel_tests="-parallel=1"
-  else
-    parallel_tests="-parallel=10"
-  fi
+execute_gotestsum() {
+  local package_pattern="$1"
+  local parallel_packages="$2"
+  local parallel_tests="$3"
+  local rerun_flag="$4"
+  local specific_test_flag="$5"
 
   # Display the command that will be run
   echo ""
@@ -294,50 +293,87 @@ EOF
     $parallel_tests \
     $rerun_flag \
     $specific_test_flag
+}
+
+# Run tests function
+run_tests() {
+  local rerun=$1
+  local slow_mode=$2
+
+  setup_test_processor
+
+  export NO_COLOR=1
+  echo "Starting tests..."
+  cd "$REPO_ROOT/$TEST_DIR" || exit 1
+
+  # Build rerun flag
+  local rerun_flag=""
+  if [ "$rerun" = true ] && [ -f "/tmp/${IDENTIFIER}_failed_tests.txt" ]; then
+    rerun_flag="-run=$(tr '\n' '|' < "/tmp/${IDENTIFIER}_failed_tests.txt" | sed 's/|$//')"
+    echo "Rerunning failed tests: $rerun_flag"
+  fi
+
+  # Build specific test flag
+  local specific_test_flag=""
+  if [ -n "$specific_test" ] && [ "$rerun" != true ]; then
+    specific_test_flag="-run=$specific_test"
+    echo "Running specific test: $specific_test"
+  fi
+
+  # Build package pattern
+  local package_pattern=""
+  if [ -n "$specific_package" ]; then
+    package_pattern="$specific_package"
+    echo "Running specific package: $specific_package"
+  else
+    package_pattern="..."
+  fi
+
+  # Build parallel flags for slow mode
+  local parallel_packages=""
+  local parallel_tests=""
+  if [ "$slow_mode" = true ]; then
+    echo "Slow mode: Running tests sequentially"
+    parallel_packages="-p=1"
+    parallel_tests="-parallel=1"
+  elif [ -n "$speed_mode" ]; then
+    echo "Custom speed: Running $speed_mode tests in parallel"
+    parallel_packages="-p=$speed_mode"
+    parallel_tests="-parallel=$speed_mode"
+  fi
+
+  execute_gotestsum "$package_pattern" "$parallel_packages" "$parallel_tests" "$rerun_flag" "$specific_test_flag"
 
   return $?
 }
 
-# Generate and export identifier
-if [ -z "$IDENTIFIER" ]; then
-  IDENTIFIER="$(echo "a-$RANDOM-d" | base64 | tr -d '=')"
-  export IDENTIFIER
-fi
+check_environment() {
+  # Check required environment variables
+  echo "=== Environment Check ==="
+  if [ -z "$GITHUB_TOKEN" ]; then
+    echo "WARNING: GITHUB_TOKEN is not set"
+  else
+    echo "GITHUB_TOKEN: Set"
+  fi
 
-echo "Test identifier: $IDENTIFIER"
-echo ""
+  if [ -z "$GITHUB_OWNER" ]; then
+    echo "WARNING: GITHUB_OWNER is not set"
+  else
+    echo "GITHUB_OWNER: Set ($GITHUB_OWNER)"
+  fi
 
-# Check required environment variables
-echo "=== Environment Check ==="
-if [ -z "$GITHUB_TOKEN" ]; then
-  echo "WARNING: GITHUB_TOKEN is not set"
-else
-  echo "GITHUB_TOKEN: Set"
-fi
+  if [ -z "$ZONE" ]; then
+    echo "WARNING: ZONE is not set"
+  else
+    echo "ZONE: Set"
+  fi
+  echo "========================="
+  echo ""
+}
 
-if [ -z "$GITHUB_OWNER" ]; then
-  echo "WARNING: GITHUB_OWNER is not set"
-else
-  echo "GITHUB_OWNER: Set ($GITHUB_OWNER)"
-fi
-
-if [ -z "$ZONE" ]; then
-  echo "WARNING: ZONE is not set"
-else
-  echo "ZONE: Set"
-fi
-echo "========================="
-echo ""
-
-# If cleanup-only mode, skip tests and run cleanup directly
-if [ -n "$cleanup_id" ]; then
-  echo "Cleanup-only mode enabled, skipping tests..."
-  # In cleanup-only mode, we want to run cleanup immediately
-  run_cleanup
-  echo "Cleanup-only mode completed"
-  exit 0
-else
+pre_test_validation() {
   # Pre-test validation
+  local current_dir
   current_dir="$(pwd)"
 
   echo "=== Pre-Test Validation ==="
@@ -355,19 +391,18 @@ else
   echo "✓ Formatting complete"
 
   echo "Checking for compile errors..."
-  while IFS= read -r file; do
-    if [ -n "$file" ]; then
-      if ! go test -c "$file" -o "${file}.test" 2>&1; then
-        echo "ERROR: Failed to compile $file"
+  while IFS= read -r dir; do
+    if [ -n "$dir" ]; then
+      if ! go test -c "$dir" -o /dev/null 2>&1; then
+        echo "ERROR: Failed to compile package in $dir"
         exit 1
       fi
-      rm -f "${file}.test"
     fi
-  done <<< "$(find "$REPO_ROOT/$TEST_DIR" -not \( -path "$REPO_ROOT/$TEST_DIR/data" -prune \) -name '*.go')"
+  done <<< "$(find "$REPO_ROOT/$TEST_DIR" -not \( -path "$REPO_ROOT/$TEST_DIR/data" -prune \) -name '*.go' -exec dirname {} \; | sort -u)"
   echo "✓ Compile checks passed"
 
   echo "Running go lint..."
-  if ! golangci-lint run; then
+  if ! golangci-lint run -c "$REPO_ROOT/.golangci.yml"; then
     echo "ERROR: Linting failed"
     exit 1
   fi
@@ -382,9 +417,41 @@ else
   fi
   echo "✓ Terraform configs valid"
 
+  echo "Running actionlint..."
+  if ! actionlint; then
+    echo "ERROR: actionlint failed"
+    exit 1
+  fi
+  echo "✓ actionlint passed"
+
+  echo "Running shellcheck..."
+  if ! find . -name "*.sh" -not -path "./.terraform/*" -exec shellcheck {} +; then
+    echo "ERROR: shellcheck failed"
+    exit 1
+  fi
+  echo "✓ shellcheck passed"
+
+  echo "Running npm install..."
+  if [ -f "package.json" ]; then
+    npm install --no-fund --no-audit || echo "WARNING: npm install failed, eslint may fail"
+  else
+    # Install required eslint packages directly if package.json is missing
+    npm install --no-save @eslint/js globals eslint || echo "WARNING: npm install failed, eslint may fail"
+  fi
+
+  echo "Running eslint..."
+  if ! eslint .; then
+    echo "ERROR: eslint failed"
+    exit 1
+  fi
+  echo "✓ eslint passed"
+
   echo "============================"
   echo ""
 
+}
+
+execute_tests() {
   # Clear failed tests before initial run
   rm -f "/tmp/${IDENTIFIER}_failed_tests.txt"
 
@@ -417,17 +484,130 @@ else
 
     sleep 5
   fi
-fi
+}
 
-echo ""
-echo "=== Test Summary ==="
+display_summary() {
+  echo ""
+  echo "=== Test Summary ==="
 
-# Exit with appropriate code based on test results
-if [ -f "/tmp/${IDENTIFIER}_failed_tests.txt" ]; then
-  echo "Tests FAILED"
-  echo "Failed tests logged to: /tmp/${IDENTIFIER}_failed_tests.txt"
-  exit 1
-else
-  echo "All tests PASSED"
-  exit 0
-fi
+  # Exit with appropriate code based on test results
+  if [ -f "/tmp/${IDENTIFIER}_failed_tests.txt" ]; then
+    echo "Tests FAILED"
+    echo "Failed tests logged to: /tmp/${IDENTIFIER}_failed_tests.txt"
+    exit 1
+  else
+    echo "All tests PASSED"
+    exit 0
+  fi
+}
+
+prime_plugin_cache() {
+  echo "=== Prime Plugin Cache ==="
+  echo "priming terraform plugin cache..."
+  export GLOBAL_TF_PLUGIN_CACHE="$HOME/.terraform.d/plugin-cache"
+  mkdir -p "$GLOBAL_TF_PLUGIN_CACHE"
+  export TF_PLUGIN_CACHE_DIR="$GLOBAL_TF_PLUGIN_CACHE"
+  while IFS= read -r dir; do
+    pushd "$dir" || exit
+
+    needs_mirror=false
+
+    (terraform get > /dev/null 2>&1 || true)
+    providers=$(terraform providers | grep provider | awk -F'provider' '{print $2}' | awk -F'[' '{print $2}' | awk -F']' '{print $1}' | sort | uniq || true)
+
+    for p in $providers; do
+      if [ "$p" = "terraform.io/builtin/terraform" ]; then
+        continue
+      fi
+      if [ ! -d "$GLOBAL_TF_PLUGIN_CACHE/$p" ]; then
+        echo "Global cache doesn't have provider: $p"
+        needs_mirror=true
+        break
+      fi
+    done
+
+    if $needs_mirror; then
+      echo "  running 'terraform providers mirror $GLOBAL_TF_PLUGIN_CACHE' in $dir..."
+      (terraform providers mirror "$GLOBAL_TF_PLUGIN_CACHE" > /dev/null 2>&1 || true)
+    fi
+    rm -rf .terraform
+
+    popd || exit
+  done <<< "$(find "$REPO_ROOT/examples" -name 'main.tf' -not -path '*/.terraform/*' -exec dirname {} \; | sort -u)"
+  unset TF_PLUGIN_CACHE_DIR
+}
+
+validate_examples() {
+  echo "=== Validate Examples ==="
+  export GLOBAL_TF_PLUGIN_CACHE="$HOME/.terraform.d/plugin-cache"
+  export TF_PLUGIN_CACHE_DIR="$GLOBAL_TF_PLUGIN_CACHE"
+
+  while IFS= read -r dir; do
+    pushd "$dir" > /dev/null || exit 1
+    echo "  validating example in $dir..."
+
+    (terraform init -backend=false > /dev/null 2>&1 || true)
+    if ! terraform validate; then
+      echo "ERROR: Terraform validation failed in $dir"
+      popd > /dev/null || exit 1
+      exit 1
+    fi
+    rm -rf .terraform
+    rm -f .terraform.lock.hcl
+    popd > /dev/null || exit 1
+  done <<< "$(find "$REPO_ROOT/examples" -name 'main.tf' -not -path '*/.terraform/*' -exec dirname {} \; | sort -u)"
+  echo "✓ All examples validated successfully"
+  echo ""
+}
+
+main() {
+  parse_options "$@"
+  validate_options
+
+  # Set trap to run cleanup on exit, error, interrupt, or termination
+  trap run_cleanup EXIT ERR INT TERM
+
+  display_configuration
+
+  if [ "$lint_only" = true ]; then
+    echo "Lint-only mode enabled, skipping tests and cleanup..."
+    TEST_DIR="$(find_test_dir)"
+    dirty_mode=true # Skip cleanup
+    pre_test_validation
+    validate_examples
+    echo "Lint-only mode completed successfully"
+    exit 0
+  fi
+
+  if [ "$build_only" = true ]; then
+    echo "Build-only mode enabled, skipping tests and cleanup..."
+    dirty_mode=true # Skip cleanup
+    prime_plugin_cache
+    echo "Build-only mode completed successfully"
+    exit 0
+  fi
+
+  prime_plugin_cache
+  setup_environment
+
+  TEST_DIR="$(find_test_dir)"
+  echo "Using test directory: $TEST_DIR"
+  echo ""
+
+  check_environment
+
+  # If cleanup-only mode, skip tests and run cleanup directly
+  if [ -n "$cleanup_id" ]; then
+    echo "Cleanup-only mode enabled, skipping tests..."
+    # In cleanup-only mode, we want to run cleanup immediately
+    run_cleanup
+    echo "Cleanup-only mode completed"
+    exit 0
+  fi
+
+  pre_test_validation
+  execute_tests
+  display_summary
+}
+
+main "$@"

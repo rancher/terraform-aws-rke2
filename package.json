@@ -1,0 +1,14 @@
+{
+  "name": "terraform-aws-rke2-scripts",
+  "private": true,
+  "description": "Tooling dependencies for linting github-script actions",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0"
+  }
+}
