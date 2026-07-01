@@ -334,7 +334,7 @@ func CreateFixture(t *testing.T, combo map[string]string) (string, string, Fixtu
 	fixtureData.IPFamily = combo["ipFamily"]
 	fixtureData.Owner = "terraform-ci@suse.com"
 	fixtureData.ExampleDirectory = repoRoot + "/test/test_relay"
-	fixtureData.DataDirectory = repoRoot + "/test/tests/data/" + fixtureData.ID
+	fixtureData.DataDirectory = repoRoot + "/test/data/" + fixtureData.ID
 	fixtureData.Region = getRegion()
 	fixtureData.AcmeServer = getAcmeServer()
 	fixtureData.Zone = os.Getenv("ZONE")
@@ -404,7 +404,7 @@ func createTestDirectories(t *testing.T, id string) error {
 	if err != nil {
 		return err
 	}
-	dataDir := "/test/tests/data/"
+	dataDir := "/test/data/"
 	tdd := fwd + dataDir
 	err = os.Mkdir(tdd, 0750)
 	if err != nil && !os.IsExist(err) {

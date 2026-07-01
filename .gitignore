@@ -27,3 +27,4 @@ terraform.lock.hcl
 .terraform.lock.hcl
 .claude
 .terraform.lock.hcl
+node_modules
