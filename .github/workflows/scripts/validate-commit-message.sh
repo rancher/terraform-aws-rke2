@@ -50,7 +50,7 @@ length_check() {
 spell_check() {
   message="$1"
   if grep -e '^Merge ' <<<"$message"; then exit 0; fi
-  WORDS="$(cspell stdin <<<"$message")"
+  WORDS="$(cspell stdin --quiet --words-only <<<"$message")"
   if [ "" != "$WORDS" ]; then
     echo "...Commit message contains spelling errors on: ^$WORDS\$"
     echo "...Also try updating the PR title."
