@@ -13,26 +13,30 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        # https://github.com/actions/checkout/releases
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.7
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        # https://github.com/actions/setup-go/releases
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.2
         with:
           go-version: '1.x'
           check-latest: true
 
       - name: Update Go version and dependencies
+        id: update-deps
         working-directory: test
-        run: ../.github/workflows/scripts/update-go-deps.sh
+        run: ${{ github.workspace }}/.github/workflows/scripts/update-go-deps.sh
 
-      - name: Commit and Push Changes
-        id: git-push
-        run: .github/workflows/scripts/commit-go-deps-changes.sh
-
-      - name: Create Pull Request
-        if: steps.git-push.outputs.has_changes == 'true'
-        uses: actions/github-script@v7
+      - name: Create Verified Pull Request
+        # https://github.com/actions/github-script/releases
+        uses: actions/github-script@a3f4298de272aba5957b47c5e519a2720f342a59 # v7.0.2
         with:
           script: |
-            const { default: script } = await import('${{ github.workspace }}/.github/workflows/scripts/create-pr.js');
-            await script({ github, context });
+            const { default: script } = await import('${{ github.workspace }}/.github/workflows/scripts/create-verified-pr.js');
+            await script({
+              github,
+              context,
+              exec: (await import('@actions/exec')).exec,
+              core: await import('@actions/core')
+            });
