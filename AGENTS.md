@@ -46,3 +46,4 @@ Consult and adhere to these rule files when generating, editing, or reviewing co
 * **GitHub Actions (`.github/workflows/**/*.{yml,yaml}`)** -> `.agent/rules/workflows.instructions.md`
 * **GitHub Scripts (`.github/workflows/scripts/**/*.js`)** -> `.agent/rules/github-script.instructions.md`
 * **Shell Scripts (`**/*.{sh,bash}`)** -> `.agent/rules/shell-scripts.instructions.md`
+* **Markdown (`**/*.md`)** -> `.agent/rules/documentation.instructions.md`
