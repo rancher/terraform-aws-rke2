@@ -1,6 +1,8 @@
+agentic
 authconfig
+indirecting
 kubeconfig
 nutanix
 pathing
+shellcheck
 variablize
-agentic
