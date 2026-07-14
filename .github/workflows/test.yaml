@@ -15,23 +15,39 @@ env:
 permissions: {}
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
+  test:
     permissions:
       id-token: write
+      contents: read
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/rancher/ci-image/nix:20260603-18
+      volumes: # these are mounted only for the purpose of clearing them out so the runner doesn't run out of storage space
+        - /usr/share/dotnet:/host_dotnet
+        - /usr/local/lib/android:/host_android
+        - /opt/ghc:/host_ghc
+        - /opt/hostedtoolcache:/host_toolcache
+        - /usr/local/.ghcup:/host_ghcup
+        - /usr/local/share/boost:/host_boost
+    timeout-minutes: 60
     steps:
-      # https://github.com/aws-actions/configure-aws-credentials/releases
-      - uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6.1.0
+      - name: 'Checkout'
+        # https://github.com/actions/checkout/releases
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: 'Free Disk Space'
+        run: |
+          bash .github/workflows/scripts/free-disk-space.sh
+
+      - name: 'Configure AWS Credentials'
+        # https://github.com/aws-actions/configure-aws-credentials/releases
+        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6.2.0
         with:
           role-to-assume: ${{env.AWS_ROLE}}
           role-session-name: ${{github.run_id}}
           aws-region: ${{env.AWS_REGION}}
           role-duration-seconds: 14400 # 4 hours
-      # https://github.com/actions/checkout/releases
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          token: ${{secrets.GITHUB_TOKEN}}
-          fetch-depth: 0
+
       - name: Run Tests
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
@@ -39,4 +55,4 @@ jobs:
           IDENTIFIER: ${{github.run_id}}
           ZONE: ${{secrets.ZONE}}
         run: |
-          bash .github/workflows/scripts/run-in-nix-container.sh "bash .github/workflows/scripts/execute-tests.sh"
+          bash .github/workflows/scripts/nix-run.sh bash .github/workflows/scripts/execute-tests.sh
