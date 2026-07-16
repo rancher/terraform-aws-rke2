@@ -9,14 +9,14 @@ set -e
 # /usr/local/share/boost:/host_boost
 
 echo "Disk space before cleanup:"
-df -h
+df -ah
 
-sudo rm -rf /host_dotnet
-sudo rm -rf /host_android
-sudo rm -rf /host_ghc
-sudo rm -rf /host_toolcache
-sudo rm -rf /host_ghcup
-sudo rm -rf /host_boost
+sudo rm -rf /host_dotnet/*
+sudo rm -rf /host_android/*
+sudo rm -rf /host_ghc/*
+sudo rm -rf /host_toolcache/*
+sudo rm -rf /host_ghcup/*
+sudo rm -rf /host_boost/*
 
 echo "Disk space after cleanup:"
-df -h
+df -ah
