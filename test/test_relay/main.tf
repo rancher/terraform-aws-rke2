@@ -156,7 +156,7 @@ resource "local_file" "terraform_vars" {
 
 module "access" {
   source                     = "rancher/access/aws"
-  version                    = "v4.0.2"
+  version                    = "4.0.5"
   vpc_name                   = "${local.project_name}-vpc"
   vpc_type                   = "dualstack"
   vpc_public                 = true
