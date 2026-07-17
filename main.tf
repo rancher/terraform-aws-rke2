@@ -285,7 +285,7 @@ resource "random_uuid" "join_token" {
 module "download" {
   count   = local.download_mod
   source  = "rancher/rke2-download/github"
-  version = "v1.0.1"
+  version = "1.0.2"
   release = local.install_rke2_version
   path    = local.local_file_path
 }
