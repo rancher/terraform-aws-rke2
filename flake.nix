@@ -105,6 +105,7 @@
           curl
           dig
           eslint
+          gemini-cli
           gh
           git
           gitleaks
