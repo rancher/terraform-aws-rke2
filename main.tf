@@ -378,7 +378,7 @@ module "default_config" {
     module.server,
   ]
   source  = "rancher/rke2-config/local"
-  version = "v1.0.1"
+  version = "1.0.3"
   tls-san = distinct(compact([
     lower("${local.project_domain}.${local.project_domain_zone}"),
   ]))
