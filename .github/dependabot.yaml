@@ -18,3 +18,43 @@ updates:
       day: "sunday" # this way it is ready for review on Monday
     commit-message:
       prefix: "fix"
+  # Check for updates to terraform in test relay directory
+  - package-ecosystem: "terraform"
+    directory: "/test/test_relay"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+    commit-message:
+      prefix: "fix"
+  # Check for updates to terraform in one example directory
+  - package-ecosystem: "terraform"
+    directory: "/examples/one"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+    commit-message:
+      prefix: "fix"
+  # Check for updates to terraform in HA example directory
+  - package-ecosystem: "terraform"
+    directory: "/examples/ha"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+    commit-message:
+      prefix: "fix"
+  # Check for updates to terraform in Prod example directory
+  - package-ecosystem: "terraform"
+    directory: "/examples/prod"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+    commit-message:
+      prefix: "fix"
+  # Check for updates to terraform in Splitrole example directory
+  - package-ecosystem: "terraform"
+    directory: "/examples/splitrole"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+    commit-message:
+      prefix: "fix"
