@@ -13,7 +13,28 @@ env:
 permissions: {}
 
 jobs:
+  release-please:
+    name: 'Release Please'
+    outputs:
+      pr: ${{ steps.release-please.outputs.pr }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - name: 'Release Please'
+        id: release-please
+        # https://github.com/googleapis/release-please-action/releases
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          release-type: terraform-module
+
   release:
+    name: 'Release'
+    needs: release-please
+    if: needs.release-please.outputs.pr
     permissions:
       contents: write
       pull-requests: write
@@ -31,13 +52,6 @@ jobs:
         - /usr/local/share/boost:/host_boost
     timeout-minutes: 60
     steps:
-      - name: 'Release Please'
-        # https://github.com/googleapis/release-please-action/releases
-        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
-        id: release-please
-        with:
-          release-type: terraform-module
-
       - name: 'Checkout'
         # https://github.com/actions/checkout/releases
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -49,19 +63,17 @@ jobs:
       - name: 'Comment PR e2e wait'
         # https://github.com/actions/github-script/releases
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        if: steps.release-please.outputs.pr
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
             const scriptPath = `${process.env.GITHUB_WORKSPACE}/.github/workflows/scripts/pr-e2e-wait.js`;
             const { default: script } = await import(scriptPath);
-            context.payload.pull_request = { number: ${{ fromJson(steps.release-please.outputs.pr).number }} };
+            context.payload.pull_request = { number: ${{ fromJson(needs.release-please.outputs.pr).number }} };
             await script({ github, context });
 
       - name: 'Configure AWS Credentials'
         # https://github.com/aws-actions/configure-aws-credentials/releases
         uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6.2.0
-        if: steps.release-please.outputs.pr
         with:
           role-to-assume: ${{env.AWS_ROLE}}
           role-session-name: ${{github.run_id}}
@@ -69,7 +81,6 @@ jobs:
           role-duration-seconds: 14400 # 4 hours
 
       - name: Run Tests
-        if: steps.release-please.outputs.pr
         shell: bash
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
@@ -82,11 +93,10 @@ jobs:
       - name: 'Comment PR e2e pass'
         # https://github.com/actions/github-script/releases
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        if: steps.release-please.outputs.pr
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
             const scriptPath = `${process.env.GITHUB_WORKSPACE}/.github/workflows/scripts/pr-e2e-pass.js`;
             const { default: script } = await import(scriptPath);
-            context.payload.pull_request = { number: ${{ fromJson(steps.release-please.outputs.pr).number }} };
+            context.payload.pull_request = { number: ${{ fromJson(needs.release-please.outputs.pr).number }} };
             await script({ github, context });
