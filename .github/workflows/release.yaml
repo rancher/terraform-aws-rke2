@@ -50,7 +50,7 @@ jobs:
         - /opt/hostedtoolcache:/host_toolcache
         - /usr/local/.ghcup:/host_ghcup
         - /usr/local/share/boost:/host_boost
-    timeout-minutes: 60
+    timeout-minutes: 240
     steps:
       - name: 'Checkout'
         # https://github.com/actions/checkout/releases
