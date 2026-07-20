@@ -20,6 +20,7 @@ Adopt the behavior specific to your platform:
 
 All agents MUST plan their work before executing.
 After user refinement, record final plans as markdown files in `.agent/plans/`.
+Read `.agent/rules/plans.instructions.md` for planning instructions.
 * **Executed Date:** Include an "executed date" (or "pending") to build a timeline.
 * **Purpose:** Acts as project requirements (new repos) or provides historical context for future decisions (legacy repos).
 

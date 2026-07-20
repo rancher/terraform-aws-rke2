@@ -50,7 +50,7 @@ jobs:
         - /opt/hostedtoolcache:/host_toolcache
         - /usr/local/.ghcup:/host_ghcup
         - /usr/local/share/boost:/host_boost
-    timeout-minutes: 240
+    timeout-minutes: 480 # 8 hours
     steps:
       - name: 'Checkout'
         # https://github.com/actions/checkout/releases
@@ -63,10 +63,12 @@ jobs:
       - name: 'Comment PR e2e wait'
         # https://github.com/actions/github-script/releases
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          COMMENT_STATUS: wait
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
-            const scriptPath = `${process.env.GITHUB_WORKSPACE}/.github/workflows/scripts/pr-e2e-wait.js`;
+            const scriptPath = `${process.env.GITHUB_WORKSPACE}/.github/workflows/scripts/comment-pr.js`;
             const { default: script } = await import(scriptPath);
             context.payload.pull_request = { number: ${{ fromJson(needs.release-please.outputs.pr).number }} };
             await script({ github, context });
@@ -78,7 +80,7 @@ jobs:
           role-to-assume: ${{env.AWS_ROLE}}
           role-session-name: ${{github.run_id}}
           aws-region: ${{env.AWS_REGION}}
-          role-duration-seconds: 14400 # 4 hours
+          role-duration-seconds: 28800 # 8 hours
 
       - name: Run Tests
         shell: bash
@@ -88,15 +90,17 @@ jobs:
           IDENTIFIER: ${{github.run_id}}
           ZONE: ${{secrets.ZONE}}
         run: |
-          bash .github/workflows/scripts/nix-run.sh bash .github/workflows/scripts/execute-tests.sh
+          bash .github/workflows/scripts/nix-run.sh "bash ./run_tests.sh -s"
 
       - name: 'Comment PR e2e pass'
         # https://github.com/actions/github-script/releases
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          COMMENT_STATUS: pass
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
-            const scriptPath = `${process.env.GITHUB_WORKSPACE}/.github/workflows/scripts/pr-e2e-pass.js`;
+            const scriptPath = `${process.env.GITHUB_WORKSPACE}/.github/workflows/scripts/comment-pr.js`;
             const { default: script } = await import(scriptPath);
             context.payload.pull_request = { number: ${{ fromJson(needs.release-please.outputs.pr).number }} };
             await script({ github, context });

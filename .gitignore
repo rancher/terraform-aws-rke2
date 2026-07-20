@@ -28,6 +28,4 @@ terraform.lock.hcl
 .claude
 .terraform.lock.hcl
 node_modules
-.agent/agent-memory/*.md
-!.agent/agent-memory/README.md
 !terraform.instructions.md
