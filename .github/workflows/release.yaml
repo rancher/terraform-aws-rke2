@@ -50,7 +50,7 @@ jobs:
         - /opt/hostedtoolcache:/host_toolcache
         - /usr/local/.ghcup:/host_ghcup
         - /usr/local/share/boost:/host_boost
-    timeout-minutes: 240
+    timeout-minutes: 480 # 8 hours
     steps:
       - name: 'Checkout'
         # https://github.com/actions/checkout/releases
@@ -80,7 +80,7 @@ jobs:
           role-to-assume: ${{env.AWS_ROLE}}
           role-session-name: ${{github.run_id}}
           aws-region: ${{env.AWS_REGION}}
-          role-duration-seconds: 14400 # 4 hours
+          role-duration-seconds: 28800 # 8 hours
 
       - name: Run Tests
         shell: bash
