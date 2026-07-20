@@ -1,7 +1,7 @@
 # Workflow Standards
 
-**Date Completed:** Pending
-**Purpose:** Update all workflows to have a standard step structure, extract all scripts so they can be linted, use commit hashes for action versioning, and implement least privilege security principle.
+**Executed Date:** pending
+**Purpose:** Update all workflows to have a standard step structure, extract all scripts so they can be linted, use commit hashes for action versioning, implement least privilege security principle, and consolidate workflow/linter scripts to eliminate redundant overhead and files.
 
 ---
 
@@ -33,3 +33,13 @@
       ...
     ```
   Update any workflow steps necessary to meet this guideline.
+
+## CI Script Consolidation and Simplification
+
+To reduce GitHub Actions runner overhead, improve execution speed, and maintain a cleaner codebase, we will:
+- **Consolidate Linters:** Combine `lint-terraform.sh`, `eslint.sh`, `actionlint.sh`, `shellcheck.sh`, and `gitleaks.sh` into a single, unified `lint-all.sh` static analysis script. This allows us to run a single, high-performance static analysis job in `pull_request.yaml` instead of 5 separate container spin-ups.
+- **Eliminate Unused/Redundant Scripts:**
+  - Remove `.github/workflows/scripts/commit-go-deps-changes.sh` (unused, replaced by `create-verified-pr.js`).
+  - Remove `.github/workflows/scripts/create-pr.js` (unused, replaced by `create-verified-pr.js`).
+  - Remove `.github/workflows/scripts/execute-tests.sh` (redundant wrapper; call `run_tests.sh -s` directly instead).
+- **Consolidate Comments:** Combine `.github/workflows/scripts/pr-e2e-wait.js` and `.github/workflows/scripts/pr-e2e-pass.js` into a single versatile `.github/workflows/scripts/comment-pr.js` script that accepts an action type/status (e.g. `'wait'` or `'pass'`) as an environment variable or argument.

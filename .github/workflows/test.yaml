@@ -55,4 +55,4 @@ jobs:
           IDENTIFIER: ${{github.run_id}}
           ZONE: ${{secrets.ZONE}}
         run: |
-          bash .github/workflows/scripts/nix-run.sh bash .github/workflows/scripts/execute-tests.sh
+          bash .github/workflows/scripts/nix-run.sh "bash ./run_tests.sh -s"

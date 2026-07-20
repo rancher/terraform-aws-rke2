@@ -8,40 +8,39 @@
 
   outputs = { self, nixpkgs, flake-utils, ... }:
     flake-utils.lib.eachSystem [ "x86_64-darwin" "aarch64-darwin" "x86_64-linux" ]
-      (system:
-        let
-          pkgs = nixpkgs.legacyPackages.${system};
+      (system: let
+        pkgs = nixpkgs.legacyPackages.${system};
 
-          leftovers-version = {
-            "selected" = "v0.70.0";
+        leftovers-version = {
+          "selected" = "v0.70.0";
+        };
+        leftovers-prep = {
+          "x86_64-darwin" = {
+            "url" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-darwin-amd64";
+            "sha" = "sha256-HV12kHqB14lGDm1rh9nD1n7Jvw0rCnxmjC9gusw7jfo=";
           };
-          leftovers-prep = {
-            "x86_64-darwin" = {
-              "url" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-darwin-amd64";
-              "sha" = "sha256-HV12kHqB14lGDm1rh9nD1n7Jvw0rCnxmjC9gusw7jfo=";
-            };
-            "aarch64-darwin" = {
-              "url" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-darwin-arm64";
-              "sha" = "sha256-Tw7G538RYZrwIauN7kI68u6aKS4d/0Efh+dirL/kzoM=";
-            };
-            "x86_64-linux" = {
-              "url" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-linux-amd64";
-              "sha" = "sha256-D2OPjLlV5xR3f+dVHu0ld6bQajD5Rv9GLCMCk9hXlu8=";
-            };
+          "aarch64-darwin" = {
+            "url" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-darwin-arm64";
+            "sha" = "sha256-Tw7G538RYZrwIauN7kI68u6aKS4d/0Efh+dirL/kzoM=";
           };
-          leftovers = pkgs.stdenv.mkDerivation {
-            name = "leftovers-${leftovers-version.selected}";
-            src = pkgs.fetchurl {
-              url = leftovers-prep."${system}".url;
-              sha256 = leftovers-prep."${system}".sha;
-            };
-            phases = [ "installPhase" ];
-            installPhase = ''
-              mkdir -p $out/bin
-              cp $src $out/bin/leftovers
-              chmod +x $out/bin/leftovers
-            '';
+          "x86_64-linux" = {
+            "url" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-linux-amd64";
+            "sha" = "sha256-D2OPjLlV5xR3f+dVHu0ld6bQajD5Rv9GLCMCk9hXlu8=";
           };
+        };
+        leftovers = pkgs.stdenv.mkDerivation {
+          name = "leftovers-${leftovers-version.selected}";
+          src = pkgs.fetchurl {
+            url = leftovers-prep."${system}".url;
+            sha256 = leftovers-prep."${system}".sha;
+          };
+          phases = [ "installPhase" ];
+          installPhase = ''
+            mkdir -p $out/bin
+            cp $src $out/bin/leftovers
+            chmod +x $out/bin/leftovers
+          '';
+        };
 
         terraform-version = {
           "selected" = "1.5.7";
@@ -90,11 +89,24 @@
           exec /usr/local/bin/code "$@"
         '';
 
+        swVers = pkgs.writeShellScriptBin "sw_vers" ''
+          exec /usr/bin/sw_vers "$@"
+        '';
+
+        claude-code = (import nixpkgs {
+          inherit system;
+          config = {
+            allowUnfree = true;
+          };
+        }).claude-code;
+
         devPackages = [
           # place our downloaded packages here
           leftovers
           terraform
           macVscode
+          swVers
+          claude-code
         ] ++ (with pkgs; [
           # here are the packages from the nix repository
           actionlint
@@ -104,6 +116,8 @@
           cspell
           curl
           dig
+          docker-client
+          docker-compose
           eslint
           gemini-cli
           gh
@@ -130,7 +144,7 @@
           vim
           which
           yq-go
-        ]);
+        ]) ++ (if pkgs.stdenv.isDarwin then [ pkgs.colima ] else []);
 
         devShellPackage = pkgs.symlinkJoin {
           name = "dev-shell-package";
@@ -144,6 +158,8 @@
             buildInputs = [ devShellPackage ];
             shellHook = ''
               export PS1="nix:# ";
+              install -d ~/.docker/cli-plugins/ || true;
+              ln -sfn $(which docker-compose) ~/.docker/cli-plugins/docker-compose || true;
             '';
           };
         }
