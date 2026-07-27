@@ -15,7 +15,7 @@ locals {
   template_path    = abspath("${path.module}/templates")
   rke2_module_path = abspath("${path.root}/../../")
   deploy_path      = abspath("${path.root}/child_modules")
-  data_path        = var.data_path == "" ? var.data_path : abspath("${path.root}/data")
+  data_path        = var.data_path == "" ? "${path.root}/data" : var.data_path
 
   # Project inputs
   identifier       = var.identifier # this is a random unique string that can be used to identify resources in the cloud provider
@@ -171,7 +171,7 @@ check "ubuntu_rpm_compatibility" {
 }
 
 data "http" "myip" {
-  url = "https://ipinfo.io/ip"
+  url = local.ip_family == "ipv6" ? "https://v6.api.ipinfo.io/ip" : "https://ipinfo.io/ip"
 }
 
 data "aws_availability_zones" "available" {
@@ -248,7 +248,7 @@ module "deploy_initial_node" {
     k8s_target_group            = "${local.k8s_target_group}"
     runner_ip                   = "${local.runner_ip}"
     username                    = "${local.username}"
-    ssh_key                     = "${local.ssh_key}"
+    ssh_key                     = "${chomp(local.ssh_key)}"
     ssh_key_name                = "${local.ssh_key_name}"
     workfolder                  = "${local.workfolder}"
     install_method              = "${local.install_method}"
@@ -301,7 +301,7 @@ module "deploy_other_nodes" {
     k8s_target_group            = "${local.k8s_target_group}"
     runner_ip                   = "${local.runner_ip}"
     username                    = "${local.username}"
-    ssh_key                     = "${local.ssh_key}"
+    ssh_key                     = "${chomp(local.ssh_key)}"
     ssh_key_name                = "${local.ssh_key_name}"
     workfolder                  = "${local.workfolder}"
     install_method              = "${local.install_method}"

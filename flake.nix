@@ -144,7 +144,7 @@
           vim
           which
           yq-go
-        ]) ++ (if pkgs.stdenv.isDarwin then [ pkgs.colima ] else []);
+        ]) ++ (if pkgs.stdenv.isDarwin then [ pkgs.colima ] else [ ]);
 
         devShellPackage = pkgs.symlinkJoin {
           name = "dev-shell-package";

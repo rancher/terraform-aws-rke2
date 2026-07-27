@@ -3,6 +3,9 @@ DIR=$(pwd)
 
 CREATE_AFTER_PERSIST=$1
 
+# Prevent high Go runtime CPU context swapping during concurrent Terraform runs
+export GOMAXPROCS=2
+
 # Add ~/bin to PATH for age and aws
 export PATH="$HOME/bin:$PATH"
 
@@ -22,8 +25,10 @@ if [ -n "$AGE_KEY_PATH" ] && [ -n "$SECRETS_PATH" ] && [ -f "$AGE_KEY_PATH" ] &&
     echo "Failed to decrypt secrets"
     exit 1
   fi
+elif [ -n "$AWS_ACCESS_KEY_ID" ] || [ -n "$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI" ] || [ -n "$AWS_ROLE" ] || [ -n "$AWS_PROFILE" ]; then
+  echo "Active AWS credentials found in environment. Skipping decryption."
 else
-  echo "No secrets to decrypt"
+  echo "No secrets to decrypt and no active AWS credentials found in environment"
   exit 1
 fi
 
@@ -65,20 +70,21 @@ TF_CLI_ARGS_apply=""
 MAX=${attempts}
 EXITCODE=1
 ATTEMPTS=0
-E=1
-E1=0
 while [ $EXITCODE -gt 0 ] && [ $ATTEMPTS -lt "$MAX" ]; do
+  E=1
+  E1=0
   A=0
   while [ $E -gt 0 ] && [ $A -lt "$MAX" ]; do
     # shellcheck disable=SC2154
-    timeout -k 1m "${timeout}" terraform apply -var-file="inputs.tfvars" -no-color -auto-approve -state="tfstate"
-    E=$?
+    timeout -k 1m "${timeout}" terraform apply -var-file="inputs.tfvars" -no-color -auto-approve -state="tfstate"; E=$?
+    echo "terraform apply exit code: $E"
     if [ $E -eq 124 ]; then echo "Apply timed out after ${timeout}"; fi
     A=$((A+1))
   done
   # don't destroy if the last attempt fails
   if [ $E -gt 0 ] && [ $ATTEMPTS != $((MAX-1)) ]; then
     A1=0
+    E1=1
     while [ $E1 -gt 0 ] && [ $A1 -lt "$MAX" ]; do
       timeout -k 1m "${timeout}" terraform destroy -var-file="inputs.tfvars" -no-color -auto-approve -state="tfstate"
       E1=$?
@@ -118,6 +124,9 @@ fi
 if [ $SECRETS_DECRYPTED -eq 1 ] && [ -f "$DECRYPTED_SECRETS" ]; then
   rm -f "$DECRYPTED_SECRETS"
 fi
+ls -lh "${deploy_path}/outputs.json"
+jq "${deploy_path}/outputs.json"
+jq "${deploy_path}/tfstate"
 
 cd "$DIR" || exit
 exit $EXITCODE

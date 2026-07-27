@@ -23,6 +23,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/ssh"
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	"github.com/stretchr/testify/require"
+	gossh "golang.org/x/crypto/ssh"
 	"golang.org/x/oauth2"
 )
 
@@ -58,6 +59,14 @@ func GenerateOptions(t *testing.T, d *FixtureData) *terraform.Options {
 // Teardown is a helper function to destroy terraform resources.
 func Teardown(t *testing.T, f *FixtureData) {
 	t.Log("Tearing down...")
+	if os.Getenv("DIRTY_MODE") == "true" {
+		t.Log("[DIRTY MODE] Skipping Teardown to preserve infrastructure")
+		return
+	}
+	if os.Getenv("DRY_RUN") == "true" || (os.Getenv("HALF_DRY") == "true" && !strings.HasSuffix(f.ExampleDirectory, "test_relay")) {
+		t.Log("[DRY RUN / HALF DRY] Skipping Teardown / Terraform destroy")
+		return
+	}
 	if f.TfOptions != nil {
 		_, err := terraform.InitContextE(t, t.Context(), f.TfOptions)
 		if err != nil {
@@ -333,7 +342,6 @@ func CreateFixture(t *testing.T, combo map[string]string) (string, string, Fixtu
 	fixtureData.Cni = combo["cni"]
 	fixtureData.IPFamily = combo["ipFamily"]
 	fixtureData.Owner = "terraform-ci@suse.com"
-	fixtureData.ExampleDirectory = repoRoot + "/test/test_relay"
 	fixtureData.DataDirectory = repoRoot + "/test/data/" + fixtureData.ID
 	fixtureData.Region = getRegion()
 	fixtureData.AcmeServer = getAcmeServer()
@@ -344,9 +352,110 @@ func CreateFixture(t *testing.T, combo map[string]string) (string, string, Fixtu
 		return "", "", fixtureData, err
 	}
 
+	repoZip := os.Getenv("TEST_REPO_ZIP")
+	insideRelay := os.Getenv("INSIDE_RELAY") == "true"
+
+	if repoZip != "" && !insideRelay {
+		// ----------------------------------------------------
+		// LOCAL ORCHESTRATOR MODE (SSH test runner)
+		// ----------------------------------------------------
+		fixtureData.ExampleDirectory = repoRoot + "/test/test_relay"
+
+		latest, stable, old, err := GetRke2Releases(t)
+		if err != nil {
+			return "", "", fixtureData, err
+		}
+		comboName := getComboName(&fixtureData, latest, stable, old)
+
+		if os.Getenv("DRY_RUN") == "true" {
+			t.Logf("[DRY RUN] Skipping test_relay deployment and remote SSH execution for combo %s", comboName)
+			return "skip_kubeconfig", "skip_api", fixtureData, nil
+		}
+
+		// Deploy test_relay
+		_, _, err = create(t, &fixtureData)
+		if err != nil {
+			t.Errorf("Error creating test relay: %v", err)
+			return "", "", fixtureData, err
+		}
+
+		runnerIP, err := terraform.OutputContextE(t, t.Context(), fixtureData.TfOptions, "runner_ip")
+		if err != nil {
+			return "", "", fixtureData, err
+		}
+		username, err := terraform.OutputContextE(t, t.Context(), fixtureData.TfOptions, "username")
+		if err != nil {
+			return "", "", fixtureData, err
+		}
+
+		host := ssh.Host{
+			Hostname:    runnerIP,
+			SshUserName: username,
+			SshKeyPair:  fixtureData.SSHKeyPair.KeyPair,
+		}
+
+		t.Logf("Executing remote test for %s on runner %s...", comboName, runnerIP)
+
+		// Step 1: Decrypt secrets on the host
+		decryptCommand := fmt.Sprintf(
+			"age -d -i /home/%s/age_key /home/%s/secrets.rc.age > /home/%s/workspace/secrets.rc",
+			username, username, username,
+		)
+		t.Logf("[STEP 1] Decrypting environment secrets on host...")
+		_, err = ssh.CheckSSHCommandContextE(t, t.Context(), &host, decryptCommand)
+		if err != nil {
+			t.Errorf("Remote secrets decryption failed: %v", err)
+			return "", "", fixtureData, err
+		}
+
+		// Step 2: Run containerized tests (utilizing host networking for native DNS and zero virtualization overhead)
+		testCommand := fmt.Sprintf("bash ./run_tests.sh -f %s --inside-relay --identifier %s -n 5", comboName, fixtureData.ID)
+		if os.Getenv("HALF_DRY") == "true" {
+			testCommand += " --dry-run"
+		}
+
+		dockerCommand := fmt.Sprintf(
+			"sudo docker run --rm "+
+				"--network host "+
+				"-v /home/%s/workspace:/workspace "+
+				"-v /var/run/docker.sock:/var/run/docker.sock "+
+				"-w /workspace "+
+				"ghcr.io/rancher/ci-image/nix:20260603-18 "+
+				"bash .github/workflows/scripts/nix-run.sh \"%s\"",
+			username, testCommand,
+		)
+		t.Logf("[STEP 2] Launching Nix containerized test execution: %s", testCommand)
+		_, err = runSSHCommandStream(t, &host, dockerCommand)
+
+		// Step 3: Securely cleanup secrets.rc file (always executed)
+		t.Logf("[STEP 3] Cleaning up temporary secrets...")
+		cleanupCommand := fmt.Sprintf("rm -f /home/%s/workspace/secrets.rc", username)
+		_, _ = ssh.CheckSSHCommandContextE(t, t.Context(), &host, cleanupCommand)
+
+		if err != nil {
+			t.Errorf("Remote test execution failed for combination %s: %v", comboName, err)
+			return "", "", fixtureData, err
+		}
+
+		t.Logf("✓ Remote test execution succeeded for combination %s!", comboName)
+		// Return "skip" values so the local orchestrator knows it was successful and skips checkReady locally
+		return "skip_kubeconfig", "skip_api", fixtureData, nil
+	}
+
+	// ----------------------------------------------------
+	// REMOTE TEST MODE / DIRECT DEPLOYMENT
+	// ----------------------------------------------------
+	fixtureData.ExampleDirectory = repoRoot + "/examples/" + fixtureData.Name
+
+	if os.Getenv("DRY_RUN") == "true" || os.Getenv("HALF_DRY") == "true" {
+		t.Logf("[DRY RUN / HALF DRY] Skipping direct deployment for fixture %s", fixtureData.Name)
+		return "dry_run_kubeconfig", "dry_run_api", fixtureData, nil
+	}
+
 	kubeconfig, api, err := create(t, &fixtureData)
 	if err != nil {
 		t.Errorf("Error creating fixture: %v", err)
+		return "", "", fixtureData, err
 	}
 	if kubeconfig == "{}" {
 		t.Log("Kubeconfig not found")
@@ -426,4 +535,82 @@ func createTestDirectories(t *testing.T, id string) error {
 		return err
 	}
 	return nil
+}
+
+func getComboName(d *FixtureData, latest, stable, old string) string {
+	release := d.Release
+	switch release {
+	case latest:
+		release = "latest"
+	case stable:
+		release = "stable"
+	case old:
+		release = "old"
+	}
+	parts := []string{
+		d.OperatingSystem,
+		d.Cni,
+		release,
+		d.Name,
+		d.InstallType,
+		d.IPFamily,
+	}
+	return strings.Join(parts, "-")
+}
+
+func runSSHCommandStream(t *testing.T, host *ssh.Host, command string) (string, error) {
+	// Parse the private key to create an SSH Signer
+	signer, err := gossh.ParsePrivateKey([]byte(host.SshKeyPair.PrivateKey))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse private key: %w", err)
+	}
+
+	// Configure the standard SSH Client
+	config := &gossh.ClientConfig{
+		User: host.SshUserName,
+		Auth: []gossh.AuthMethod{
+			gossh.PublicKeys(signer),
+		},
+		// #nosec G106
+		HostKeyCallback: gossh.InsecureIgnoreHostKey(),
+		Timeout:         30 * time.Second,
+	}
+
+	// Connect to the remote host
+	address := fmt.Sprintf("%s:%d", host.Hostname, host.GetPort())
+	client, err := gossh.Dial("tcp", address, config)
+	if err != nil {
+		return "", fmt.Errorf("failed to dial SSH: %w", err)
+	}
+	defer func() {
+		_ = client.Close()
+	}()
+
+	// Create an SSH Session
+	session, err := client.NewSession()
+	if err != nil {
+		return "", fmt.Errorf("failed to create SSH session: %w", err)
+	}
+	defer func() {
+		_ = session.Close()
+	}()
+
+	// Redirect Stdout and Stderr to stream in real-time
+	writer := &terratestLogWriter{t: t}
+	session.Stdout = writer
+	session.Stderr = writer
+
+	t.Logf("Running remote command with live streaming: %s", command)
+	err = session.Run(command)
+	return "", err
+}
+
+type terratestLogWriter struct {
+	t *testing.T
+}
+
+func (w *terratestLogWriter) Write(p []byte) (n int, err error) {
+	// Write to os.Stdout so it shows up live in the terminal
+	_, _ = os.Stdout.Write(p)
+	return len(p), nil
 }

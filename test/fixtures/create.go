@@ -2,6 +2,7 @@ package fixtures
 
 import (
 	"encoding/json"
+	"os"
 	"testing"
 
 	aws "github.com/gruntwork-io/terratest/modules/aws"
@@ -33,6 +34,11 @@ type FixtureData struct {
 }
 
 func create(t *testing.T, d *FixtureData) (string, string, error) {
+	if os.Getenv("DRY_RUN") == "true" {
+		t.Logf("[DRY RUN] Skipping create lifecycle for fixture %s", d.Name)
+		return "dry_run_kubeconfig", "dry_run_api", nil
+	}
+
 	var err error
 	terraformOptions := GenerateOptions(t, d)
 	if d.Name == "" {
@@ -49,18 +55,25 @@ func create(t *testing.T, d *FixtureData) (string, string, error) {
 
 	testDataDir := d.DataDirectory + "/test"
 
-	terraformOptions.Vars = map[string]any{
-		"rke2_version":   d.Release,
-		"os":             d.OperatingSystem,
-		"zone":           d.Zone,
-		"key_name":       d.SSHKeyPair.Name,
-		"key":            d.SSHKeyPair.PublicKey,
-		"identifier":     d.ID,
-		"install_method": d.InstallType,
-		"cni":            d.Cni,
-		"ip_family":      d.IPFamily,
-		"fixture":        d.Name,
+	vars := map[string]any{
+		"key_name":   d.SSHKeyPair.Name,
+		"key":        d.SSHKeyPair.PublicKey,
+		"identifier": d.ID,
 	}
+
+	repoZip := os.Getenv("TEST_REPO_ZIP")
+	if repoZip != "" {
+		vars["repo_archive_path"] = repoZip
+	} else {
+		vars["rke2_version"] = d.Release
+		vars["os"] = d.OperatingSystem
+		vars["zone"] = d.Zone
+		vars["install_method"] = d.InstallType
+		vars["cni"] = d.Cni
+		vars["ip_family"] = d.IPFamily
+	}
+
+	terraformOptions.Vars = vars
 
 	terraformOptions.EnvVars = map[string]string{
 		"AWS_DEFAULT_REGION":  d.Region,
@@ -80,6 +93,10 @@ func create(t *testing.T, d *FixtureData) (string, string, error) {
 	if err != nil {
 		t.Errorf("Error creating cluster: %s", err)
 		return "", "", err
+	}
+
+	if repoZip != "" {
+		return "", "", nil
 	}
 
 	output := terraform.OutputJSONContext(t, t.Context(), terraformOptions, "")

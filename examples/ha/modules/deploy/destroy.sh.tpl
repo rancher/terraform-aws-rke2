@@ -1,6 +1,9 @@
 #!/usr/bin/env sh
 DIR=$(pwd)
 
+# Prevent high Go runtime CPU context swapping during concurrent Terraform runs
+export GOMAXPROCS=2
+
 # Add ~/bin to PATH for age and aws
 export PATH="$${HOME}/bin:$PATH"
 
@@ -20,8 +23,10 @@ if [ -n "$AGE_KEY_PATH" ] && [ -n "$SECRETS_PATH" ] && [ -f "$AGE_KEY_PATH" ] &&
     echo "Failed to decrypt secrets"
     exit 1
   fi
+elif [ -n "$AWS_ACCESS_KEY_ID" ] || [ -n "$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI" ] || [ -n "$AWS_ROLE" ] || [ -n "$AWS_PROFILE" ]; then
+  echo "Active AWS credentials found in environment. Skipping decryption."
 else
-  echo "No secrets to decrypt"
+  echo "No secrets to decrypt and no active AWS credentials found in environment"
   exit 1
 fi
 
