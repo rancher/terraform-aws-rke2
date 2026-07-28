@@ -99,7 +99,7 @@ check "ubuntu_rpm_compatibility" {
 }
 
 data "http" "myip" {
-  url = "https://ipinfo.io/ip"
+  url = local.ip_family == "ipv6" ? "https://v6.api.ipinfo.io/ip" : "https://ipinfo.io/ip"
 }
 
 resource "random_pet" "server" {

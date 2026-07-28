@@ -1,11 +1,9 @@
-output "kubeconfig" {
-  value       = local_file.kubeconfig.content
-  description = "Kubernetes config file contents for the cluster."
-  sensitive   = true
+output "runner_ip" {
+  value       = module.runner.server.public_ip
+  description = "The public IP address of the test relay runner."
 }
 
-output "api" {
-  value       = "https://${module.runner.server.public_ip}:6443"
-  description = "API endpoint for the cluster."
-  sensitive   = true
+output "username" {
+  value       = local.username
+  description = "The SSH username for connecting to the test relay runner."
 }

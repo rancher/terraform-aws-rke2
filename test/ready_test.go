@@ -135,6 +135,12 @@ func TestMatrix(t *testing.T) {
 				t.Logf("Error creating cluster: %s", err)
 				t.Fail()
 				fit.Teardown(t, &d)
+				return
+			}
+			if kubeconfigPath == "skip_kubeconfig" {
+				t.Log("Remote test executed successfully. Skipping local checks.")
+				fit.Teardown(t, &d)
+				return
 			}
 			t.Logf("Fixture %s created, checking...", k)
 			assert.NotEmpty(t, kubeconfigPath)
@@ -154,6 +160,10 @@ func TestMatrix(t *testing.T) {
 }
 
 func checkReady(t *testing.T, kubeconfigPath string, api string) {
+	if os.Getenv("DRY_RUN") == "true" || os.Getenv("HALF_DRY") == "true" {
+		t.Log("[DRY RUN / HALF DRY] Skipping checkReady validation")
+		return
+	}
 	script, err2 := os.ReadFile("./scripts/readyNodes.sh")
 	if err2 != nil {
 		require.NoError(t, err2)

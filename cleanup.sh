@@ -166,7 +166,7 @@ clear_s3_buckets() {
   log_success "S3 clearance completed for Id: ${id}"
 }
 
-# 4. Clear EC2 key pairs
+# 4a. Clear EC2 key pairs by Id tag
 clear_key_pairs() {
   local id="$1"
   log_info "Clearing EC2 key pairs for Id ${id}..."
@@ -180,6 +180,49 @@ clear_key_pairs() {
       --tag-filters "Key=Id,Values=${id}" \
       | jq -r '.ResourceTagMappingList[]?.ResourceARN' 2>/dev/null || true)
 
+    local has_keys=false
+    while read -r arn; do
+      if [[ -z "$arn" ]]; then
+        continue
+      fi
+      has_keys=true
+      local key_id="${arn##*/}"
+      log_info "Removing EC2 key pair: ${key_id}..."
+      if ! aws ec2 delete-key-pair --key-pair-id "${key_id}" >/dev/null 2>&1; then
+        log_warning "Failed to delete key pair: ${key_id}"
+      fi
+    done <<< "${key_arns}"
+
+    if [[ "$has_keys" = false ]]; then
+      break
+    fi
+
+    local delay=$((attempts * 10))
+    sleep "${delay}"
+    attempts=$((attempts + 1))
+  done
+  log_success "EC2 key pairs clearance completed for Id: ${id}"
+}
+
+# 4b. Clear EC2 key pairs by fuzzy Name tag (for older resources)
+clear_key_pairs_name() {
+  local id="$1"
+  local owner="terraform-ci@suse.com"
+  log_info "Clearing EC2 key pairs by Name tag for Id ${id}..."
+
+  local attempts=0
+  while [[ $attempts -lt $MAX_ATTEMPTS ]]; do
+    local key_arns
+
+    # query needs to have both Owner and Name tag filters
+    # shellcheck disable=SC2027,SC2086
+    key_arns=$(aws resourcegroupstaggingapi get-resources \
+      --no-cli-pager \
+      --resource-type-filters "ec2:key-pair" \
+      --query "ResourceTagMappingList[?Tags[?Key=='Owner' && contains(Value, '"${owner}"')] && Tags[?Key=='Name' && contains(Value, '"${id}"')]]" \
+      | jq -r .[].ResourceARN 2>/dev/null || true)
+    # one line for quick cli verification: 
+    #  id="" owner="" aws resourcegroupstaggingapi get-resources --no-cli-pager --resource-type-filters "ec2:key-pair" --query "ResourceTagMappingList[?Tags[?Key=='Owner' && contains(Value, '"${owner}"')] && Tags[?Key=='Name' && contains(Value, '"${id}"')]]" | jq -r .[].ResourceARN 2>/dev/null || true
     local has_keys=false
     while read -r arn; do
       if [[ -z "$arn" ]]; then
@@ -279,6 +322,55 @@ clear_target_groups() {
   log_success "ELB target groups clearance completed for Id: ${id}"
 }
 
+# 7. Remove route 53 records
+clear_route53_records() {
+  local id="$1"
+  log_info "Clearing Route 53 records for Id ${id}..."
+
+  local attempts=0
+  while [[ $attempts -lt $MAX_ATTEMPTS ]]; do
+    local hosted_zones
+    hosted_zones=$(aws route53 list-hosted-zones | jq -r '.HostedZones[]?.Id' || true)
+
+    local has_records=false
+    while read -r hz; do
+      if [[ -z "$hz" ]]; then
+        continue
+      fi
+
+      local records
+      records=$(aws route53 list-resource-record-sets --hosted-zone-id "$hz" | jq -c --arg ID "$id" '.ResourceRecordSets[]? | select(.Name | contains($ID))' || true)
+
+      while read -r record; do
+        if [[ -z "$record" ]]; then
+          continue
+        fi
+        has_records=true
+        local record_name
+        record_name=$(echo "$record" | jq -r '.Name')
+        local record_type
+        record_type=$(echo "$record" | jq -r '.Type')
+        log_info "Removing Route 53 record $record_name of type $record_type from zone $hz..."
+        local change_batch
+        change_batch=$(jq -n --argjson rec "$record" '{"Changes": [{"Action": "DELETE", "ResourceRecordSet": $rec}]}')
+        if ! aws route53 change-resource-record-sets --hosted-zone-id "$hz" --change-batch "$change_batch" >/dev/null 2>&1; then
+          log_warning "Failed to delete Route 53 record: $record_name of type $record_type from zone $hz"
+        fi
+      done <<< "${records}"
+    done <<< "${hosted_zones}"
+
+    if [[ "$has_records" = false ]]; then
+      break
+    fi
+
+    local delay=$((attempts * 10))
+    sleep "${delay}"
+    attempts=$((attempts + 1))
+  done
+  log_success "Route 53 records clearance completed for Id: ${id}"
+}
+
+
 # Orchestrate clearance of all categories for a specific ID
 cleanup_resources() {
   local id="$1"
@@ -344,7 +436,15 @@ find_ci_resource_ids() {
   printf "%s\n%s\n" "${resource_ids}" "${cert_ids}" | sort | uniq | grep -v '^$'
 }
 
+clean_cleanup() {
+  echo "cleanup complete"
+  exit 0
+}
+
 main() {
+  # Set trap to run cleanup on exit, error, interrupt, or termination
+  trap clean_cleanup EXIT ERR INT TERM
+
   local target_id="${1:-}"
 
   if [[ -z "${target_id}" ]]; then

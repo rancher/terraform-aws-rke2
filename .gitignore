@@ -20,7 +20,7 @@ examples/*/51-*
 examples/**/51-*
 *.lock
 *.DS_*
-test/tests/data/*
+test/data/*
 examples/*/data/*
 test/test_relay/data/*
 terraform.lock.hcl
@@ -29,3 +29,5 @@ terraform.lock.hcl
 .terraform.lock.hcl
 node_modules
 !terraform.instructions.md
+*.zip
+*.test

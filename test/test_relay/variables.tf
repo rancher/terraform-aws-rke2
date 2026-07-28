@@ -1,52 +1,29 @@
 variable "identifier" {
-  type = string
-}
-variable "key" {
-  type = string
-}
-variable "key_name" {
-  type = string
-}
-variable "fixture" {
   type        = string
-  description = <<-EOT
-    Directory name of the example we are testing, like 'ha', 'one', or 'splitrole'.
-    This should be a directory name in the 'examples' directory.
-  EOT
+  description = "A random alphanumeric string that is unique and less than 10 characters."
+}
+
+variable "key" {
+  type        = string
+  description = "The content of a public ssh key for server access."
+}
+
+variable "key_name" {
+  type        = string
+  description = "The name of an ssh key that already exists in AWS or that you want to create."
+}
+
+variable "relay_os" {
+  type        = string
+  description = "The OS image to use for the test relay runner. Must be a SLES or Ubuntu based image (e.g. sles-16, ubuntu-24)."
+  default     = "ubuntu-24"
   validation {
-    condition = (
-      contains(["one", "ha", "prod", "splitrole"], var.fixture)
-    )
-    error_message = "This must be one of 'one', 'ha', 'prod', or 'splitrole'."
+    condition     = can(regex("^(sles-|ubuntu-)", var.relay_os))
+    error_message = "The relay_os must be a SLES or Ubuntu operating system (e.g. sles-15, sles-16, ubuntu-22, ubuntu-24)."
   }
 }
 
-# from fixtures:
-variable "zone" {
+variable "repo_archive_path" {
   type        = string
-  description = "The dns zone to add domains under, must already exist in AWS Route53."
-}
-variable "rke2_version" {
-  type        = string
-  description = "The rke2 version to install."
-}
-variable "os" {
-  type        = string
-  description = "The operating system to deploy."
-  default     = "sle-micro-55"
-}
-variable "install_method" {
-  type        = string
-  description = "The method used to install RKE2 on the nodes. Must be either 'tar' or 'rpm'."
-  default     = "tar"
-}
-variable "cni" {
-  type        = string
-  description = "Which CNI configuration file to add."
-  default     = "canal"
-}
-variable "ip_family" {
-  type        = string
-  description = "The IP family to use. Must be 'ipv4', 'ipv6', or 'dualstack'."
-  default     = "ipv4"
+  description = "The path to the packaged repository tar.gz archive on the local machine."
 }

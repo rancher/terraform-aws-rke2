@@ -1,5 +1,6 @@
 .PHONY: lint test build cleanup check-nix build-nix
 
+SHELL := /bin/bash
 NIX_FLAGS := --extra-experimental-features nix-command --extra-experimental-features flakes
 NIX_KEEPS := --keep HOME --keep SSH_AUTH_SOCK --keep GITHUB_TOKEN --keep WORKSPACE \
 	--keep AWS_ROLE --keep AWS_REGION --keep AWS_DEFAULT_REGION \

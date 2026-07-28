@@ -121,6 +121,11 @@ run_nix_command() {
     return 1
   fi
 
+  # Pre-configure Git to trust all directories globally for both root and suse users to prevent Nix/Git ownership crashes (exit 128)
+  log_info "Pre-configuring Git safe directories..."
+  git config --global --add safe.directory '*' 2>/dev/null || true
+  sudo -E -u suse git config --global --add safe.directory '*' 2>/dev/null || true
+
   log_info "Preparing temporary Nix runner script..."
   {
     printf "%s\n" "#!/usr/bin/env bash"
@@ -143,6 +148,7 @@ run_nix_command() {
     --keep SSL_CERT_FILE \
     --keep CURL_CA_BUNDLE \
     --keep NIX_ENV_LOADED \
+    --keep INSIDE_RELAY \
     --keep TERM \
     --keep HOME \
     --keep SSH_AUTH_SOCK \
