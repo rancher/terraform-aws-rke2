@@ -43,6 +43,11 @@ EOF
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -f|--file)
+      if [[ $# -lt 2 ]]; then
+        echo "Error: Option $1 requires an argument." >&2
+        show_help >&2
+        exit 1
+      fi
       LOG_FILE="$2"
       shift 2
       ;;
@@ -69,6 +74,13 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+# Validate mutual exclusion
+if [ "$FAILED_ONLY" = true ] && [ "$PASSED_ONLY" = true ]; then
+  echo "Error: --failed-only and --passed-only options are mutually exclusive." >&2
+  show_help >&2
+  exit 1
+fi
 
 # Initialize color settings
 if [ "$NO_COLOR_OPTION" = true ] || [ -n "${NO_COLOR:-}" ]; then
