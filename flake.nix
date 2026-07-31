@@ -7,7 +7,7 @@
   };
 
   outputs = { self, nixpkgs, flake-utils, ... }:
-    flake-utils.lib.eachSystem [ "x86_64-darwin" "aarch64-darwin" "x86_64-linux" ]
+    flake-utils.lib.eachSystem [ "aarch64-darwin" "x86_64-linux" "aarch64-linux" ]
       (system: let
         pkgs = nixpkgs.legacyPackages.${system};
 
@@ -15,10 +15,6 @@
           "selected" = "v0.70.0";
         };
         leftovers-prep = {
-          "x86_64-darwin" = {
-            "url" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-darwin-amd64";
-            "sha" = "sha256-HV12kHqB14lGDm1rh9nD1n7Jvw0rCnxmjC9gusw7jfo=";
-          };
           "aarch64-darwin" = {
             "url" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-darwin-arm64";
             "sha" = "sha256-Tw7G538RYZrwIauN7kI68u6aKS4d/0Efh+dirL/kzoM=";
@@ -26,6 +22,11 @@
           "x86_64-linux" = {
             "url" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-linux-amd64";
             "sha" = "sha256-D2OPjLlV5xR3f+dVHu0ld6bQajD5Rv9GLCMCk9hXlu8=";
+          };
+          # linux container running on darwin, actual arm linux isnt in the artifacts
+          "aarch64-linux" = {
+            "url" = "https://github.com/genevieve/leftovers/releases/download/${leftovers-version.selected}/leftovers-${leftovers-version.selected}-darwin-arm64";
+            "sha" = "sha256-Tw7G538RYZrwIauN7kI68u6aKS4d/0Efh+dirL/kzoM=";
           };
         };
         leftovers = pkgs.stdenv.mkDerivation {
@@ -46,11 +47,6 @@
           "selected" = "1.5.7";
         };
         terraform-prep = {
-          "x86_64-darwin" = {
-            "url" = "https://releases.hashicorp.com/terraform/${terraform-version.selected}/terraform_${terraform-version.selected}_darwin_amd64.zip";
-            "sha" = "sha256-R2t/sP+f403E7WlO8oO2zI/gSnb9Q4V3yV78R4oD+rI="; # You may need to update this sha if using an intel mac
-            "checksum" = "d142d10c01a2380a0de24ea64214f7620eb5e8d98dffde6414902c2e646d6fc3";
-          };
           "aarch64-darwin" = {
             "url" = "https://releases.hashicorp.com/terraform/${terraform-version.selected}/terraform_${terraform-version.selected}_darwin_arm64.zip";
             "sha" = "sha256-23wz6xpEa3OkQ+LFW1MoRfe3DNVhAL7EyW8Vz6tfUMs=";
@@ -93,26 +89,31 @@
           exec /usr/bin/sw_vers "$@"
         '';
 
-        claude-code = (import nixpkgs {
+        unfreePkgs = import nixpkgs {
           inherit system;
           config = {
             allowUnfree = true;
           };
-        }).claude-code;
+        };
+
+        claude-code = unfreePkgs.claude-code;
+        github-copilot-cli = unfreePkgs.github-copilot-cli;
 
         devPackages = [
-          # place our downloaded packages here
+          # downloaded packages here
           leftovers
           terraform
-          macVscode
-          swVers
+        ] ++ ([
+          # unfree packages from the nix repository
           claude-code
-        ] ++ (with pkgs; [
-          # here are the packages from the nix repository
+          github-copilot-cli
+        ]) ++ (with pkgs; [
+          # free packages from the nix repository
           actionlint
           age
           awscli2
           bashInteractive
+          claude-code
           cspell
           curl
           dig
@@ -126,30 +127,47 @@
           gnupg
           go
           golangci-lint
+          google-cloud-sdk
           goreleaser
           gotestfmt
           gotestsum
           jq
           kubectl
+          kubernetes-helm
           less
           nodejs_26
           openssh
           openssl
+          ripgrep
           shellcheck
           tflint
           tfsec
           time
+          tree
           trivy
           updatecli
           vim
           which
+          xz
           yq-go
-        ]) ++ (if pkgs.stdenv.isDarwin then [ pkgs.colima ] else [ ]);
+        ]) ++ ( if pkgs.stdenv.isDarwin then [
+          # mac only packages
+          macVscode
+          swVers
+          pkgs.colima
+        ] else []);
 
         devShellPackage = pkgs.symlinkJoin {
           name = "dev-shell-package";
-          paths = devPackages;
-          };
+
+          # buildEnv properly handles combining all outputs (like bin, out, etc.)
+          paths = [
+            (pkgs.buildEnv {
+              name = "dev-shell-env";
+              paths = devPackages;
+            })
+          ];
+        };
         in
         {
           packages.default = devShellPackage;
