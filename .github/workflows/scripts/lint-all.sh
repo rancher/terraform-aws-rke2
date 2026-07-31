@@ -42,7 +42,7 @@ while read -r file; do
       failed_shellcheck=true
     fi
   fi
-done <<<"$(grep -Rl -e '^#!' | grep -v '.terraform' | grep -v '.git')"
+done <<<"$(grep -Rl -e '^#!' | grep -v '.terraform' | grep -v '.git' | grep -v -e '\.js$' -e '\.md$')"
 
 if [ "$failed_shellcheck" = true ]; then
   echo "❌ Shellcheck failed"
