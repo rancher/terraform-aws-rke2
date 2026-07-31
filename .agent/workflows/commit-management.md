@@ -59,11 +59,11 @@ To allow the developer to review the current layer's modifications in complete, 
 Present a concise summary to the user outlining the unstaged files, requesting them to perform an IDE review, and proposing a draft commit message matching the repository's convention. Apply any refinements or stylistic edits they make directly inside their IDE.
 
 #### Step 4: Stage, Commit, and Push
-Once the developer manually inspects the IDE and provides an explicit directive to commit, stage the files, run the commit, and push the branch to the developer's origin fork:
+Once the developer manually inspects the IDE and provides an explicit directive to commit, stage the files, run the commit, and push the branch to the developer's origin fork, prefixing `git commit` and `git push` with `APPROVED_BY_USER=1` to satisfy the tool-level safety hook:
 ```bash
 git add <file1> <file2> ...
-git commit -m "fix: commit message description"
-git push origin <new-feature-branch>
+APPROVED_BY_USER=1 git commit -m "fix: commit message description"
+APPROVED_BY_USER=1 git push origin <new-feature-branch>
 ```
 
 #### Step 5: Create a Draft PR

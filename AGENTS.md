@@ -23,7 +23,11 @@ Adopt the behavior specific to your platform:
 ## 3. Planning Protocol & Workflow Execution
 
 All agents MUST plan their work before executing.
-After user refinement, record final plans as markdown files in `.agent/plans/`.
+Every plan MUST be documented as a single, unified markdown file in `.agent/plans/<PlanName>.md`.
+* **Combined Structure:** The plan must consist of:
+  * A **Top Half** describing the Executed Date, Purpose, Goals, and Code Snippets/Architecture.
+  * A **Bottom Half** containing a sequential, step-by-step `## Implementation Checklist`.
+* **Execution State tracking:** Each step of the implementation checklist MUST be worked sequentially in turn, updating the checkboxes (`- [ ]` -> `- [x]`) in the plan file in place **once a step is completed and BEFORE starting the next step**. This unified file serves as the session-persistent execution state.
 * **Format:** Please read `.agent/rules/plans.instructions.md` for more information on how to format and execute plans.
 * **Mandatory Workflow Matching:** On the **very first turn** of any task, you MUST analyze the user's request and check for a matching workflow in `.agent/workflows/`.
   * You must explicitly state which workflow you are executing. 
@@ -69,5 +73,6 @@ Tool use MUST prioritize built in tools and skills over shell, shell commands ar
 ## 7. Git & Source Control Rules
 
 * **Forbid Pushes to Upstream Remote:** AI agents are strictly forbidden from pushing any code to a "rancher" (upstream) remote.
-* **Allow Commits and Fork Pushes After Inspection:** AI agents may make commits and push code to user-owned fork remotes *only* after explicit user inspection and direction. 
+* **Allow Commits and Fork Pushes After Inspection (Programmatically Guarded):** AI agents may make commits and push code to user-owned fork remotes *only* after explicit user inspection and direction. 
   * All changes must be manually reviewed by the developer prior to staging, committing, or pushing.
+  * **Hard Tool Guardrail:** A tool-level safety hook blocks any `git commit` or `git push` unless the command is explicitly prefixed with `APPROVED_BY_USER=1` (e.g., `APPROVED_BY_USER=1 git commit -m ...` or `APPROVED_BY_USER=1 git push ...`). You MUST obtain explicit developer approval in the chat before executing any commit or push, and once received, you must prefix your command with `APPROVED_BY_USER=1` to satisfy the guardrail.

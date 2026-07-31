@@ -51,7 +51,7 @@ This workflow defines the procedure that AI agents must follow when investigatin
 * Avoid quick-and-dirty hacks (like bypassing static checks or disabling safety flags) unless explicitly requested.
 
 ### 2. Document the Resolution Plan
-* Write a plan file under `.agent/plans/` and a checklist in `.agent/agent-memory/` detailing what needs to be changed.
+* Write a unified plan and implementation checklist under `.agent/plans/<PlanName>.md` detailing what needs to be changed following the guidelines in `.agent/rules/plans.instructions.md`.
 * Get approval from the user before applying edits.
 
 ---

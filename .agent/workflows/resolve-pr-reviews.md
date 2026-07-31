@@ -20,9 +20,8 @@ Before modifying any files or assuming a solution, gather the latest feedback di
 * Review the output timeline, taking note of the file paths, lines, and the specific feedback left by reviewers.
 
 ### 2. Identify the Active Project Plans
-Locate the project plans associated with the current branch/feature development to keep documentation in sync:
-* **Persistent Plan:** Located under `.agent/plans/<feature-name>.md`
-* **Temporary Plan:** Located under `.agent/agent-memory/<feature-name>-temporary.md`
+Locate the unified project plan and implementation checklist associated with the current branch/feature development:
+* **Unified Plan & Checklist:** Located under `.agent/plans/<feature-name>.md`
 
 ### 3. Separation of Concerns (Discernment Phase)
 For each comment retrieved, perform a strict architectural assessment:
@@ -31,13 +30,11 @@ For each comment retrieved, perform a strict architectural assessment:
 * **The Idiomatic Design:** Formulate a clean, native, and high-quality solution that addresses the *concern* perfectly while aligning with the workspace standards and language paradigms (e.g., using Bash's native `printf %q` instead of custom string escape hacks; enforcing strict contracts and failing fast instead of introducing silent defaults).
 
 ### 4. Adjust the Feature Plans
-Before implementing any changes, record the planned actions in the feature plans to ensure traceability:
-* **Update the Persistent Plan (`.agent/plans/<feature-name>.md`):**
-  * Add a dedicated section (e.g., `Address Review Comments` or `Step 7: Address Copilot Review Comments`).
+Before implementing any changes, record the planned actions in the unified plan to ensure traceability:
+* **Update the Unified Plan (`.agent/plans/<feature-name>.md`):**
+  * Add a dedicated section (e.g., `Address Review Comments` or `Address Copilot Review Comments`).
   * Explicitly document the core *concerns* and outline the designed *idiomatic solutions* (contrasting them against the sub-optimal bot recommendations if necessary).
-* **Update the Temporary Plan (`.agent/agent-memory/<feature-name>-temporary.md`):**
-  * Append a new task section to the checklist tracking each of the designed resolutions.
-  * Keep tasks unchecked `[ ]` to guide the execution phase.
+  * Append new sequential tasks to the bottom `## Implementation Checklist` section of the plan file. Keep them unchecked `[ ]` to guide the execution phase.
 
 ### 5. Obtain User Approval
 Present your formulated strategy and plan updates to the user:
@@ -49,4 +46,4 @@ Present your formulated strategy and plan updates to the user:
 Once authorized by the user, proceed to implement and verify the changes:
 * **Act surgically:** Apply changes step-by-step, touching only the necessary files.
 * **Validate thoroughly:** Run local linters, compilers, and test suites (e.g., `shellcheck`, `actionlint`, local unit/acceptance tests) to verify correctness.
-* **Track progress:** Update the temporary plan checklist as each task is successfully completed and verified.
+* **Track progress:** Update the plan's `## Implementation Checklist` in place, checking off each step **once it is completed and BEFORE starting the next step**.
