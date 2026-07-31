@@ -1,0 +1,32 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "name": "load-agents-and-workflow-context",
+            "type": "command",
+            "command": "bash .agent/hooks/startup-context.sh",
+            "timeout": 10000,
+            "description": "Loads and injects AGENTS.md and development-process.md as startup context for the session"
+          }
+        ]
+      }
+    ],
+    "BeforeTool": [
+      {
+        "matcher": "run_shell_command",
+        "hooks": [
+          {
+            "name": "block-rancher-git",
+            "type": "command",
+            "command": "node .agent/hooks/block-rancher-git.js",
+            "timeout": 5000,
+            "description": "Prevents running git remote operations against rancher-owned remotes"
+          }
+        ]
+      }
+    ]
+  }
+}
