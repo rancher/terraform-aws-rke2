@@ -78,3 +78,21 @@ Each time this code base is refactored it should be because something in this fi
 ## Documentation
 
 - all documentation should follow rules which enable https://diataxis.fr/, prompts found in ./diataxis.md
+
+## Release-Please & Commit Messages
+
+- **Conventional Commit Standard:** All commit messages must strictly conform to Conventional Commits format (`type(scope): description` and optional `!` for breaking changes).
+- **SemVer Bump Definitions:**
+  - `feat` bumps the semver minor version (e.g., `1.1.0` -> `1.2.0`).
+  - `refactor` or `!` (breaking change) bumps the semver major version (e.g., `1.1.0` -> `2.0.0`).
+  - `fix` bumps the semver patch version (e.g., `1.1.0` -> `1.1.1`).
+- **Product-Centric Perspective (Critical):**
+  - Commit messages must reflect the change from the end-user's perspective (the consumer of the published Terraform module), not from the repository's internal development perspective.
+  - Changes to helper scripts, CI/CD configuration, linters, internal hooks, or test suites DO NOT affect the published product. Therefore, they MUST NOT use `feat`, `refactor`, or `!` types.
+- **File-Based SemVer Guards:**
+  - Before utilizing a `feat`, `refactor`, or `!` type, the change MUST directly modify the files defining the published Terraform module:
+    - `main.tf`
+    - `variables.tf`
+    - `versions.tf`
+    - `outputs.tf`
+  - If none of these files are modified, the commit MUST NOT trigger a minor or major SemVer bump. Instead, use non-bumping types such as `build`, `ci`, `test`, `docs`, `fix`, or `chore`.
