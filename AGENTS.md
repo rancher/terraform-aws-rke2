@@ -15,14 +15,22 @@ Adopt the behavior specific to your platform:
 * **GitHub Copilot:** Strictly perform code review (runs automatically on pull requests).
 * **Claude:** Operate in agentic programming mode. Execute like a script with little to no interaction after understanding the task.
 * **Gemini:** Act as a conversational coding assistant and partner. Be skeptical of ideas, correct the user to ensure the best outcome, and teach about functions, workflows, actions, or commands that might better suit the goals.
+* **No Praise/Fluff:** Do not praise, compliment, or flatter the user. Programming is not about the user's ego. Focus strictly on objective engineering and architecture.
+* **File Lookups:** If the user asks you to look at a file, treat it as two implicit requests: 
+  1. synchronize your context with the file's latest state
+  2. perform a critical, objective code review of that file for potential bugs, security issues, or stylistic deviations
 
-## 3. Planning Protocol
+## 3. Planning Protocol & Workflow Execution
 
 All agents MUST plan their work before executing.
 After user refinement, record final plans as markdown files in `.agent/plans/`.
-Read `.agent/rules/plans.instructions.md` for planning instructions.
-* **Executed Date:** Include an "executed date" (or "pending") to build a timeline.
-* **Purpose:** Acts as project requirements (new repos) or provides historical context for future decisions (legacy repos).
+* **Format:** Please read `.agent/rules/plans.instructions.md` for more information on how to format and execute plans.
+* **Mandatory Workflow Matching:** On the **very first turn** of any task, you MUST analyze the user's request and check for a matching workflow in `.agent/workflows/`.
+  * You must explicitly state which workflow you are executing. 
+  * Do not run commands or perform modifications until the correct workflow has been identified and initialized.
+* **Scenario-to-Workflow Mappings:**
+  * **CI/CD, Release, or GitHub Action failures/errors** (e.g., "The release CI failed", "Action is broken", "workflow failed") -> **ALWAYS** execute `.agent/workflows/troubleshoot-workflows.md`. You must begin by using the log retrieval skill `.agent/skills/pull-ci-logs.sh` to download the logs to your workspace.
+  * **Standard Development, Bug Fixes, Refactoring, or Feature additions** (e.g., "Implement feature X", "Fix panic Y") -> **ALWAYS** execute `.agent/workflows/development-process.md`. For bug fixes, you must write an empirical reproduction first.
 
 ## 4. Directory Structure Mapping
 
@@ -47,4 +55,19 @@ Consult and adhere to these rule files when generating, editing, or reviewing co
 * **GitHub Actions (`.github/workflows/**/*.{yml,yaml}`)** -> `.agent/rules/workflows.instructions.md`
 * **GitHub Scripts (`.github/workflows/scripts/**/*.js`)** -> `.agent/rules/github-script.instructions.md`
 * **Shell Scripts (`**/*.{sh,bash}`)** -> `.agent/rules/shell-scripts.instructions.md`
-* **Markdown (`**/*.md`)** -> `.agent/rules/documentation.instructions.md`
+
+## 6. Tool Use
+
+Tool use MUST prioritize built in tools and skills over shell, shell commands are a last resort.
+* **ReadFile:** When reading files always use the built in "ReadFile" tool, not cat on the command line.
+* **WriteFile:** When writing files always use the built in "WriteFile" tool, not a redirected cat or echo on the command line.
+* **Edit:** When editing files always use the built in "Edit" tool, not sed on the command line.
+* **WebFetch:** When fetching web content always use the built in "Webfetch" tool, not curl on the command line.
+* **Skills:** When any of the above tools won't work for the task, use skills in the .agent/skills directory before crafting your own commands.
+* **Shell:** The "Shell" tool is a last resort if a built in tool or skill doesn't exist to preform the operation.
+
+## 7. Git & Source Control Rules
+
+* **Forbid Pushes to Upstream Remote:** AI agents are strictly forbidden from pushing any code to a "rancher" (upstream) remote.
+* **Allow Commits and Fork Pushes After Inspection:** AI agents may make commits and push code to user-owned fork remotes *only* after explicit user inspection and direction. 
+  * All changes must be manually reviewed by the developer prior to staging, committing, or pushing.
