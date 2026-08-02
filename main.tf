@@ -301,7 +301,7 @@ resource "random_pet" "server" {
 module "project" {
   count                       = local.project_mod
   source                      = "rancher/access/aws"
-  version                     = "4.0.5"
+  version                     = "4.0.6"
   vpc_use_strategy            = local.project_vpc_use_strategy
   vpc_name                    = local.project_vpc_name
   vpc_type                    = local.project_vpc_type
