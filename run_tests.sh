@@ -276,6 +276,10 @@ display_configuration() {
     log_info "Inside Relay: Enabled"
   fi
 
+  if [ "$no_color" = true ]; then
+    log_info "Color Output: Disabled"
+  fi
+
   log_info "=========================="
 }
 
