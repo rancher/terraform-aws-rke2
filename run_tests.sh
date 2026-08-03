@@ -39,6 +39,21 @@ NC='\033[0m' # No Color
 CHECK_MARK='\033[1;32m✓\033[0m'
 CROSS_MARK='\033[1;31m✗\033[0m'
 
+disable_colors() {
+  RED=''
+  GREEN=''
+  YELLOW=''
+  BLUE=''
+  NC=''
+  CHECK_MARK='✓'
+  CROSS_MARK='✗'
+}
+
+# Honor NO_COLOR environment variable if already set
+if [ -n "$NO_COLOR" ]; then
+  disable_colors
+fi
+
 log_info() {
   printf "%b[INFO] [run_tests]%b %s\n" "${BLUE}" "${NC}" "$*"
 }
@@ -161,7 +176,7 @@ parse_options() {
           half-dry) half_dry=true ;;
           skip-relay) skip_relay=true ;;
           inside-relay) inside_relay=true ;;
-          no-color) no_color=true ;;
+          no-color) no_color=true; disable_colors ;;
           help) display_usage; exit 0 ;;
           identifier)
             specific_identifier="${!OPTIND}"
