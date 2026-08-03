@@ -54,5 +54,6 @@ jobs:
           GITHUB_OWNER: rancher
           IDENTIFIER: ${{github.run_id}}
           ZONE: ${{secrets.ZONE}}
+          NO_COLOR: true
         run: |
           bash .github/workflows/scripts/nix-run.sh "bash ./run_tests.sh -s"

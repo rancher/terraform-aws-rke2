@@ -2,11 +2,19 @@
 set -euo pipefail
 
 # Color definitions for logging
-RED='\033[1;31m'
-GREEN='\033[1;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[1;34m'
-NC='\033[0m' # No Color
+if [[ -n "${NO_COLOR:-}" ]]; then
+  RED=''
+  GREEN=''
+  YELLOW=''
+  BLUE=''
+  NC=''
+else
+  RED='\033[1;31m'
+  GREEN='\033[1;32m'
+  YELLOW='\033[1;33m'
+  BLUE='\033[1;34m'
+  NC='\033[0m' # No Color
+fi
 
 log_info() {
   printf "%b[INFO] [nix-run]%b %s\n" "${BLUE}" "${NC}" "$*"
@@ -163,6 +171,7 @@ run_nix_command() {
     --keep IDENTIFIER \
     --keep ZONE \
     --keep ACME_SERVER_URL \
+    --keep NO_COLOR \
     --command bash -e .nix-script.sh || nix_status=$?
 
   if [[ "$nix_status" -ne 0 ]]; then
