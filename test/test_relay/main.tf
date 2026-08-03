@@ -67,7 +67,7 @@ module "runner" {
     module.access,
   ]
   source                     = "rancher/server/aws"
-  version                    = "2.0.3"
+  version                    = "2.0.4"
   image_type                 = local.image
   server_name                = local.project_name
   server_type                = "xl"
