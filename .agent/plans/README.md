@@ -8,8 +8,8 @@ When creating a plan, please make sure to update the standards to reflect the go
 
 Plans should only reflect major changes to the codebase, we don't need plans for everything, only major refactors or new processes.
 
-This script can help when executing a new plan on a repository.
+This prompt can help when importing a plan from another repository:
 
 ```
-Please take a look at <plan>.md, which I copied from another repository. We need to apply this plan to this repo. Our previous attempt at this failed midway through, please verify what has been done and build a temporary plan accordingly. Don't execute the plan yet, I want to review it first. We can save the temporary plan to the .agent/agent-memory directory. It should include detailed information and have checkboxes to track progress over many interactive sessions.
+Please take a look at <plan>.md, which I copied from another repository. We need to apply this plan to this repo. Our previous attempt at this failed midway through. Please verify what has been done and construct a unified plan in `.agent/plans/<PlanName>.md`. The plan must contain a high-level abstract (top half) and a sequential, step-by-step implementation checklist (bottom half) to track progress. Do not execute the plan yet; I want to review it first.
 ```
