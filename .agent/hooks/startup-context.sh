@@ -8,6 +8,17 @@ cat > /dev/null
 echo "Loading session-start workspace context..." >&2
 
 combined_context=""
+combined_context+=$'###############################################################################\n'
+combined_context+=$'#                           CRITICAL AGENT MANDATES                           #\n'
+combined_context+=$'#                                                                             #\n'
+combined_context+=$'# 1. YOU MUST FOLLOW THE DEVELOPMENT PROCESS IN \'development-process.md\'.     #\n'
+combined_context+=$'# 2. YOU MUST NEVER COMMIT OR PUSH WITHOUT EXPLICIT APPROVAL AND THE          #\n'
+combined_context+=$'#    \'APPROVED_BY_USER=1\' PREFIX.                                             #\n'
+combined_context+=$'# 3. FOR ALL TASKS, YOU MUST DEFINE A SEQUENTIAL IMPLEMENTATION CHECKLIST AT  #\n'
+combined_context+=$'#    THE BOTTOM OF YOUR PLAN IN \'.agent/plans/<PlanName>.md\'.                 #\n'
+combined_context+=$'#                                                                             #\n'
+combined_context+=$'# FAILURE TO COMPLY WILL TRIGGER SECURITY BLOCKS AND PROCESS TERMINATION.     #\n'
+combined_context+=$'###############################################################################\n\n'
 
 if [[ -f "AGENTS.md" ]]; then
   combined_context+=$'# Context from AGENTS.md\n\n'

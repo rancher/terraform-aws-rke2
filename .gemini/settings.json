@@ -26,6 +26,30 @@
             "description": "Prevents running git remote operations against rancher-owned remotes"
           }
         ]
+      },
+      {
+        "matcher": "write_file",
+        "hooks": [
+          {
+            "name": "enforce-planning-before-write",
+            "type": "command",
+            "command": "node .agent/hooks/enforce-planning.js",
+            "timeout": 5000,
+            "description": "Enforces that a plan/checklist must be created or modified before writing files"
+          }
+        ]
+      },
+      {
+        "matcher": "replace",
+        "hooks": [
+          {
+            "name": "enforce-planning-before-replace",
+            "type": "command",
+            "command": "node .agent/hooks/enforce-planning.js",
+            "timeout": 5000,
+            "description": "Enforces that a plan/checklist must be created or modified before replacing text in files"
+          }
+        ]
       }
     ]
   }
