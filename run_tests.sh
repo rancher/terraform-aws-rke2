@@ -22,6 +22,7 @@ dry_run=false
 half_dry=false
 skip_relay=false
 inside_relay=false
+no_color=false
 
 # Track whether cleanup has run
 cleanup_has_run=false
@@ -35,6 +36,8 @@ GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[1;34m'
 NC='\033[0m' # No Color
+CHECK_MARK='\033[1;32m✓\033[0m'
+CROSS_MARK='\033[1;31m✗\033[0m'
 
 log_info() {
   printf "%b[INFO] [run_tests]%b %s\n" "${BLUE}" "${NC}" "$*"
@@ -123,6 +126,7 @@ Options:
   --half-dry      Run in half-dry mode (deploy relay VM, but skip RKE2 fixture)
   --skip-relay    Skip relay packaging and run tests directly on workstation
   --inside-relay  Indicate the script is running inside the testing runner
+  --no-color      Disable color output (respects standard NO_COLOR env var too)
 
 Notes:
   - Only one of -c, -t, -p, -f, -g, --build-only, or --lint-only can be used at a time
@@ -157,6 +161,7 @@ parse_options() {
           half-dry) half_dry=true ;;
           skip-relay) skip_relay=true ;;
           inside-relay) inside_relay=true ;;
+          no-color) no_color=true ;;
           help) display_usage; exit 0 ;;
           identifier)
             specific_identifier="${!OPTIND}"
@@ -355,6 +360,7 @@ find_test_dir() {
 process_test_results() {
   local log_file="/tmp/${IDENTIFIER}_test.log"
   local fail_file="/tmp/${IDENTIFIER}_failed_tests.txt"
+  local fail_pkg_file="/tmp/${IDENTIFIER}_failed_packages.txt"
 
   if [ ! -f "$log_file" ] || ! command -v jq >/dev/null 2>&1; then
     return 0
@@ -362,29 +368,46 @@ process_test_results() {
 
   log_info "=== Test Outcome Summary ==="
 
-  local passed failed
+  local passed failed_tests failed_packages
   passed="$(jq -r '. | select(.Action == "pass") | select(.Test != null).Test' "$log_file" 2>/dev/null | sort -u | grep -v '^[[:space:]]*$' || true)"
-  failed="$(jq -r '. | select(.Action == "fail") | select(.Test != null).Test' "$log_file" 2>/dev/null | sort -u | grep -v '^[[:space:]]*$' || true)"
+  failed_tests="$(jq -r '. | select(.Action == "fail") | select(.Test != null).Test' "$log_file" 2>/dev/null | sort -u | grep -v '^[[:space:]]*$' || true)"
+  failed_packages="$(jq -r '. | select(.Action == "fail") | select(.Test == null).Package' "$log_file" 2>/dev/null | sort -u | grep -v '^[[:space:]]*$' || true)"
 
   if [ -n "$passed" ]; then
     log_success "PASSED TESTS:"
     while IFS= read -r test_name; do
       if [ -n "$test_name" ]; then
-        echo -e "  \033[1;32m✓\033[0m $test_name"
+        printf "  %b %s\n" "${CHECK_MARK}" "$test_name"
       fi
     done <<< "$passed"
   fi
 
-  if [ -n "$failed" ]; then
-    log_error "FAILED TESTS:"
-    while IFS= read -r test_name; do
-      if [ -n "$test_name" ]; then
-        echo -e "  \033[1;31m✗\033[0m $test_name"
-      fi
-    done <<< "$failed"
-    echo "$failed" > "$fail_file"
+  if [ -n "$failed_tests" ] || [ -n "$failed_packages" ]; then
+    log_error "FAILED ITEMS:"
+    if [ -n "$failed_tests" ]; then
+      while IFS= read -r test_name; do
+        if [ -n "$test_name" ]; then
+          printf "  %b %s\n" "${CROSS_MARK}" "$test_name"
+        fi
+      done <<< "$failed_tests"
+      echo "$failed_tests" > "$fail_file"
+    else
+      rm -f "$fail_file"
+    fi
+
+    if [ -n "$failed_packages" ]; then
+      while IFS= read -r pkg_name; do
+        if [ -n "$pkg_name" ]; then
+          printf "  %b Package: %s\n" "${CROSS_MARK}" "$pkg_name"
+        fi
+      done <<< "$failed_packages"
+      echo "$failed_packages" > "$fail_pkg_file"
+    else
+      rm -f "$fail_pkg_file"
+    fi
   else
     rm -f "$fail_file"
+    rm -f "$fail_pkg_file"
   fi
 
   log_info "============================"
@@ -653,6 +676,27 @@ display_summary() {
   # Exit with appropriate code based on test results
   if [ "$TESTS_PASSED" = false ]; then
     log_error "Tests FAILED"
+
+    if [ -f "/tmp/${IDENTIFIER}_failed_tests.txt" ] || [ -f "/tmp/${IDENTIFIER}_failed_packages.txt" ]; then
+      log_error "Failed items:"
+      if [ -f "/tmp/${IDENTIFIER}_failed_tests.txt" ]; then
+        while IFS= read -r test_name; do
+          if [ -n "$test_name" ]; then
+            printf "  %b %s\n" "${CROSS_MARK}" "${test_name}"
+          fi
+        done < "/tmp/${IDENTIFIER}_failed_tests.txt"
+      fi
+      if [ -f "/tmp/${IDENTIFIER}_failed_packages.txt" ]; then
+        while IFS= read -r pkg_name; do
+          if [ -n "$pkg_name" ]; then
+            printf "  %b Package: %s\n" "${CROSS_MARK}" "${pkg_name}"
+          fi
+        done < "/tmp/${IDENTIFIER}_failed_packages.txt"
+      fi
+    else
+      log_error "No specific failed tests or packages logged, but the exit code was non-zero."
+    fi
+
     if [ -f "/tmp/${IDENTIFIER}_failed_tests.txt" ]; then
       log_error "Failed tests logged to: /tmp/${IDENTIFIER}_failed_tests.txt"
     fi
@@ -724,6 +768,17 @@ validate_examples() {
 main() {
   parse_options "$@"
   validate_options
+
+  # Handle no-color option and environment variable
+  if [ "$no_color" = true ] || [ -n "${NO_COLOR:-}" ]; then
+    RED=''
+    GREEN=''
+    YELLOW=''
+    BLUE=''
+    NC=''
+    CHECK_MARK='✓'
+    CROSS_MARK='✗'
+  fi
 
   # Set trap to run cleanup on exit, error, interrupt, or termination
   trap run_cleanup EXIT ERR INT TERM
