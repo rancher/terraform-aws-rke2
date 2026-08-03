@@ -285,7 +285,7 @@ resource "random_uuid" "join_token" {
 module "download" {
   count   = local.download_mod
   source  = "rancher/rke2-download/github"
-  version = "1.0.2"
+  version = "v1.0.3"
   release = local.install_rke2_version
   path    = local.local_file_path
 }
@@ -301,7 +301,7 @@ resource "random_pet" "server" {
 module "project" {
   count                       = local.project_mod
   source                      = "rancher/access/aws"
-  version                     = "4.0.5"
+  version                     = "v4.0.6"
   vpc_use_strategy            = local.project_vpc_use_strategy
   vpc_name                    = local.project_vpc_name
   vpc_type                    = local.project_vpc_type
@@ -343,7 +343,7 @@ module "server" {
     data.aws_security_group.general_info,
   ]
   source                       = "rancher/server/aws"
-  version                      = "2.0.3"
+  version                      = "v2.0.4"
   image_use_strategy           = local.server_image_use_strategy
   image                        = local.server_image
   image_type                   = local.server_image_type
@@ -378,7 +378,7 @@ module "default_config" {
     module.server,
   ]
   source  = "rancher/rke2-config/local"
-  version = "1.0.3"
+  version = "v1.0.4"
   tls-san = distinct(compact([
     lower("${local.project_domain}.${local.project_domain_zone}"),
   ]))
@@ -405,7 +405,7 @@ module "install" {
     module.download,
   ]
   source                     = "rancher/rke2-install/null"
-  version                    = "1.3.4"
+  version                    = "v1.3.5"
   release                    = local.install_rke2_version
   rpm_channel                = local.install_rpm_channel
   local_file_path            = local.local_file_path
