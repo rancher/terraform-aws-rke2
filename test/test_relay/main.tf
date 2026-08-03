@@ -52,7 +52,7 @@ resource "terraform_data" "create_data_local" {
 
 module "access" {
   source                     = "rancher/access/aws"
-  version                    = "4.0.5"
+  version                    = "4.0.6"
   vpc_name                   = "${local.project_name}-vpc"
   vpc_type                   = "dualstack"
   vpc_public                 = true
