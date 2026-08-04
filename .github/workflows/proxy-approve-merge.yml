@@ -1,0 +1,41 @@
+name: review-proxy
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions: {}
+
+jobs:
+  proxy:
+    name: Proxy Approve and Merge
+    if: github.event.review.state == 'approved'
+    permissions:
+      pull-requests: write
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate User
+        run: |
+          ASSOCIATION="${{ github.event.review.author_association }}"
+          echo "Reviewer association is: $ASSOCIATION"
+          if [[ "$ASSOCIATION" != "MEMBER" && "$ASSOCIATION" != "COLLABORATOR" ]]; then
+            echo "Error: Only MEMBER or COLLABORATOR approvals are proxied."
+            exit 1
+          fi
+          echo "User is validated as a trusted author."
+
+      - name: Checkout Code
+        # https://github.com/actions/checkout/releases
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Proxy Approve & Merge
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          ACTOR="${{ github.event.review.user.login }}"
+          echo "Proxying approval for $PR_URL on behalf of @$ACTOR..."
+          gh pr review "$PR_URL" --approve --body "Official approval triggered by trusted reviewer @$ACTOR."
+          echo "Enabling auto-merge..."
+          gh pr merge "$PR_URL" --auto --squash

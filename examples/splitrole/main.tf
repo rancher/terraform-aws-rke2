@@ -368,6 +368,6 @@ module "deploy_other_nodes" {
   jitter_max     = 300 # 5 min
   deploy_trigger = "v0.0.0"
   environment_variables = { # env variables are inherited, but you can add more here
-    TF_PLUGIN_CACHE_DIR = "$HOME/.terraform.d/plugin-cache"
+    TF_PLUGIN_CACHE_DIR = "$HOME/${each.key}/plugin-cache"
   }
 }
