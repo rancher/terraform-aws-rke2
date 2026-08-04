@@ -11,18 +11,21 @@ show_help() {
   cat <<EOF
 Usage: create-pr.sh [options]
 
-Safely creates a pull request from your local fork branch to the upstream repository.
+Safely creates or graduates a pull request from your local fork branch to the upstream repository.
 
 Options:
-  --title TITLE        The title of the pull request (Required).
-  --body BODY          The markdown description body of the pull request (Required).
+  --title TITLE        The title of the pull request (Required for creation).
+  --body BODY          The markdown description body of the pull request (Required for creation).
   --base BASE          The target upstream branch (default: main).
   --draft              Create the pull request as a draft.
+  --ready [TARGET]     Graduate a draft pull request to ready-for-review (accepts PR number, branch, or URL; defaults to current branch).
   -h, --help           Show this help message and exit.
 
 Examples:
   .agent/skills/create-pr.sh --title "fix: logic error" --body "Fixes the loop bounds"
   .agent/skills/create-pr.sh --title "feat: new helper" --body "Adds skill" --draft
+  .agent/skills/create-pr.sh --ready
+  .agent/skills/create-pr.sh --ready 280
 EOF
 }
 
@@ -86,11 +89,28 @@ create_pull_request() {
     $draft_flag
 }
 
+graduate_pull_request() {
+  local target="$1"
+  local branch
+  branch=$(git branch --show-current)
+
+  if [[ -z "$target" ]]; then
+    echo "Graduating draft pull request for the current branch '${branch}'..."
+    GITHUB_TOKEN="" gh pr ready
+  else
+    echo "Graduating draft pull request for target '${target}'..."
+    GITHUB_TOKEN="" gh pr ready "$target"
+  fi
+  echo "✅ Pull Request successfully graduated to ready for review!"
+}
+
 main() {
   local title=""
   local body=""
   local base="main"
   local draft_flag=""
+  local action="create"
+  local ready_target=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -126,6 +146,16 @@ main() {
         draft_flag="--draft"
         shift
         ;;
+      --ready)
+        action="ready"
+        if [[ $# -gt 1 && ! "$2" =~ ^- ]]; then
+          ready_target="$2"
+          shift 2
+        else
+          ready_target=""
+          shift
+        fi
+        ;;
       *)
         echo "Unknown parameter: $1" >&2
         show_help
@@ -133,6 +163,12 @@ main() {
         ;;
     esac
   done
+
+  if [[ "$action" == "ready" ]]; then
+    verify_git_env
+    graduate_pull_request "$ready_target"
+    exit 0
+  fi
 
   if [[ -z "$title" || -z "$body" ]]; then
     echo "Error: Both --title and --body parameters are required." >&2
