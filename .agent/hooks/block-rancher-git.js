@@ -31,25 +31,25 @@ function main() {
     commandClean = next;
   }
 
-  // Check for unauthorized git commit or push operations
-  const isCommitOrPush = /\bgit\s+(commit|push)\b/.test(commandClean);
-  if (isCommitOrPush) {
+  // Check for unauthorized git commit, push, or pull request graduation/ready operations
+  const isProtectedOp = /\b(git\s+(commit|push)|gh\s+pr\s+ready|create-pr\.sh\s+.*--ready)\b/.test(commandClean);
+  if (isProtectedOp) {
     const segments = command.split(/\s*(?:&&|;|\|\|)\s*/);
     const hasUserApproval = segments.every(segment => {
-      const isSegmentCommitOrPush = /\bgit\s+(commit|push)\b/.test(segment);
-      if (!isSegmentCommitOrPush) return true;
+      const isSegmentProtected = /\b(git\s+(commit|push)|gh\s+pr\s+ready|create-pr\.sh\s+.*--ready)\b/.test(segment);
+      if (!isSegmentProtected) return true;
       const segmentClean = segment.trim();
       return /^(?:[A-Za-z_][A-Za-z0-9_]*=(?:'[^']*'|"[^"]*"|\S+)\s+)*APPROVED_BY_USER=1\b/.test(segmentClean);
     });
     if (!hasUserApproval) {
       console.log(JSON.stringify({
         decision: "deny",
-        reason: "Security Policy Violation: Automated git commits and pushes are strictly prohibited without manual developer review and sign-off.\n\n" +
-                "To proceed with a commit or push, you MUST:\n" +
-                "1. Invite the developer in the chat to review the unstaged changes in their IDE.\n" +
-                "2. Obtain their explicit manual approval to perform the commit or push.\n" +
-                "3. Prefix your git command with APPROVED_BY_USER=1 (e.g., `APPROVED_BY_USER=1 git commit -m ...` or `APPROVED_BY_USER=1 git push ...`).",
-        systemMessage: "🔒 Security Block: Unauthorized automated git commit/push detected. Explicit developer approval required."
+        reason: "Security Policy Violation: Automated git commits, pushes, and draft PR graduations/ready modifications are strictly prohibited without manual developer review and sign-off.\n\n" +
+                "To proceed, you MUST:\n" +
+                "1. Invite the developer in the chat to review the unstaged changes (for commit/push) or draft PR on GitHub (for graduation).\n" +
+                "2. Obtain their explicit manual approval in the chat.\n" +
+                "3. Prefix your command with APPROVED_BY_USER=1 (e.g., `APPROVED_BY_USER=1 git commit ...`, `APPROVED_BY_USER=1 git push ...`, or `APPROVED_BY_USER=1 bash .agent/skills/create-pr.sh --ready`).",
+        systemMessage: "🔒 Security Block: Unauthorized automated git commit/push/ready detected. Explicit developer approval required."
       }));
       process.exit(0);
     }

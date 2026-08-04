@@ -11,6 +11,7 @@
 2. **Standard Quality Gate Integration:** Require that every plan checklist programmatically checkbox-tracks local builds, tests, linters, proactive code reviews, upstream sync, unstaged IDE reviews, authorized commits, and draft PR generation.
 3. **Relax Commit Validation:** Support all standard Conventional Commit prefixes (build, chore, ci, docs, feat, feature, fix, perf, refactor, revert, style, test), support optional scopes in parentheses, enforce a strict < 70 character limit on the subject line, and add targeted file-based gating (bumping prefixes are blocked unless root Terraform files are modified).
 4. **Draft PR Graduation:** Update `.agent/skills/create-pr.sh` to support the `--ready [target]` option.
+5. **Draft PR Graduation Hook Guardrail:** Update `.agent/hooks/block-rancher-git.js` to enforce the `APPROVED_BY_USER=1` prefix requirement for pull request ready / graduation commands.
 
 ---
 
@@ -26,6 +27,7 @@
 - [x] Update `plans.instructions.md` and `development-process.md` to mandate the standard quality-gate checklists.
 - [x] Relax `validate-commit-message.sh` to allow all Conventional Commits, add file-based gating, and enforce the < 70 character length check.
 - [x] Update `create-pr.sh` to add the `--ready` option for graduations.
+- [x] Update `.agent/hooks/block-rancher-git.js` to block draft PR graduations unless approved.
 
 ### Phase 3: Surgical Verification & Quality Gate
 - [x] Run local static analysis and linters (`shellcheck`, `actionlint`, `tflint --recursive`) to verify all scripts and workflows pass.
