@@ -22,7 +22,7 @@ zypper --gpg-auto-import-keys --non-interactive ar -f https://download.opensuse.
 zypper --gpg-auto-import-keys --non-interactive ar -f https://download.opensuse.org/repositories/security:/SELinux_legacy/$OS_VER/security:SELinux_legacy.repo || true
 rpm --import https://rpm.rancher.io/public.key || true
 zypper --gpg-auto-import-keys --non-interactive refresh
-zypper --gpg-auto-import-keys --non-interactive install -y --force-resolution restorecond policycoreutils curl
+zypper --gpg-auto-import-keys --non-interactive install -y --force-resolution restorecond
 
 if ! systemctl list-unit-files 2>/dev/null | grep -q "sshd.service"; then
   echo "sshd.service not found. Creating dummy..."

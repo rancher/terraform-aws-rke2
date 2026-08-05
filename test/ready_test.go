@@ -28,33 +28,43 @@ func TestMatrix(t *testing.T) {
 	cc, err := fit.GetCombinations(t)
 	require.NoError(t, err)
 
-	// these tests must pass before release
-	necessaryTests := []string{
-		//// os
+	// targeted subgroups of necessary tests
+	osTests := []string{
 		"sle-micro-61-canal-stable-one-rpm-ipv4",
 		"sles-16-canal-stable-one-rpm-ipv4",
 		"cis-rhel-9-canal-stable-one-rpm-ipv4",
 		"ubuntu-24-canal-stable-one-tar-ipv4", // also counts as air gapped test
 		"rhel-9-canal-stable-one-rpm-ipv4",
-		//// cni
-		"sle-micro-61-cilium-stable-one-rpm-ipv4",
-		"sle-micro-61-calico-stable-one-rpm-ipv4",
-		//// version
-		"sle-micro-61-canal-latest-one-rpm-ipv4",
-		"sle-micro-61-canal-old-one-rpm-ipv4",
-		//// ipv6 tests
-		"sle-micro-61-canal-stable-one-rpm-ipv6",
-		//// dualstack tests
-		"sle-micro-61-canal-stable-one-rpm-dualstack",
-		//// ha
-		"sle-micro-61-canal-stable-ha-rpm-ipv4",
-		//// splitrole
-		"sle-micro-61-canal-stable-splitrole-rpm-ipv4",
-		//// prod
-		"sle-micro-61-canal-stable-prod-rpm-ipv4",
-		//// confirmed use cases
 		"ubuntu-22-canal-stable-one-tar-ipv4", // https://github.com/rancher/terraform-aws-rke2/issues/153
 	}
+
+	cniTests := []string{
+		"sles-16-cilium-stable-one-rpm-ipv4",
+		"sles-16-calico-stable-one-rpm-ipv4",
+	}
+
+	versionTests := []string{
+		"sles-16-canal-latest-one-rpm-ipv4",
+		"sles-16-canal-old-one-rpm-ipv4",
+	}
+
+	ipfamilyTests := []string{
+		"sles-16-canal-stable-one-rpm-ipv6",
+		"sles-16-canal-stable-one-rpm-dualstack",
+	}
+
+	layoutTests := []string{
+		"sles-16-canal-stable-ha-rpm-ipv4",
+		"sles-16-canal-stable-splitrole-rpm-ipv4",
+		"sles-16-canal-stable-prod-rpm-ipv4",
+	}
+
+	// necessary tests are the union of all targeted subgroups
+	necessaryTests := append([]string{}, osTests...)
+	necessaryTests = append(necessaryTests, cniTests...)
+	necessaryTests = append(necessaryTests, versionTests...)
+	necessaryTests = append(necessaryTests, ipfamilyTests...)
+	necessaryTests = append(necessaryTests, layoutTests...)
 
 	// extended tests
 	extendedTests := []string{
@@ -80,6 +90,16 @@ func TestMatrix(t *testing.T) {
 		"sle-micro-61-canal-stable-ha-rpm-ipv6",
 		"sle-micro-61-canal-stable-splitrole-rpm-ipv6",
 		"sle-micro-61-canal-stable-prod-rpm-ipv6",
+		//// sle-micro-61 dimensional tests moved from necessary to extended
+		"sle-micro-61-cilium-stable-one-rpm-ipv4",
+		"sle-micro-61-calico-stable-one-rpm-ipv4",
+		"sle-micro-61-canal-latest-one-rpm-ipv4",
+		"sle-micro-61-canal-old-one-rpm-ipv4",
+		"sle-micro-61-canal-stable-one-rpm-ipv6",
+		"sle-micro-61-canal-stable-one-rpm-dualstack",
+		"sle-micro-61-canal-stable-ha-rpm-ipv4",
+		"sle-micro-61-canal-stable-splitrole-rpm-ipv4",
+		"sle-micro-61-canal-stable-prod-rpm-ipv4",
 	}
 
 	// Unsupported Combos:
@@ -109,10 +129,20 @@ func TestMatrix(t *testing.T) {
 			selection = necessaryTests
 		case "extended":
 			selection = extendedTests
+		case "os":
+			selection = osTests
+		case "cni":
+			selection = cniTests
+		case "version":
+			selection = versionTests
+		case "ipfamily":
+			selection = ipfamilyTests
+		case "layout":
+			selection = layoutTests
 		case "all":
 			selection = append(selection, extendedTests...)
 		default:
-			t.Fatalf("Unknown fixture group: %s (valid groups: necessary, extended, all)", group)
+			t.Fatalf("Unknown fixture group: %s (valid groups: necessary, extended, os, cni, version, ipfamily, layout, all)", group)
 		}
 	}
 
