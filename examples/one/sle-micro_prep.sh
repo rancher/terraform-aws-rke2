@@ -23,6 +23,38 @@ zypper --gpg-auto-import-keys --non-interactive ar -f https://download.opensuse.
 rpm --import https://rpm.rancher.io/public.key || true
 zypper --gpg-auto-import-keys --non-interactive refresh
 zypper --gpg-auto-import-keys --non-interactive install -y --force-resolution restorecond policycoreutils curl
+
+if ! systemctl list-unit-files 2>/dev/null | grep -q "sshd.service"; then
+  echo "sshd.service not found. Creating dummy..."
+  cat <<'SSHD_EOF' > /etc/systemd/system/sshd.service
+[Unit]
+Description=Dummy SSHD Service for SLE Micro compatibility
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/true
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+SSHD_EOF
+fi
+
+if ! systemctl list-unit-files 2>/dev/null | grep -q "ssh.service"; then
+  echo "ssh.service not found. Creating dummy..."
+  cat <<'SSH_EOF' > /etc/systemd/system/ssh.service
+[Unit]
+Description=Dummy SSH Service for SLE Micro compatibility
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/true
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+SSH_EOF
+fi
 EOF
 
 # Enable IP forwarding for Kubernetes/RKE2 routing

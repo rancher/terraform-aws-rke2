@@ -53,3 +53,40 @@ EOT
   echo "Testing IPv6 DNS resolution:"
   dig AAAA google.com
 fi
+
+# Ensure sshd.service / ssh.service exist (handling socket-activated SLE Micro units to prevent remote-exec restart errors)
+if [ -d /run/systemd/system ] || [ -d /etc/systemd/system ]; then
+  if ! systemctl list-unit-files 2>/dev/null | grep -q "sshd.service"; then
+    echo "sshd.service not found. Creating a dummy sshd.service for compatibility..."
+    cat <<'EOF' > /etc/systemd/system/sshd.service
+[Unit]
+Description=Dummy SSHD Service for SLE Micro compatibility
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/true
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload 2>/dev/null || true
+  fi
+
+  if ! systemctl list-unit-files 2>/dev/null | grep -q "ssh.service"; then
+    echo "ssh.service not found. Creating a dummy ssh.service for compatibility..."
+    cat <<'EOF' > /etc/systemd/system/ssh.service
+[Unit]
+Description=Dummy SSH Service for SLE Micro compatibility
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/true
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload 2>/dev/null || true
+  fi
+fi
