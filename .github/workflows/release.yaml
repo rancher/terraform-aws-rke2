@@ -31,34 +31,19 @@ jobs:
         with:
           release-type: terraform-module
 
-  release:
-    name: 'Release'
+  start-comment:
+    name: 'Start PR Comment'
     needs: release-please
     if: needs.release-please.outputs.pr
+    runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       pull-requests: write
       issues: write
-      id-token: write
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/rancher/ci-image/nix:20260603-18
-      volumes: # these are mounted only for the purpose of clearing them out so the runner doesn't run out of storage space
-        - /usr/share/dotnet:/host_dotnet
-        - /usr/local/lib/android:/host_android
-        - /opt/ghc:/host_ghc
-        - /opt/hostedtoolcache:/host_toolcache
-        - /usr/local/.ghcup:/host_ghcup
-        - /usr/local/share/boost:/host_boost
-    timeout-minutes: 480 # 8 hours
     steps:
       - name: 'Checkout'
         # https://github.com/actions/checkout/releases
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: 'Free Disk Space'
-        run: |
-          bash .github/workflows/scripts/free-disk-space.sh
 
       - name: 'Comment PR e2e wait'
         # https://github.com/actions/github-script/releases
@@ -73,25 +58,70 @@ jobs:
             context.payload.pull_request = { number: ${{ fromJson(needs.release-please.outputs.pr).number }} };
             await script({ github, context });
 
+  release:
+    name: 'Release matrix-group: ${{ matrix.group }}'
+    needs: [release-please, start-comment]
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [os, cni, version, ipfamily, layout]
+    container:
+      image: ghcr.io/rancher/ci-image/nix:20260603-18
+      volumes: # these are mounted only for the purpose of clearing them out so the runner doesn't run out of storage space
+        - /usr/share/dotnet:/host_dotnet
+        - /usr/local/lib/android:/host_android
+        - /opt/ghc:/host_ghc
+        - /opt/hostedtoolcache:/host_toolcache
+        - /usr/local/.ghcup:/host_ghcup
+        - /usr/local/share/boost:/host_boost
+    timeout-minutes: 120
+    steps:
+      - name: 'Checkout'
+        # https://github.com/actions/checkout/releases
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 'Free Disk Space'
+        run: |
+          bash .github/workflows/scripts/free-disk-space.sh
+
       - name: 'Configure AWS Credentials'
         # https://github.com/aws-actions/configure-aws-credentials/releases
         uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
         with:
           role-to-assume: ${{env.AWS_ROLE}}
-          role-session-name: ${{github.run_id}}
+          role-session-name: ${{github.run_id}}-${{matrix.group}}
           aws-region: ${{env.AWS_REGION}}
-          role-duration-seconds: 28800 # 8 hours
+          role-duration-seconds: 14400 # 4 hours
 
       - name: Run Tests
         shell: bash
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
           GITHUB_OWNER: rancher
-          IDENTIFIER: ${{github.run_id}}
+          IDENTIFIER: ${{github.run_id}}-${{matrix.group}}
           ZONE: ${{secrets.ZONE}}
           NO_COLOR: true
         run: |
-          bash .github/workflows/scripts/nix-run.sh "bash ./run_tests.sh -s"
+          bash .github/workflows/scripts/nix-run.sh "bash ./run_tests.sh -g ${{matrix.group}} -s -r"
+
+  finish-comment:
+    name: 'Finish PR Comment'
+    needs: [release-please, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: 'Checkout'
+        # https://github.com/actions/checkout/releases
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: 'Comment PR e2e pass'
         # https://github.com/actions/github-script/releases
