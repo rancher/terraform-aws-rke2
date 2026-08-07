@@ -70,7 +70,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: [os, cni, version, ipfamily, layout]
+        group: [suse, ibm, cis, ubuntu, rocky, cni, version, ipfamily, layout]
     container:
       image: ghcr.io/rancher/ci-image/nix:20260603-18
       volumes: # these are mounted only for the purpose of clearing them out so the runner doesn't run out of storage space
