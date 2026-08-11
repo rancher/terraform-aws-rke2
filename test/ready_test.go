@@ -29,14 +29,34 @@ func TestMatrix(t *testing.T) {
 	require.NoError(t, err)
 
 	// targeted subgroups of necessary tests
-	osTests := []string{
+	suseTests := []string{
 		"sle-micro-61-canal-stable-one-rpm-ipv4",
 		"sles-16-canal-stable-one-rpm-ipv4",
-		"cis-rhel-9-canal-stable-one-rpm-ipv4",
-		"ubuntu-24-canal-stable-one-tar-ipv4", // also counts as air gapped test
+		"suse-multi-linux-manager-server-5-canal-stable-one-rpm-ipv4", // moved from extendedTests
+	}
+
+	ibmTests := []string{
 		"rhel-9-canal-stable-one-rpm-ipv4",
+	}
+
+	cisTests := []string{
+		"cis-rhel-9-canal-stable-one-rpm-ipv4",
+	}
+
+	ubuntuTests := []string{
+		"ubuntu-24-canal-stable-one-tar-ipv4", // also counts as air gapped test
 		"ubuntu-22-canal-stable-one-tar-ipv4", // https://github.com/rancher/terraform-aws-rke2/issues/153
 	}
+
+	rockyTests := []string{
+		"rocky-9-canal-stable-one-rpm-ipv4", // moved from extendedTests
+	}
+
+	osTests := append([]string{}, suseTests...)
+	osTests = append(osTests, ibmTests...)
+	osTests = append(osTests, cisTests...)
+	osTests = append(osTests, ubuntuTests...)
+	osTests = append(osTests, rockyTests...)
 
 	cniTests := []string{
 		"sles-16-cilium-stable-one-rpm-ipv4",
@@ -60,7 +80,11 @@ func TestMatrix(t *testing.T) {
 	}
 
 	// necessary tests are the union of all targeted subgroups
-	necessaryTests := append([]string{}, osTests...)
+	necessaryTests := append([]string{}, suseTests...)
+	necessaryTests = append(necessaryTests, ibmTests...)
+	necessaryTests = append(necessaryTests, cisTests...)
+	necessaryTests = append(necessaryTests, ubuntuTests...)
+	necessaryTests = append(necessaryTests, rockyTests...)
 	necessaryTests = append(necessaryTests, cniTests...)
 	necessaryTests = append(necessaryTests, versionTests...)
 	necessaryTests = append(necessaryTests, ipfamilyTests...)
@@ -70,8 +94,6 @@ func TestMatrix(t *testing.T) {
 	extendedTests := []string{
 		// os
 		"sle-micro-55-canal-stable-one-rpm-ipv4",
-		"rocky-9-canal-stable-one-rpm-ipv4",
-		"suse-multi-linux-manager-server-5-canal-stable-one-rpm-ipv4",
 		//// ha
 		"sles-15-canal-stable-ha-rpm-ipv4",
 		"ubuntu-24-canal-stable-ha-tar-ipv4",
@@ -131,6 +153,16 @@ func TestMatrix(t *testing.T) {
 			selection = extendedTests
 		case "os":
 			selection = osTests
+		case "suse":
+			selection = suseTests
+		case "ibm":
+			selection = ibmTests
+		case "cis":
+			selection = cisTests
+		case "ubuntu":
+			selection = ubuntuTests
+		case "rocky":
+			selection = rockyTests
 		case "cni":
 			selection = cniTests
 		case "version":
@@ -142,7 +174,7 @@ func TestMatrix(t *testing.T) {
 		case "all":
 			selection = append(selection, extendedTests...)
 		default:
-			t.Fatalf("Unknown fixture group: %s (valid groups: necessary, extended, os, cni, version, ipfamily, layout, all)", group)
+			t.Fatalf("Unknown fixture group: %s (valid groups: necessary, extended, os, suse, ibm, cis, ubuntu, rocky, cni, version, ipfamily, layout, all)", group)
 		}
 	}
 
