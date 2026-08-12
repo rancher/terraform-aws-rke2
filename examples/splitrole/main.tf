@@ -12,7 +12,7 @@ provider "acme" {
 
 locals {
   # Module inputs
-  template_path    = abspath("${path.module}/templates")
+  template_path    = "${path.module}/config_files"
   rke2_module_path = abspath("${path.root}/../../")
   deploy_path      = abspath("${path.root}/child_modules")
   data_path        = var.data_path == "" ? "${path.root}/data" : var.data_path
@@ -259,7 +259,7 @@ module "project" {
 # deploy_path/rke2_module/wk_two
 # deploy_path/rke2_module/wk_three
 # where rke2_module is generated from the files in ../../
-# the modules are generated using templates found in ./templates
+# the modules are generated using templates found in ./config_files
 # each module will be its own Terraform process with its own state running parallel
 # except the initial node which will be run before anything else
 module "deploy_initial_node" {
