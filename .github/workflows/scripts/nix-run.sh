@@ -34,9 +34,13 @@ log_error() {
 
 cleanup() {
   local exit_code=$?
-  if [[ -f .nix-script.sh ]]; then
-    log_info "Cleaning up temporary script: .nix-script.sh"
-    rm -f .nix-script.sh
+  if [[ -f /tmp/.nix-script.sh ]]; then
+    log_info "Cleaning up temporary script: /tmp/.nix-script.sh"
+    rm -f /tmp/.nix-script.sh
+  fi
+  if [[ -f /tmp/.nix-entered ]]; then
+    log_info "Cleaning up temporary canary: /tmp/.nix-entered"
+    rm -f /tmp/.nix-entered
   fi
   if [[ "$exit_code" -ne 0 ]]; then
     log_error "nix-run.sh failed with exit code $exit_code"
@@ -134,45 +138,118 @@ run_nix_command() {
   git config --global --add safe.directory '*' 2>/dev/null || true
   sudo -E -u suse git config --global --add safe.directory '*' 2>/dev/null || true
 
+  # Detect and output environment variables that will be suppressed by --ignore-environment
+  local kept_vars=(
+    "NIX_SSL_CERT_FILE"
+    "SSL_CERT_FILE"
+    "CURL_CA_BUNDLE"
+    "NIX_ENV_LOADED"
+    "INSIDE_RELAY"
+    "TERM"
+    "HOME"
+    "SSH_AUTH_SOCK"
+    "GITHUB_TOKEN"
+    "GITHUB_OWNER"
+    "AWS_ACCESS_KEY_ID"
+    "AWS_SECRET_ACCESS_KEY"
+    "AWS_SESSION_TOKEN"
+    "AWS_ROLE"
+    "AWS_REGION"
+    "AWS_DEFAULT_REGION"
+    "IDENTIFIER"
+    "ZONE"
+    "ACME_SERVER_URL"
+    "NO_COLOR"
+  )
+  local suppressed_vars=()
+  while IFS= read -r var; do
+    if [[ -n "$var" ]]; then
+      local kept=false
+      for k in "${kept_vars[@]}"; do
+        if [[ "$k" == "$var" ]]; then
+          kept=true
+          break
+        fi
+      done
+      if [[ "$kept" == "false" ]] && [[ ! "$var" =~ ^(BASH_|SHELL|UID|EUID|PPID|IFS|PWD|OLDPWD|SHLVL|TERM_|NIX_PATH|PATH|_) ]]; then
+        suppressed_vars+=("$var")
+      fi
+    fi
+  done < <(compgen -e)
+
+  if [[ ${#suppressed_vars[@]} -gt 0 ]]; then
+    log_warning "The following environment variables will be suppressed/ignored inside the Nix shell environment:"
+    for var in "${suppressed_vars[@]}"; do
+      echo "  - ${var}"
+    done
+  fi
+
+  # Build the --keep arguments dynamically from the master list
+  local keep_args=()
+  for var in "${kept_vars[@]}"; do
+    keep_args+=("--keep" "$var")
+  done
+
   log_info "Preparing temporary Nix runner script..."
+  local temp_script="/tmp/.nix-script.sh"
+  local temp_entered="/tmp/.nix-entered"
+
+  # Ensure any old ones are removed
+  rm -f "$temp_script" "$temp_entered"
+
   {
     printf "%s\n" "#!/usr/bin/env bash"
     printf "%s\n" "set -euo pipefail"
+    printf "%s\n" "touch ${temp_entered}"
     printf "printf '%%b[nix-run]%%b Entering Nix development environment...\n' '%s' '%s'\n" "${GREEN}" "${NC}"
     printf "%s\n" "git config --global --add safe.directory \"$PWD\""
     printf "printf '%%b[nix-run]%%b Executing command: %%s\n' '%s' '%s' %q\n" "${GREEN}" "${NC}" "${cmd}"
     printf "%s\n" "$cmd"
-  } > .nix-script.sh
+  } > "$temp_script"
 
-  log_info "Executing command inside Nix development environment as user 'suse'..."
+  # Ensure the suse user can read and execute the script
+  chown suse:suse "$temp_script" 2>/dev/null || true
+  chmod a+rx "$temp_script" 2>/dev/null || true
 
-  # Run the Nix development environment
+  # Run the Nix development environment with retries for environment setup failures
+  local max_attempts=5
+  local attempt=1
   local nix_status=0
-  sudo -E -u suse "$NIX_PATH" develop \
-    --ignore-environment \
-    --extra-experimental-features nix-command \
-    --extra-experimental-features flakes \
-    --keep NIX_SSL_CERT_FILE \
-    --keep SSL_CERT_FILE \
-    --keep CURL_CA_BUNDLE \
-    --keep NIX_ENV_LOADED \
-    --keep INSIDE_RELAY \
-    --keep TERM \
-    --keep HOME \
-    --keep SSH_AUTH_SOCK \
-    --keep GITHUB_TOKEN \
-    --keep GITHUB_OWNER \
-    --keep AWS_ACCESS_KEY_ID \
-    --keep AWS_SECRET_ACCESS_KEY \
-    --keep AWS_SESSION_TOKEN \
-    --keep AWS_ROLE \
-    --keep AWS_REGION \
-    --keep AWS_DEFAULT_REGION \
-    --keep IDENTIFIER \
-    --keep ZONE \
-    --keep ACME_SERVER_URL \
-    --keep NO_COLOR \
-    --command bash -e .nix-script.sh || nix_status=$?
+
+  while [[ ${attempt} -le ${max_attempts} ]]; do
+    if [[ -f "$temp_entered" ]]; then
+      rm -f "$temp_entered"
+    fi
+
+    log_info "Executing command inside Nix development environment as user 'suse' (attempt ${attempt}/${max_attempts})...."
+
+    nix_status=0
+    sudo -E -u suse "$NIX_PATH" develop \
+      --ignore-environment \
+      --extra-experimental-features nix-command \
+      --extra-experimental-features flakes \
+      "${keep_args[@]}" \
+      --command bash -e "$temp_script" || nix_status=$?
+
+    if [[ "$nix_status" -eq 0 ]]; then
+      log_success "Nix command execution succeeded."
+      break
+    fi
+
+    # Check if the environment was entered successfully
+    if [[ -f "$temp_entered" ]]; then
+      log_error "Nix environment entered, but command script failed. Skipping environment retries."
+      break
+    fi
+
+    log_warning "Nix environment startup failed on attempt ${attempt}."
+    if [[ ${attempt} -lt ${max_attempts} ]]; then
+      local delay=$(( attempt * 5 ))
+      log_info "Retrying Nix startup in ${delay} seconds..."
+      sleep "${delay}"
+    fi
+    attempt=$(( attempt + 1 ))
+  done
 
   if [[ "$nix_status" -ne 0 ]]; then
     echo ""
