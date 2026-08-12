@@ -20,3 +20,10 @@ We will modify `examples/one/multi-linux_prep.sh` to dynamically check if `trans
 - [x] Developer IDE Review Gateway: Present the unstaged diff and commit message to the developer, and obtain explicit manual approval.
 - [x] Authorized Commit & Push: Commit and push the changes with the `APPROVED_BY_USER=1` prefix.
 - [x] PR Generation Gateway: Run `create-pr.sh --draft` to raise the draft pull request.
+
+## PR Comments Resolution Checklist
+- [x] Address review comments in `examples/one/multi-linux_prep.sh` by adding `timeout` guards to the `zypper` commands in the transactional-update path.
+- [x] Verify the modified script using `shellcheck`.
+- [x] Present the new unstaged diff for developer IDE review and obtain explicit approval.
+- [x] Commit and push the fix with `APPROVED_BY_USER=1`.
+- [x] Resolve the comment thread on GitHub using `.agent/skills/resolve-pr-reviews.sh 288 --all`.

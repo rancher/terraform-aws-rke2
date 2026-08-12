@@ -20,8 +20,8 @@ zypper --gpg-auto-import-keys --non-interactive ar -f https://download.opensuse.
 zypper --gpg-auto-import-keys --non-interactive ar -f https://download.opensuse.org/distribution/leap/15.6/repo/non-oss/ repo-non-oss || true
 zypper --gpg-auto-import-keys --non-interactive ar -f https://download.opensuse.org/repositories/security:/SELinux_legacy/15.5/security:SELinux_legacy.repo || true
 rpm --import https://rpm.rancher.io/public.key || true
-zypper --gpg-auto-import-keys --non-interactive refresh
-zypper --gpg-auto-import-keys --non-interactive install -n -y --force-resolution restorecond policycoreutils curl
+timeout 10m zypper --gpg-auto-import-keys --non-interactive refresh
+timeout 5m zypper --gpg-auto-import-keys --non-interactive install -n -y --force-resolution restorecond policycoreutils curl
 EOF
     IS_TRANSACTIONAL=true
   else
