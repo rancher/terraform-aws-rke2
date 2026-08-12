@@ -12,7 +12,7 @@ provider "acme" {
 
 locals {
   # Module inputs
-  template_path    = abspath("${path.module}/templates")
+  template_path    = "${path.module}/config_files"
   rke2_module_path = abspath("${path.root}/../../")
   deploy_path      = abspath("${path.root}/child_modules")
   data_path        = var.data_path == "" ? "${path.root}/data" : var.data_path
