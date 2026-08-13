@@ -37,10 +37,45 @@ fi
 
 # shellcheck disable=SC2154
 if [ "ipv6" = "${ip_family}" ]; then
-  IPV6="$(ip -6 a show eth0 | grep inet6 | head -n1 | awk '{ print $2 }' | awk -F/ '{ print $1 }')"
-  IPV6_GW="$(echo "$IPV6" | awk -F: '{gw=$1":"$2":"$3":"$4"::1"; print gw}')"
+  if command -v nmcli >/dev/null 2>&1 || [ -d /etc/NetworkManager ]; then
+    echo "NetworkManager detected. Configuring IPv6 for NetworkManager..."
+    DEVICE="$(ip -6 -o a show scope global | awk '{print $2}' | head -n1)"
+    [ -z "$DEVICE" ] && DEVICE="eth0"
+    IPV6="$(ip -6 a show "$DEVICE" | grep inet6 | head -n1 | awk '{ print $2 }' | awk -F/ '{ print $1 }')"
+    IPV6_GW="$(echo "$IPV6" | awk -F: '{gw=$1":"$2":"$3":"$4"::1"; print gw}')"
 
-  cat > /etc/sysconfig/network/ifcfg-eth0 << EOT
+    # Write NetworkManager configuration
+    mkdir -p /etc/NetworkManager/system-connections
+    cat > "/etc/NetworkManager/system-connections/$DEVICE.nmconnection" << EOT
+[connection]
+id=$DEVICE
+type=ethernet
+interface-name=$DEVICE
+
+[ipv4]
+method=disabled
+
+[ipv6]
+addr-gen-mode=eui64
+addresses1=$IPV6/64,$IPV6_GW
+dns=2001:4860:4860::8888;2606:4700:4700::1111;
+method=manual
+never-default=false
+EOT
+    chmod 0600 "/etc/NetworkManager/system-connections/$DEVICE.nmconnection"
+
+    if command -v nmcli >/dev/null 2>&1; then
+      nmcli connection reload || true
+      nmcli connection up "$DEVICE" || true
+    fi
+    systemctl restart NetworkManager 2>/dev/null || true
+  else
+    echo "Wicked/sysconfig network manager detected. Configuring IPv6 for Wicked..."
+    IPV6="$(ip -6 a show eth0 | grep inet6 | head -n1 | awk '{ print $2 }' | awk -F/ '{ print $1 }')"
+    IPV6_GW="$(echo "$IPV6" | awk -F: '{gw=$1":"$2":"$3":"$4"::1"; print gw}')"
+
+    mkdir -p /etc/sysconfig/network
+    cat > /etc/sysconfig/network/ifcfg-eth0 << EOT
 STARTMODE='auto'
 BOOTPROTO='static'
 IPADDR="$IPV6"
@@ -48,20 +83,21 @@ PREFIXLEN='64'
 DHCLIENT6_MODE='info'
 EOT
 
-  [ ! -f /etc/sysconfig/network/routes ] && touch /etc/sysconfig/network/routes
-  echo "default $IPV6_GW - -" >> /etc/sysconfig/network/routes
+    [ ! -f /etc/sysconfig/network/routes ] && touch /etc/sysconfig/network/routes
+    echo "default $IPV6_GW - -" >> /etc/sysconfig/network/routes
 
-  CONFIG_FILE="/etc/sysconfig/network/config"
-  IPV6_DNS1="2001:4860:4860::8888"
-  IPV6_DNS2="2606:4700:4700::1111"
+    CONFIG_FILE="/etc/sysconfig/network/config"
+    IPV6_DNS1="2001:4860:4860::8888"
+    IPV6_DNS2="2606:4700:4700::1111"
 
-  sed -i "s|^NETCONFIG_DNS_STATIC_SERVERS=.*|NETCONFIG_DNS_STATIC_SERVERS=\"$IPV6_DNS1 $IPV6_DNS2\"|" "$CONFIG_FILE"
-  sed -i "s|^NETWORKMANAGER_DISABLE_IPV6=.*|NETWORKMANAGER_DISABLE_IPV6=\"no\"|" "$CONFIG_FILE"
+    sed -i "s|^NETCONFIG_DNS_STATIC_SERVERS=.*|NETCONFIG_DNS_STATIC_SERVERS=\"$IPV6_DNS1 $IPV6_DNS2\"|" "$CONFIG_FILE"
+    sed -i "s|^NETWORKMANAGER_DISABLE_IPV6=.*|NETWORKMANAGER_DISABLE_IPV6=\"no\"|" "$CONFIG_FILE"
 
-  grep -q "^NETCONFIG_DNS_STATIC_SERVERS=" "$CONFIG_FILE" || echo "NETCONFIG_DNS_STATIC_SERVERS=\"$IPV6_DNS1 $IPV6_DNS2\"" >> "$CONFIG_FILE"
-  grep -q "^NETWORKMANAGER_DISABLE_IPV6=" "$CONFIG_FILE" || echo "NETWORKMANAGER_DISABLE_IPV6=\"no\"" >> "$CONFIG_FILE"
+    grep -q "^NETCONFIG_DNS_STATIC_SERVERS=" "$CONFIG_FILE" || echo "NETCONFIG_DNS_STATIC_SERVERS=\"$IPV6_DNS1 $IPV6_DNS2\"" >> "$CONFIG_FILE"
+    grep -q "^NETWORKMANAGER_DISABLE_IPV6=" "$CONFIG_FILE" || echo "NETWORKMANAGER_DISABLE_IPV6=\"no\"" >> "$CONFIG_FILE"
 
-  netconfig update -f
+    netconfig update -f
+  fi
 
   echo "Updated /etc/resolv.conf:"
   cat /etc/resolv.conf
