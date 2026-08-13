@@ -457,7 +457,6 @@ variable "server_image_type" {
       "ubuntu-24",
       "rocky-9",
       "rhel-9",
-      "suse-multi-linux-manager-server-5",
   EOT
   validation {
     condition = (
@@ -473,7 +472,6 @@ variable "server_image_type" {
         "ubuntu-24",
         "rocky-9",
         "rhel-9",
-        "suse-multi-linux-manager-server-5",
       ], var.server_image_type)
     )
     error_message = <<-EOT
@@ -489,7 +487,6 @@ variable "server_image_type" {
       "ubuntu-24",
       "rocky-9",
       "rhel-9",
-      "suse-multi-linux-manager-server-5",
     EOT
   }
   default = "sle-micro-61"

@@ -105,7 +105,6 @@ func getData(t *testing.T) (map[string][]string, []string, error) {
 		"ubuntu-24",
 		"rocky-9",
 		"rhel-9",
-		"suse-multi-linux-manager-server-5",
 	}
 	ipFamilies := []string{"ipv4", "ipv6", "dualstack"}
 	t.Log("Getting releases")
