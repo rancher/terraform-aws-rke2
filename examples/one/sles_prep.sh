@@ -86,7 +86,13 @@ EOT
   cat /etc/resolv.conf
 
   echo "Testing IPv6 DNS resolution:"
-  dig AAAA google.com
+  if command -v dig >/dev/null 2>&1; then
+    dig AAAA google.com
+  elif command -v getent >/dev/null 2>&1; then
+    getent hosts google.com
+  else
+    echo "Warning: Neither dig nor getent is available to test DNS resolution."
+  fi
 fi
 
 # Ensure sshd.service / ssh.service exist (handling socket-activated SLE Micro units to prevent remote-exec restart errors)

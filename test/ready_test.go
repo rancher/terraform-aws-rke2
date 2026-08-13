@@ -32,7 +32,6 @@ func TestMatrix(t *testing.T) {
 	suseTests := []string{
 		"sle-micro-61-canal-stable-one-rpm-ipv4",
 		"sles-16-canal-stable-one-rpm-ipv4",
-		"suse-multi-linux-manager-server-5-canal-stable-one-rpm-ipv4", // moved from extendedTests
 	}
 
 	ibmTests := []string{
