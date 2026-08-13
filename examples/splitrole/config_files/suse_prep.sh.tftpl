@@ -36,7 +36,7 @@ if [ "ipv6" = "${ip_family}" ]; then
 
     # Write NetworkManager configuration
     mkdir -p /etc/NetworkManager/system-connections
-    cat > "/etc/NetworkManager/system-connections/$DEVICE.nmconnection" << EOT
+    cat > "/etc/NetworkManager/system-connections/$DEVICE.nmconnection" << EOF
 [connection]
 id=$DEVICE
 type=ethernet
@@ -51,7 +51,7 @@ addresses1=$IPV6/64,$IPV6_GW
 dns=2001:4860:4860::8888;2606:4700:4700::1111;
 method=manual
 never-default=false
-EOT
+EOF
     chmod 0600 "/etc/NetworkManager/system-connections/$DEVICE.nmconnection"
 
     if command -v nmcli >/dev/null 2>&1; then

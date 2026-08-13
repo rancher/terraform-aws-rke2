@@ -6,4 +6,5 @@ kubeconfig
 nutanix
 pathing
 shellcheck
+sles
 variablize
