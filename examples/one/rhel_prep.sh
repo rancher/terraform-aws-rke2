@@ -31,10 +31,10 @@ if [ "cis-rhel-8" = "${image}" ] || [ "cis-rhel-9" = "${image}" ]; then
   systemctl disable nftables
 
   install -d /etc/NetworkManager/conf.d
-  cat > /etc/NetworkManager/conf.d/rke2-canal.conf << EOT
+  cat > /etc/NetworkManager/conf.d/rke2-canal.conf << EOF
 [keyfile]
 unmanaged-devices=interface-name:flannel*;interface-name:cali*;interface-name:tunl*;interface-name:vxlan.calico;interface-name:vxlan-v6.calico;interface-name:wireguard.cali;interface-name:wg-v6.cali
-EOT
+EOF
 
   groupadd --system etcd && sudo useradd -s /sbin/nologin --system -g etcd etcd
 
