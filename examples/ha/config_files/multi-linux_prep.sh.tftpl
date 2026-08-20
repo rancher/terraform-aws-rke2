@@ -27,13 +27,13 @@ if [ "ipv6" = "${ip_family}" ]; then
   IPV6="$(ip -6 a show eth0 | grep inet6 | head -n1 | awk '{ print $2 }' | awk -F/ '{ print $1 }')"
   IPV6_GW="$(echo "$IPV6" | awk -F: '{gw=$1":"$2":"$3":"$4"::1"; print gw}')"
 
-  cat > /etc/sysconfig/network/ifcfg-eth0 << EOT
+  cat > /etc/sysconfig/network/ifcfg-eth0 << EOF
 STARTMODE='auto'
 BOOTPROTO='static'
 IPADDR="$IPV6"
 PREFIXLEN='64'
 DHCLIENT6_MODE='info'
-EOT
+EOF
 
   [ ! -f /etc/sysconfig/network/routes ] && touch /etc/sysconfig/network/routes
   echo "default $IPV6_GW - -" >> /etc/sysconfig/network/routes
