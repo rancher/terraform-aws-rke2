@@ -254,7 +254,9 @@ module "deploy_initial_node" {
     install_method              = "${local.install_method}"
     download                    = "${local.download}"
     rke2_version                = "${local.rke2_version}"
-    install_prep_script         = "${local.install_prep_script}"
+    install_prep_script         = <<-EOD
+    ${local.install_prep_script}
+    EOD
   EOT
   template_files = { # map of relative path => absolute path for files that will be copied to the deploy path
     "./versions.tf" = abspath("${path.module}/config_files/versions.tf")
@@ -307,7 +309,9 @@ module "deploy_other_nodes" {
     install_method              = "${local.install_method}"
     download                    = "${local.download}"
     rke2_version                = "${local.rke2_version}"
-    install_prep_script         = "${local.install_prep_script}"
+    install_prep_script         = <<-EOD
+    ${local.install_prep_script}
+    EOD
     join_token                  = "${module.deploy_initial_node.output.join_token}"
     join_url                    = "${module.deploy_initial_node.output.join_url}"
     cluster_cidr                = "${join(",", module.project.cluster_cidr)}"
