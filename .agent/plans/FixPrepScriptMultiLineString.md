@@ -24,5 +24,5 @@ This produces valid HCL heredoc syntax in the temporary `inputs.tfvars` file, al
 - [x] Local Test Verification Gateway: Propose the fast layout fixture `sles-16-canal-stable-ha-rpm-ipv4` and invite the developer to run the test locally before we push/commit.
 - [x] Staging Isolation: Create a dedicated branch off main (after merging the previous PR).
 - [x] Developer IDE Review Gateway: Present the unstaged diff and commit message to the developer, and obtain explicit manual approval.
-- [ ] Authorized Commit & Push: Commit and push the changes with the `APPROVED_BY_USER=1` prefix.
-- [ ] PR Generation Gateway: Run `create-pr.sh --draft` to raise the draft pull request.
+- [x] Authorized Commit & Push: Commit and push the changes with the `APPROVED_BY_USER=1` prefix.
+- [x] PR Generation Gateway: Run `create-pr.sh --draft` to raise the draft pull request.request.
