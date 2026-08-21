@@ -1,5 +1,51 @@
 # Changelog
 
+## [3.0.1](https://github.com/rancher/terraform-aws-rke2/compare/v3.0.0...v3.0.1) (2026-08-20)
+
+
+### Bug Fixes
+
+* add agentic framework ([#242](https://github.com/rancher/terraform-aws-rke2/issues/242)) ([57c8483](https://github.com/rancher/terraform-aws-rke2/commit/57c84838ef5363853393662ccc9655c95f783636))
+* add better information on how to make and execute plans ([#246](https://github.com/rancher/terraform-aws-rke2/issues/246)) ([4d4de42](https://github.com/rancher/terraform-aws-rke2/commit/4d4de4220d5eb4545be6576491511190b68b3b0f))
+* add no-color option and fix test summary output ([#270](https://github.com/rancher/terraform-aws-rke2/issues/270)) ([3c8e7c7](https://github.com/rancher/terraform-aws-rke2/commit/3c8e7c7bbe41668acf91f218ec856bfbf7ef2152))
+* add review proxy workflow and resolve parallel test failures ([#283](https://github.com/rancher/terraform-aws-rke2/issues/283)) ([940496b](https://github.com/rancher/terraform-aws-rke2/commit/940496b274cb485b12dbe9a3690ab2e0eff1bb3d))
+* add scripts for pull requests and syncs ([#269](https://github.com/rancher/terraform-aws-rke2/issues/269)) ([08b3ed2](https://github.com/rancher/terraform-aws-rke2/commit/08b3ed251ccfe3edd26e3a9e828593cd19109da2))
+* add troubleshooting information and consolidate workflow scripts ([#261](https://github.com/rancher/terraform-aws-rke2/issues/261)) ([d117acf](https://github.com/rancher/terraform-aws-rke2/commit/d117acf40ae89818f97790126d84e8d7db9ea746))
+* bump actions/setup-go from 6.5.0 to 7.0.0 ([#257](https://github.com/rancher/terraform-aws-rke2/issues/257)) ([a5a1c22](https://github.com/rancher/terraform-aws-rke2/commit/a5a1c2260da297a3cf3c457d356bf26df24d829e))
+* bump aws-actions/configure-aws-credentials from 6.2.0 to 6.2.2 ([#258](https://github.com/rancher/terraform-aws-rke2/issues/258)) ([a838e4c](https://github.com/rancher/terraform-aws-rke2/commit/a838e4c3264b2d356925ac135b20290dc09446e6))
+* bump fossas/fossa-action from 1.9.0 to 2.0.0 ([#256](https://github.com/rancher/terraform-aws-rke2/issues/256)) ([0f45aa9](https://github.com/rancher/terraform-aws-rke2/commit/0f45aa92cad3bfcfd5d59d9c04c74cbdde4e2953))
+* bump rancher/server/aws from 2.0.3 to 2.0.4 in /test/test_relay ([#279](https://github.com/rancher/terraform-aws-rke2/issues/279)) ([8556f64](https://github.com/rancher/terraform-aws-rke2/commit/8556f644ca8827af59c25bd1efda56f02651243c))
+* define commit guidelines and agent rules ([#266](https://github.com/rancher/terraform-aws-rke2/issues/266)) ([7eb9205](https://github.com/rancher/terraform-aws-rke2/commit/7eb920556c1dfe1b5361fd5cbbb05fe97fa2b5ff))
+* deploy settings and git security block hook ([#268](https://github.com/rancher/terraform-aws-rke2/issues/268)) ([fa860c0](https://github.com/rancher/terraform-aws-rke2/commit/fa860c0d689b5d1afe76857e2f7f30c61381ce20))
+* drop multi-linux server and make ipv6 dig fallback safe ([#290](https://github.com/rancher/terraform-aws-rke2/issues/290)) ([f385577](https://github.com/rancher/terraform-aws-rke2/commit/f385577a4f662f6097c751f2b772334371469a81))
+* expand nix env and add utility tools ([#265](https://github.com/rancher/terraform-aws-rke2/issues/265)) ([a5c79ee](https://github.com/rancher/terraform-aws-rke2/commit/a5c79ee6eab7b48468797a464f845b01fa5482c2))
+* fix go dependency CI, use proper commit message ([#244](https://github.com/rancher/terraform-aws-rke2/issues/244)) ([d38694f](https://github.com/rancher/terraform-aws-rke2/commit/d38694f8d127e41706670e46ab6b306a375a24e7))
+* fix release ci by removing mount point files ([#248](https://github.com/rancher/terraform-aws-rke2/issues/248)) ([33f3b90](https://github.com/rancher/terraform-aws-rke2/commit/33f3b90624a71718333de1a51138ab39dc3707f2))
+* implement commit management and workflows ([#267](https://github.com/rancher/terraform-aws-rke2/issues/267)) ([5f716f4](https://github.com/rancher/terraform-aws-rke2/commit/5f716f4d5765ef585321e70fd9bb8eb45533f84e))
+* overhaul testing harness to prevent CPU pinning ([#264](https://github.com/rancher/terraform-aws-rke2/issues/264)) ([3058cfd](https://github.com/rancher/terraform-aws-rke2/commit/3058cfd545e0f82118ff13c6fe3e79204e168896))
+* Refactor workflows ([#239](https://github.com/rancher/terraform-aws-rke2/issues/239)) ([c39b97b](https://github.com/rancher/terraform-aws-rke2/commit/c39b97bf73f7a0beeaa5cc8b97c6bdc5f22982f2))
+* remove update script and add dependabot config ([#250](https://github.com/rancher/terraform-aws-rke2/issues/250)) ([8beafa5](https://github.com/rancher/terraform-aws-rke2/commit/8beafa5f771f1b6a3d7706d2459961392b974108))
+* resolve nested heredoc keyword collision in sles prep scripts ([#291](https://github.com/rancher/terraform-aws-rke2/issues/291)) ([beb556a](https://github.com/rancher/terraform-aws-rke2/commit/beb556abae53c718f1dc8c6d0878152238741bbd))
+* resolve nested heredoc keyword collisions across all prep scripts ([#292](https://github.com/rancher/terraform-aws-rke2/issues/292)) ([966de37](https://github.com/rancher/terraform-aws-rke2/commit/966de378f613171598eb5af1adb448279e705714))
+* run release-please outside of CI container ([#249](https://github.com/rancher/terraform-aws-rke2/issues/249)) ([5e7ffb7](https://github.com/rancher/terraform-aws-rke2/commit/5e7ffb7a3ec56d3ac3ca1a16e1c4f87b647d998a))
+* simplify dev process and relax commit message validation ([#282](https://github.com/rancher/terraform-aws-rke2/issues/282)) ([7b9a3d0](https://github.com/rancher/terraform-aws-rke2/commit/7b9a3d0c917769e28c42d134a4be547160a70ae3))
+* support --no-color flag in test runner script ([#280](https://github.com/rancher/terraform-aws-rke2/issues/280)) ([8f5cdf3](https://github.com/rancher/terraform-aws-rke2/commit/8f5cdf36041eeb77355c151f13d637f47b6d8139))
+* support NetworkManager and Wicked dynamically for SUSE IPv6 ([#289](https://github.com/rancher/terraform-aws-rke2/issues/289)) ([cf3bebc](https://github.com/rancher/terraform-aws-rke2/commit/cf3bebc7457f5a26e4eaa6bb69d4bdc829a3bbf9))
+* support transactional-update in multi-linux prep script ([#288](https://github.com/rancher/terraform-aws-rke2/issues/288)) ([ab78626](https://github.com/rancher/terraform-aws-rke2/commit/ab786268546c44c8d6f07ba29b903a98e2924a43))
+* this forces the release workflow to use the ci container ([#247](https://github.com/rancher/terraform-aws-rke2/issues/247)) ([4e6f67c](https://github.com/rancher/terraform-aws-rke2/commit/4e6f67c78883761aa46a4c9effb2158d2429879e))
+* update agentic rules and plans, update workflow dependencies ([#245](https://github.com/rancher/terraform-aws-rke2/issues/245)) ([f1adf1b](https://github.com/rancher/terraform-aws-rke2/commit/f1adf1b70d7887141b599c6231e3447f208c231c))
+* update rancher/access/aws requirement from v4.0.2 to 4.0.5 in /test/test_relay ([#260](https://github.com/rancher/terraform-aws-rke2/issues/260)) ([8429357](https://github.com/rancher/terraform-aws-rke2/commit/842935772ec80d6133f0b8695ab65b7ffaddfbe8))
+* update rancher/access/aws requirement from v4.0.3 to 4.0.5 ([#255](https://github.com/rancher/terraform-aws-rke2/issues/255)) ([93cfe4b](https://github.com/rancher/terraform-aws-rke2/commit/93cfe4bbecb23ce841a03d229c1dbfb5238baac9))
+* update rancher/rke2-config/local requirement from v1.0.1 to 1.0.3 ([#253](https://github.com/rancher/terraform-aws-rke2/issues/253)) ([950111c](https://github.com/rancher/terraform-aws-rke2/commit/950111c9826d8fc121030b97d2ed5b24a636c31d))
+* update rancher/rke2-download/github requirement from v1.0.1 to 1.0.2 ([#251](https://github.com/rancher/terraform-aws-rke2/issues/251)) ([9f5bdb1](https://github.com/rancher/terraform-aws-rke2/commit/9f5bdb1db3e478a02d0007dff3fde2bf11247a44))
+* update rancher/rke2-install/null requirement from v1.3.3 to 1.3.4 ([#254](https://github.com/rancher/terraform-aws-rke2/issues/254)) ([6e46824](https://github.com/rancher/terraform-aws-rke2/commit/6e46824e735f77ebbb8740ff3f04b45879ea9b9d))
+* update rancher/server/aws requirement from v2.0.1 to 2.0.3 in /test/test_relay ([#259](https://github.com/rancher/terraform-aws-rke2/issues/259)) ([0de1258](https://github.com/rancher/terraform-aws-rke2/commit/0de1258e0db08bdfa8552ac4b2d0d79e0f1aabc3))
+* update rancher/server/aws requirement from v2.0.2 to 2.0.3 ([#252](https://github.com/rancher/terraform-aws-rke2/issues/252)) ([8132093](https://github.com/rancher/terraform-aws-rke2/commit/81320939a5d49330b0e80f28f6d5d98270c1ff8e))
+* upgrade public modules and workflow actions ([#281](https://github.com/rancher/terraform-aws-rke2/issues/281)) ([661f21f](https://github.com/rancher/terraform-aws-rke2/commit/661f21fbc5e53778e1f140fab23a6e4b190debdd))
+* upgrade test dependencies, add new go dependency workflow ([#241](https://github.com/rancher/terraform-aws-rke2/issues/241)) ([6a9e465](https://github.com/rancher/terraform-aws-rke2/commit/6a9e465145ee5aebe166a78f795247583f97e6a2))
+* use inner heredoc for prep script in dynamic layout inputs ([#293](https://github.com/rancher/terraform-aws-rke2/issues/293)) ([e2508b2](https://github.com/rancher/terraform-aws-rke2/commit/e2508b2b0e3c3f246f37f448b1e3fc9553e990f3))
+* use portable relative path for examples template_path ([#286](https://github.com/rancher/terraform-aws-rke2/issues/286)) ([17ce0fd](https://github.com/rancher/terraform-aws-rke2/commit/17ce0fdab3903956049d4dda908ae78184a2ae4b))
+
 ## [3.0.0](https://github.com/rancher/terraform-aws-rke2/compare/v2.0.0...v3.0.0) (2026-05-12)
 
 
