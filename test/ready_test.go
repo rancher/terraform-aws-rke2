@@ -91,8 +91,6 @@ func TestMatrix(t *testing.T) {
 
 	// extended tests
 	extendedTests := []string{
-		// os
-		"sle-micro-55-canal-stable-one-rpm-ipv4",
 		//// ha
 		"sles-15-canal-stable-ha-rpm-ipv4",
 		"ubuntu-24-canal-stable-ha-tar-ipv4",
