@@ -18,6 +18,7 @@ locals {
 
   # Local Paths
   data_local_path = abspath("${path.root}/data/${local.identifier}")
+  ssh_key_path    = abspath("${path.root}/../data/${local.identifier}/ssh_key")
 
   ## Remote Paths
   home_remote_path = "/home/${local.username}"
@@ -52,7 +53,7 @@ resource "terraform_data" "create_data_local" {
 
 module "access" {
   source                     = "rancher/access/aws"
-  version                    = "v4.0.6"
+  version                    = "v5.0.0"
   vpc_name                   = "${local.project_name}-vpc"
   vpc_type                   = "dualstack"
   vpc_public                 = true
@@ -335,7 +336,7 @@ resource "terraform_data" "create_age" {
   # download the remote's public key
   provisioner "local-exec" {
     command = <<-EOT
-      scp -o StrictHostKeyChecking=no ${local.username}@${module.runner.server.public_ip}:${local.home_remote_path}/age_key.pub ${local.data_local_path}
+      scp -i '${local.ssh_key_path}' -o StrictHostKeyChecking=no ${local.username}@${module.runner.server.public_ip}:${local.home_remote_path}/age_key.pub ${local.data_local_path}
     EOT
   }
   # add remote's public key to the list of recipients

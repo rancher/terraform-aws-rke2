@@ -96,7 +96,6 @@ func getData(t *testing.T) (map[string][]string, []string, error) {
 	operatingSystems := []string{
 		"sles-15",
 		"sles-16",
-		"sle-micro-55",
 		"sle-micro-60",
 		"sle-micro-61",
 		"cis-rhel-8",
