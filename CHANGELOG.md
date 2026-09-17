@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.0.2](https://github.com/rancher/terraform-aws-rke2/compare/v3.0.1...v3.0.2) (2026-09-16)
+
+
+### Bug Fixes
+
+* bump aws-actions/configure-aws-credentials from 6.2.3 to 6.2.4 ([#295](https://github.com/rancher/terraform-aws-rke2/issues/295)) ([9381e34](https://github.com/rancher/terraform-aws-rke2/commit/9381e344ef0d243aad92f5b19ca515bce55240d8))
+* bump rancher-eio/read-vault-secrets from 7282bf97898cd1c16c89f837e0bb442e6d384c89 to dfae8acd43a9e170fca5f90168da22f814fe4e9a ([#294](https://github.com/rancher/terraform-aws-rke2/issues/294)) ([069f837](https://github.com/rancher/terraform-aws-rke2/commit/069f837eb9975cb8f0d04c9296e36efd41cf51ca))
+* update modules ([#296](https://github.com/rancher/terraform-aws-rke2/issues/296)) ([af871e4](https://github.com/rancher/terraform-aws-rke2/commit/af871e4db7cb422a401cd8ada28b02474915ff1a))
+
 ## [3.0.1](https://github.com/rancher/terraform-aws-rke2/compare/v3.0.0...v3.0.1) (2026-08-20)
 
 
