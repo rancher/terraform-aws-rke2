@@ -19,7 +19,7 @@ jobs:
   static-analysis:
     name: 'Static Analysis and Linting'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     container:
       image: ghcr.io/rancher/ci-image/nix:20260603-18
     permissions:
@@ -36,7 +36,7 @@ jobs:
   validate-commit-message:
     name: 'Validate Commit Message'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     container:
       image: ghcr.io/rancher/ci-image/nix:20260603-18
     permissions:
@@ -54,7 +54,7 @@ jobs:
   signed-commits:
     name: 'Verify Signed Commits'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     container:
       image: ghcr.io/rancher/ci-image/nix:20260603-18
     permissions:
