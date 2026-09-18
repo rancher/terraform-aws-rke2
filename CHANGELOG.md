@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.0.3](https://github.com/rancher/terraform-aws-rke2/compare/v3.0.2...v3.0.3) (2026-09-18)
+
+
+### Bug Fixes
+
+* update install module ([#298](https://github.com/rancher/terraform-aws-rke2/issues/298)) ([d4a56b8](https://github.com/rancher/terraform-aws-rke2/commit/d4a56b8bcd22d6a26cdf5f99888f131248c64639))
+
 ## [3.0.2](https://github.com/rancher/terraform-aws-rke2/compare/v3.0.1...v3.0.2) (2026-09-16)
 
 
