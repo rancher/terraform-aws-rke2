@@ -405,7 +405,7 @@ module "install" {
     module.download,
   ]
   source                     = "rancher/rke2-install/null"
-  version                    = "v1.3.5"
+  version                    = "v1.3.6"
   release                    = local.install_rke2_version
   rpm_channel                = local.install_rpm_channel
   local_file_path            = local.local_file_path
