@@ -28,6 +28,9 @@ jobs:
       - name: 'Checkout'
         # https://github.com/actions/checkout/releases
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: 'Free Disk Space'
+        run: |
+          bash .github/workflows/scripts/free-disk-space.sh
       - name: 'Run Static Analysis'
         shell: bash
         run: |
@@ -46,6 +49,9 @@ jobs:
       - name: 'Checkout'
         # https://github.com/actions/checkout/releases
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: 'Free Disk Space'
+        run: |
+          bash .github/workflows/scripts/free-disk-space.sh
       - name: 'Check commit message'
         shell: bash
         run: |
@@ -64,6 +70,9 @@ jobs:
       - name: 'Checkout'
         # https://github.com/actions/checkout/releases
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: 'Free Disk Space'
+        run: |
+          bash .github/workflows/scripts/free-disk-space.sh
       - name: 'Check commit signatures'
         shell: bash
         run: |
