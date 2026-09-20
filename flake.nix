@@ -135,7 +135,7 @@
           kubectl
           kubernetes-helm
           less
-          nodejs_26
+          nodejs_24
           openssh
           openssl
           ripgrep
