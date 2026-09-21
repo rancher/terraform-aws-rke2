@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.0.3](https://github.com/rancher/terraform-aws-rke2/compare/v3.0.2...v3.0.3) (2026-09-20)
+
+
+### Bug Fixes
+
+* falling back to node 24 since node 26 is failing to build ([#300](https://github.com/rancher/terraform-aws-rke2/issues/300)) ([a921192](https://github.com/rancher/terraform-aws-rke2/commit/a92119281e4b7f0aa40edb1cb127f557bfa80065))
+* update install module ([#298](https://github.com/rancher/terraform-aws-rke2/issues/298)) ([d4a56b8](https://github.com/rancher/terraform-aws-rke2/commit/d4a56b8bcd22d6a26cdf5f99888f131248c64639))
+
 ## [3.0.2](https://github.com/rancher/terraform-aws-rke2/compare/v3.0.1...v3.0.2) (2026-09-16)
 
 
